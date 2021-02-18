@@ -1,0 +1,21 @@
+{
+  "name": "bonfire",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "nuxt",
+    "build": "nuxt build",
+    "start": "nuxt start",
+    "generate": "nuxt generate",
+    "electron": "electron ."
+  },
+  "main": "./main.js",
+  "dependencies": {
+    "core-js": "^3.8.3",
+    "electron": "^11.2.3",
+    "nuxt": "^2.14.12"
+  },
+  "devDependencies": {
+    "@nuxtjs/vuetify": "^1.11.3"
+  }
+}
