@@ -38,17 +38,12 @@ export const state = () => ({
 
 export const getters = {};
 export const actions = {
-    // TODO: support custom transport options
     async [$actions.login]({ commit, state }, { jid, password, server, transports }) {
-        // TODO: preemptively auto-discover a way to connect to the server, show manual transports fields if unable
-        // TODO: Avoid creating a new client every time ('transports' only work when passed to the constructor like this)
         let options = { jid, password, server, transports: transports || {bosh:true,websocket:true} };
-        this.$stanza.client = XMPP.createClient(options);
+        this.$stanza.client.updateConfig(options);
 
-        // TODO: figure out a way to detect when host is unreachable
         this.$stanza.client.connect();
-
-        this.$stanza.client.on("auth:success", () => {
+        this.$stanza.client.once("auth:success", () => {
             commit($mutations.setLoggedIn, true);
             commit($mutations.setJid, jid);
             commit($mutations.setPassword, password);
