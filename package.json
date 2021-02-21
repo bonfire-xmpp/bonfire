@@ -13,7 +13,9 @@
   "dependencies": {
     "core-js": "^3.8.3",
     "electron": "^11.2.3",
-    "nuxt": "^2.14.12"
+    "nuxt": "^2.14.12",
+    "pug": "^3.0.0",
+    "pug-plain-loader": "^1.1.0"
   },
   "devDependencies": {
     "@nuxtjs/vuetify": "^1.11.3"

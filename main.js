@@ -18,6 +18,7 @@ function createWindow() {
     }
   })
   win.loadURL("http://localhost:3000")
+  // win.loadFile("./dist/index.html")
   ipcMain.on("close", () => win.close())
   ipcMain.on("minimize", () => win.minimize())
   ipcMain.on("maximizeToggle", () => win.isMaximized() ? win.unmaximize() : win.maximize())
