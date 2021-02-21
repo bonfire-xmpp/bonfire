@@ -1,5 +1,10 @@
 <template>
-  <login-dialog class="dialog" @login="submit" :loading="loading && !loggedIn" />
+  <login-dialog class="dialog"
+                @login="submit"
+                :loading="loading && !loggedIn"
+                :both-field-errors="bothFieldErrors"
+                :jid-field-errors="jidFieldErrors"
+  />
 </template>
 
 <script>
@@ -14,14 +19,36 @@
     data() {
       return {
         loading: false,
+        wrongCredentials: false,
+        serverConnectionIssues: false,
       }
     },
     methods: {
-      submit({jid, password}) {
+      submit({jid, password, transports}) {
+        this.wrongCredentials = false;
+        this.serverConnectionIssues = false;
         this.loading = true;
-        this.login({jid, password});
 
-        this.$stanza.client.on("auth:success", () => this.$router.push('/loggedIn'));
+        this.login({jid, password, transports});
+
+        this.$stanza.client.on("auth:success", () => {
+          this.$router.push('/loggedIn')
+        });
+      },
+
+      failedAuth() {
+        this.wrongCredentials = true;
+      },
+
+      transportDisconnected() {
+        if (this.wrongCredentials) {
+          console.warn("Incorrect username or password");
+        } else {
+          this.serverConnectionIssues = true;
+          console.warn("Couldn't connect to XMPP server!");
+        }
+
+        this.loading = false;
       },
 
       ...mapActions({
@@ -32,7 +59,25 @@
     computed: {
       ...mapState({
         'loggedIn': Store.$states.loggedIn,
-      })
+      }),
+
+      bothFieldErrors() {
+        return this.wrongCredentials ? 'Invalid JID or password' : null;
+      },
+
+      jidFieldErrors() {
+        return this.serverConnectionIssues ? "Couldn't connect to server" : null;
+      },
+    },
+
+    mounted() {
+      this.$stanza.client.on('auth:failed', this.failedAuth);
+      this.$stanza.client.on('--transport-disconnected', this.transportDisconnected);
+    },
+
+    destroyed() {
+      this.$stanza.client.off('auth:failed', this.failedAuth);
+      this.$stanza.client.off('--transport-disconnected', this.transportDisconnected);
     }
   }
 </script>
