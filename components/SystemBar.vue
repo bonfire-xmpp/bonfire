@@ -28,6 +28,7 @@
     width: 24px;
     text-align: right;
     transition: 0.2s;
+    outline: none;
   }
 
   button:hover {
