@@ -15,7 +15,7 @@
     },
 
     mounted() {
-      if(!this.loggedIn) this.$router.push('/login');
+      // if(!this.loggedIn) this.$router.push('/login');
     }
   }
 </script>

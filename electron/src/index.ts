@@ -1,9 +1,8 @@
 import { app, ipcMain } from "electron";
 import { createCapacitorElectronApp } from "@capacitor-community/electron";
-const path = require("path");
+const localShortcut = require("electron-localshortcut")
 
-// The MainWindow object can be accessed via myCapacitorApp.getMainWindow()
-const myCapacitorApp = createCapacitorElectronApp({
+const capapp = createCapacitorElectronApp({
   splashScreen: {
     useSplashScreen: false,
   },
@@ -21,36 +20,35 @@ const myCapacitorApp = createCapacitorElectronApp({
         allowRunningInsecureContent: false,
         nodeIntegration: false,
         contextIsolation: true,
+        devTools: true,
       }
     },
   },
 });
 
-// This method will be called when Electron has finished
-// initialization and is ready to create browser windows.
-// Some Electron APIs can only be used after this event occurs.
 app.on("ready", () => {
-  myCapacitorApp.init();
+  capapp.init();
+  localShortcut.register(capapp.getMainWindow(), "F5", () => {
+    capapp.getMainWindow().reload()
+  })
+  localShortcut.register(capapp.getMainWindow(), "F12", () => {
+    capapp.getMainWindow().webContents.toggleDevTools()
+  })
 });
 
-// Quit when all windows are closed.
 app.on("window-all-closed", function () {
-  // On OS X it is common for applications and their menu bar
-  // to stay active until the user quits explicitly with Cmd + Q
   if (process.platform !== "darwin") {
     app.quit();
   }
 });
 
 app.on("activate", function () {
-  // On OS X it's common to re-create a window in the app when the
-  // dock icon is clicked and there are no other windows open.
-  if (myCapacitorApp.getMainWindow().isDestroyed()) myCapacitorApp.init();
+  if (capapp.getMainWindow().isDestroyed()) 
+    capapp.init();
 });
 
-// Define any IPC or other custom functionality below here
 app.whenReady().then(() =>{
-  const win = myCapacitorApp.getMainWindow();
+  const win = capapp.getMainWindow();
   ipcMain.on("close", () => win.close())
   ipcMain.on("minimize", () => win.minimize())
   ipcMain.on("maximizeToggle", () => win.isMaximized() ? win.unmaximize() : win.maximize())
