@@ -14,12 +14,12 @@ html {
 $height-width-helper-sizes: splitIntoSteps(100, 20);
 
 @each $size in $height-width-helper-sizes {
-  h-#{$size} {
-    height: percentage($size) !important;
+  .h-#{$size} {
+    height: percentage($size/100) !important;
   }
 
-  w-#{$size} {
-    width: percentage($size) !important;
+  .w-#{$size} {
+    width: percentage($size/100) !important;
   }
 }
 
