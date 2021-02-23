@@ -31,6 +31,12 @@ export default {
       '@/assets/globals.scss'
   ],
 
+  styleResources: {
+    scss: [
+      './assets/_vars.scss',
+    ]
+  },
+
   // Plugins to run before rendering page: https://go.nuxtjs.dev/config-plugins
   plugins: [
       '@/plugins/stanza.js'
@@ -43,7 +49,8 @@ export default {
   buildModules: [
     // https://go.nuxtjs.dev/vuetify
     '@nuxtjs/vuetify',
-    '@nuxtjs/axios'
+    '@nuxtjs/axios',
+    '@nuxtjs/style-resources',
   ],
 
   // Modules: https://go.nuxtjs.dev/config-modules
@@ -62,6 +69,7 @@ export default {
       dark: true,
       themes: {
         dark: {
+          "grey-100": "#1e1e1e",
           primary: colors.blue.darken2,
           accent: colors.grey.darken3,
           secondary: colors.amber.darken3,

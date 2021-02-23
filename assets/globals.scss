@@ -30,3 +30,22 @@ $height-width-helper-sizes: splitIntoSteps(100, 20);
     -webkit-app-region: no-drag;
   }
 }
+
+/** Scrollbar **/
+
+// Firefox has only this for scrollbar customization
+* {
+  scrollbar-width: thin !important;
+  // TODO: define colour in a variable
+  scrollbar-color: #282828 #00000000;
+}
+
+::-webkit-scrollbar {
+  width: 5px;
+  background: none;
+}
+::-webkit-scrollbar-thumb {
+  // TODO: define colour in a variable
+  background: #282828;
+  border-radius: 10px;
+}

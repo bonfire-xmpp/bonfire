@@ -1,6 +1,6 @@
 <template>
-  <div id="sidebar">
-    <v-list id="sidebar-list">
+  <div class="sidebar d-flex">
+    <v-list dense color="grey-100" class="sidebar-list pa-1 flex-grow-1">
       <v-list-item link v-for="chan in channels" :key="chan">
         <v-list-item-content>
           {{chan}}
@@ -21,20 +21,11 @@ export default {
 </script>
 
 <style scoped lang="scss">
-#sidebar {
-  position: relative;
-  display: flex;
-  width: 320px;
-  min-width: 320px;
-  height: 100%;
-  background: #1e1e1e;
-  padding: 4px;
-  box-sizing: border-box;
-  &-list {
-    overflow: hidden scroll;
-    width: 100%;
-    background: #1e1e1e;
-    padding: 4px;
+  .sidebar {
+    width: 320px;
+    min-width: 320px;
+    &-list {
+      overflow: hidden scroll;
+    }
   }
-}
 </style>
