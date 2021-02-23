@@ -9,7 +9,7 @@ The client itself is a web app written in Nuxt.js (a Vue framework).
 You can get a local development server with hot reloading running with
 `npm run dev`.
 
-If you want to build the static files, do `npm run generate`.
+If you want to build the static files to `/dist`, do `npm run generate`.
 
 ### Standalones
 
@@ -22,7 +22,7 @@ are coming up soon ahead.
 
 To build for Electron:
 ```shell
-npx cap sync @capacitor-community/electron
-cd electron
-npm run build:electron-windows # or whatever your platform is
+cd electron && npm ci && cd .. # Install electron build dependencies
+npm run build:electron # or electron-windows for specific OS
+# Your build is now in electron/dist/
 ```
