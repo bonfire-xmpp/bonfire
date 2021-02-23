@@ -1,5 +1,5 @@
 <template>
-  <v-system-bar app fixed :light="light" :dark="dark" class="move-window pa-0">
+  <v-system-bar id="systembar" :light="light" :dark="dark" class="move-window pa-0">
     <p class="ma-0 brand">BONFIRE</p>
     <v-spacer/>
     <button @click="minimize"><v-icon>mdi-window-minimize</v-icon></button>
@@ -22,10 +22,14 @@
 
 <style scoped lang="scss">
   $systembar-brand-left: 10px !default;
+  
+  #systembar {
+    width: 100vw;
+  }
 
   button {
     height: 100%;
-    width: 24px;
+    width: $systembar-height;
     text-align: right;
     transition: 0.2s;
     outline: none;
