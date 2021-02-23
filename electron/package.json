@@ -8,6 +8,7 @@
     "electron:start": "npm run build && electron ./",
     "electron:pack": "npm run build && electron-builder build --dir",
     "electron:build-windows": "npm run build && electron-builder build --windows",
+    "electron:build-linux": "npm run build && electron-builder build --linux",
     "electron:build-mac": "npm run build && electron-builder build --mac"
   },
   "dependencies": {
