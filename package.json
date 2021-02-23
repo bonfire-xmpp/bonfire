@@ -5,7 +5,8 @@
   "scripts": {
     "dev": "nuxt",
     "start": "nuxt start",
-    "generate": "nuxt generate"
+    "generate": "nuxt generate",
+    "build:electron": "cross-env CAPACITOR_CONFIG=./capacitor.config.json CAPACITOR_ROOT_DIR=./ CAPACITOR_WEB_DIR=./dist npx cap sync @capacitor-community/electron"
   },
   "dependencies": {
     "@nuxtjs/axios": "^5.13.1",
@@ -17,6 +18,7 @@
     "@capacitor-community/electron": "github:bonfire-xmpp/electron#v3",
     "@capacitor/cli": "^2.4.6",
     "@capacitor/core": "^2.4.6",
-    "@nuxtjs/vuetify": "^1.11.3"
+    "@nuxtjs/vuetify": "^1.11.3",
+    "cross-env": "^7.0.3"
   }
 }
