@@ -5,8 +5,7 @@
   "scripts": {
     "dev": "nuxt",
     "start": "nuxt start",
-    "generate": "nuxt generate",
-    "build:electron": "cross-env CAPACITOR_CONFIG=./capacitor.config.json CAPACITOR_ROOT_DIR=./ CAPACITOR_WEB_DIR=./dist npx cap sync @capacitor-community/electron"
+    "generate": "nuxt generate"
   },
   "dependencies": {
     "@nuxtjs/axios": "^5.13.1",
