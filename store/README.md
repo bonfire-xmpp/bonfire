@@ -1,10 +1,39 @@
-# STORE
+# Vuex store usage
+By default, states, getters, setters and actions are 
+uniquely identified by their given string ID.
 
-**This directory is not required, you can delete it if you don't want to use it.**
+However, this approach to accessing properties is a problem for 
+several reasons:
+1) It completely kills out any opportunity for IDEs to autocomplete 
+   store names
+2) It involves rewriting the same string(s) over and over in 
+   different places in the codebase, leading to difficult refactors,
+   etc.
+   
+To this end, stores -- apart from their usual exports -- also export
+an object with subobjects `$states`, `$getters`, `$setters` and 
+`$actions` which map meaningful property names to the corresponding 
+store property string identifier.
 
-This directory contains your Vuex Store files.
-Vuex Store option is implemented in the Nuxt.js framework.
+To ensure that the correct string is indeed used in the store, we
+can use computed properties that reference the corresponding entry in
+one of the `$objects`.
 
-Creating a file in this directory automatically activates the option in the framework.
+For example:
+```js
+const $states = {
+    users     : 'USERS',
+    messages  : 'MESSAGES',
+};
 
-More information about the usage of this directory in [the documentation](https://nuxtjs.org/guide/vuex-store).
+export const state = () => ({
+    [$states.users]: [ me ],
+    [$states.messages]: [ 'Hello!' ],
+});
+
+export const UserMessageStore = {
+    $states
+};
+```
+
+Read more [here](https://vuex.vuejs.org/guide/mutations.html#using-constants-for-mutation-types)

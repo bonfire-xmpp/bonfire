@@ -1,0 +1,32 @@
+html {
+  overflow: hidden !important;
+}
+
+@function splitIntoSteps($width, $steps) {
+  $result: ();
+  @for $i from 0 through $steps {
+    $result: append($result, ($i * $width / $steps));
+  }
+  @return $result
+}
+
+// Split 100% into 20 steps, for w-number and h-number classes
+$height-width-helper-sizes: splitIntoSteps(100, 20);
+
+@each $size in $height-width-helper-sizes {
+  h-#{$size} {
+    height: percentage($size) !important;
+  }
+
+  w-#{$size} {
+    width: percentage($size) !important;
+  }
+}
+
+.move-window {
+  -webkit-app-region: drag;
+  -webkit-user-select: none;
+  & button {
+    -webkit-app-region: no-drag;
+  }
+}
