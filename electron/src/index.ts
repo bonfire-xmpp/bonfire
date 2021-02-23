@@ -1,5 +1,6 @@
 import { app, ipcMain } from "electron";
 import { createCapacitorElectronApp } from "@capacitor-community/electron";
+const path = require("path");
 
 // The MainWindow object can be accessed via myCapacitorApp.getMainWindow()
 const myCapacitorApp = createCapacitorElectronApp({
@@ -9,10 +10,10 @@ const myCapacitorApp = createCapacitorElectronApp({
   applicationMenuTemplate: null,
   mainWindow: {
     windowOptions: {
-      width: 1280,
-      height: 720,
-      minWidth: 800,
-      minHeight: 600,
+      width: 1120,
+      height: 800,
+      minWidth: 1120,
+      minHeight: 800,
       autoHideMenuBar: true,
       frame: false,
       webPreferences: {
@@ -20,10 +21,9 @@ const myCapacitorApp = createCapacitorElectronApp({
         allowRunningInsecureContent: false,
         nodeIntegration: false,
         contextIsolation: true,
-        // preload: path.resolve(__dirname, "preload.js")
       }
-    }
-  }
+    },
+  },
 });
 
 // This method will be called when Electron has finished

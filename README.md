@@ -22,7 +22,7 @@ are coming up soon ahead.
 
 To build for Electron:
 ```shell
-npx cap sync @capacitor-community/electron
+npx cap copy @capacitor-community/electron
 cd electron
 npm run build:electron-windows # or whatever your platform is
 ```
