@@ -1,4 +1,4 @@
-import * as XMPP from 'stanza';
+import * as storage from '@/assets/storage'
 
 /**
  * Message state definition. Due to a lack of typescript, this will have to settle:
@@ -29,11 +29,17 @@ const $states = {
 const $getters = {
     hasMessage: 'HAS_MESSAGE',
 };
-const $actions = {};
+const $actions = {
+    restoreMessagesFromStorage: 'RESTORE_MESSAGES_FROM_STORAGE',
+};
 const $mutations = {
+    setMessages: 'SET_MESSAGES',
+    setMessagesById: 'SET_MESSAGES_BY_ID',
+    setMessageStateById: 'SET_MESSAGE_STATE_BY_ID',
+
     addMessage: 'ADD_MESSAGE',
     setMessage: 'SET_MESSAGE',
-    setMessageState: 'SET_MESSAGE_STATE',
+    updateMessageState: 'SET_MESSAGE_STATE',
 }
 
 export const state = () => ({
@@ -47,10 +53,36 @@ export const getters = {
         return state[$states.messagesById].has(id);
     },
 };
-export const actions = {};
+export const actions = {
+    [$actions.restoreMessagesFromStorage] ( { commit } ) {
+        try {
+            const messages = new Map(JSON.parse(storage.permanent.getItem($states.messages)));
+            const messagesById = new Map(JSON.parse(storage.permanent.getItem($states.messagesById)));
+            const messageStateById = new Map(JSON.parse(storage.permanent.getItem($states.messageStateById)));
+
+            commit($mutations.setMessages, messages);
+            commit($mutations.setMessagesById, messagesById);
+            commit($mutations.setMessageStateById, messageStateById);
+        } catch (e) {
+
+        }
+    }
+};
 
 const resourceRegex = new RegExp("\\/.+$");
 export const mutations = {
+    [$mutations.setMessages] ( state, data ) {
+        state[$states.messages] = data;
+    },
+
+    [$mutations.setMessagesById] ( state, data ) {
+        state[$states.messagesById] = data;
+    },
+
+    [$mutations.setMessageStateById] ( state, data ) {
+        state[$states.messageStateById] = data;
+    },
+
     [$mutations.addMessage] ( state, { jid, message, state: messageState } ) {
         const bareJid = jid.replace(resourceRegex, "");
         if(!state[$states.messages].has(bareJid))
@@ -61,6 +93,11 @@ export const mutations = {
 
         if(messageState)
             state[$states.messageStateById].set(message.id, messageState)
+
+        // TODO: store these in a more efficient manner
+        storage.permanent.setItem($states.messages, JSON.stringify(Array.from(state[$states.messages])));
+        storage.permanent.setItem($states.messagesById, JSON.stringify(Array.from(state[$states.messagesById])));
+        storage.permanent.setItem($states.messageStateById, JSON.stringify(Array.from(state[$states.messageStateById])));
     },
 
     [$mutations.setMessage] ( state, { jid, message, state: messageState } ) {
@@ -70,12 +107,23 @@ export const mutations = {
         else if(data.id)
             state[$states.messagesById].set(message.id, message);
 
-        if(messageState)
+        // TODO: store these in a more efficient manner
+        storage.permanent.setItem($states.messages, JSON.stringify(Array.from(state[$states.messages])));
+        storage.permanent.setItem($states.messagesById, JSON.stringify(Array.from(state[$states.messagesById])));
+
+        if(messageState) {
             state[$states.messageStateById].set(message.id, messageState);
+
+            // TODO: store these in a more efficient manner
+            storage.permanent.setItem($states.messageStateById, JSON.stringify(Array.from(state[$states.messageStateById])));
+        }
     },
 
-    [$mutations.setMessageState] ( state, { id, state: messageState } ) {
+    [$mutations.updateMessageState] (state, { id, state: messageState } ) {
         state[$states.messageStateById].set(id, messageState)
+
+        // TODO: store these in a more efficient manner
+        storage.permanent.setItem($states.messageStateById, JSON.stringify(Array.from(state[$states.messageStateById])));
     }
 };
 

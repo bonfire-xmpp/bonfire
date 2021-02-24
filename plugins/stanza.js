@@ -1,7 +1,6 @@
 import * as XMPP from 'stanza';
 import { MessageStore } from "@/store/messages";
 import { Store } from "@/store";
-import account from "stanza/plugins/account";
 
 const client = XMPP.createClient(undefined);
 
@@ -18,7 +17,7 @@ const generateFunctions = (ctx) => ({
     determineMessageMapKey: m => determineMessageMapKey(ctx, m),
 });
 
-const setupListeners = async ctx => {
+const setupListeners = ctx => {
     function commit(mutation, ...args) {
         return ctx.store.commit(`${MessageStore.namespace}/${mutation}`, ...args);
     }
@@ -32,8 +31,6 @@ const setupListeners = async ctx => {
             ctx.store.commit(Store.$mutations.setRoster, roster);
         });
         client.sendPresence();
-        client.enableCarbons();
-        client.enableKeepAlive();
     });
 
     /**
@@ -53,7 +50,7 @@ const setupListeners = async ctx => {
      */
 
     client.on('message:sent', (m, carbon) => {
-        commit(MessageStore.$mutations.setMessageState, {
+        commit(MessageStore.$mutations.updateMessageState, {
             id: m.id,
             state: {
                 server: carbon,
@@ -68,7 +65,7 @@ const setupListeners = async ctx => {
     client.on('message:acked', m => {
         console.log("message:acked", m)
         if (get(MessageStore.$getters.hasMessage, m.id)) {
-            commit(MessageStore.$mutations.setMessageState, {
+            commit(MessageStore.$mutations.updateMessageState, {
                 id: m.id,
                 state: {
                     server: true,
@@ -80,7 +77,7 @@ const setupListeners = async ctx => {
 
     client.on('message:hibernated', m => {
         if (get(MessageStore.$getters.hasMessage, m.id)) {
-            commit(MessageStore.$mutations.setMessageState, {
+            commit(MessageStore.$mutations.updateMessageState, {
                 id: m.id,
                 state: {
                     hibernated: true,
@@ -91,7 +88,7 @@ const setupListeners = async ctx => {
 
     client.on('message:retry', m => {
         if (get(MessageStore.$getters.hasMessage, m.id)) {
-            commit(MessageStore.$mutations.setMessageState, {
+            commit(MessageStore.$mutations.updateMessageState, {
                 id: m.id,
                 state: {
                     retry: true,
@@ -102,7 +99,7 @@ const setupListeners = async ctx => {
 
     client.on('message:failed', m => {
         if (get(MessageStore.$getters.hasMessage, m.id)) {
-            commit(MessageStore.$mutations.setMessageState, {
+            commit(MessageStore.$mutations.updateMessageState, {
                 id: m.id,
                 state: {
                     failed: true,
@@ -114,8 +111,6 @@ const setupListeners = async ctx => {
 
 export default (ctx, inject) => {
     setupListeners(ctx);
-
-    // client.on('chat', console.log);
 
     inject("stanza", {
         client,

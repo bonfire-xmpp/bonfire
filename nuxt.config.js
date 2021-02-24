@@ -26,6 +26,10 @@ export default {
     ]
   },
 
+  router: {
+    middleware: ['loginRedirect'],
+  },
+
   // Global CSS: https://go.nuxtjs.dev/config-css
   css: [
       '@/assets/globals.scss'
