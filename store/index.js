@@ -14,6 +14,14 @@ const $states = {
     transports: 'TRANSPORTS',
 
     loggedIn: 'LOGGED_IN',
+
+    streamManagement: 'STREAM_MANAGEMENT',
+
+    // See stanza.js/AccountManagement
+    account: 'ACCOUNT',
+
+    // See stanza.js/Roster
+    roster: 'ROSTER',
 };
 
 const $getters = {};
@@ -26,6 +34,9 @@ const $mutations = {
     setPassword: 'SET_PASSWORD',
     setTransports: 'SET_TRANSPORTS',
     setLoggedIn: 'SET_LOGGED_IN',
+    setStreamManagement: 'SET_STREAM_MANAGEMENT',
+    setAccount: 'SET_ACCOUNT',
+    setRoster: 'SET_ROSTER',
 }
 
 export const state = () => ({
@@ -34,6 +45,9 @@ export const state = () => ({
     [$states.password]: '',
     [$states.transports]: {},
     [$states.loggedIn]: false,
+    [$states.streamManagement]: null,
+    [$states.account]: null,
+    [$states.roster]: null,
 });
 
 export const getters = {};
@@ -69,6 +83,19 @@ export const mutations = {
 
     [$mutations.setLoggedIn] ( state, data ) {
         state[$states.loggedIn] = data;
+    },
+
+    [$mutations.setStreamManagement] ( state, data ) {
+        // TODO: save to session cache
+        state[$states.streamManagement] = data;
+    },
+
+    [$mutations.setAccount] ( state, data ) {
+        state[$states.account] = data;
+    },
+
+    [$mutations.setRoster] ( state, data ) {
+        state[$states.roster] = data;
     },
 };
 
