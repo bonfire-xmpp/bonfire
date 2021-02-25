@@ -53,6 +53,7 @@ const $mutations = {
     setJid: 'SET_JID',
     setServer: 'SET_SERVER',
     setPassword: 'SET_PASSWORD',
+    unsetPassword: 'UNSET_PASSWORD',
     setTransports: 'SET_TRANSPORTS',
 
     updateLoginState: 'UPDATE_LOGIN_STATE',
@@ -195,9 +196,9 @@ const generateMutations = (storage, ...names) => {
     } else if( typeof storage === "string") {
         names.push(storage);
 
-        const mutationName = `SET_${name}`;
-
         for (let name of names) {
+            const mutationName = `SET_${name}`;
+
             mutations[mutationName] = (state, data) => {
                 state[name] = data;
             }
@@ -212,6 +213,11 @@ export const mutations = {
         $states.jid, $states.password, $states.server, $states.transports),
 
     ...generateMutations($states.account, $states.roster),
+
+    [$mutations.unsetPassword] ( state ) {
+        state[$states.password] = "";
+        storage.secure.removeItem($states.password);
+    },
 
     [$mutations.updateLoginState] ( state, data ) {
         state[$states.loginState] = Object.assign(state[$states.loginState], data);
