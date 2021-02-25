@@ -11,7 +11,10 @@
 <script>
   const {api} = window
   export default {
-    props: ['light', 'dark'],
+    props: {
+      light: Boolean,
+      dark: Boolean,
+    },
     methods: {
       close() { api.close() },
       maximizeToggle() { api.maximizeToggle() },
