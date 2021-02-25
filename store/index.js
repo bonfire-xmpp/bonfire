@@ -104,8 +104,10 @@ export const actions = {
         try {
             const cached = JSON.parse(storage.session.getItem($states.streamManagement), Utils.reviveData);
 
-            this.$stanza.client.sm.load(cached);
-            commit($mutations.setStreamManagement, cached)
+            if(cached) {
+                this.$stanza.client.sm.load(cached);
+                commit($mutations.setStreamManagement, cached)
+            }
         } catch (e) {
             console.debug("Couldn't restore session management cache", e);
         }
@@ -126,8 +128,15 @@ export const actions = {
         }
     },
 
-    async [$actions.login]({ commit }, { jid, password, server, transports }) {
-        let options = { jid, password, server: server || undefined, transports: transports || {bosh:true,websocket:true} };
+    async [$actions.login]({ commit }, { jid, password, server, transports, resource }) {
+        let options = {
+            jid,
+            password,
+            server: server || undefined,
+            transports: transports || {bosh: true, websocket: true},
+            resource: resource || `${Math.round(Math.random() * 100)}-bonfire`,
+            allowReconnect: true,
+        };
         this.$stanza.client.updateConfig(options);
 
         this.$stanza.client.connect();
