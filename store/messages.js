@@ -1,4 +1,7 @@
 import * as storage from '@/assets/storage'
+const killMap = map => JSON.stringify(Array.from(map));
+const loadAndReviveMap = key => new Map(JSON.parse(storage.permanent.getItem(key)))
+const saveMapFromStore = ( state, key ) => storage.permanent.setItem(key, killMap(state[key]));
 
 /**
  * Message state definition. Due to a lack of typescript, this will have to settle:
@@ -14,7 +17,6 @@ import * as storage from '@/assets/storage'
  *  NotReceived (sending, retrying, hibernated), Received (MUC and server), Failed (failed or error)
  *
  */
-
 const $states = {
     // Map< JID -> [Message] >
     messages: 'MESSAGES',
@@ -56,15 +58,15 @@ export const getters = {
 export const actions = {
     [$actions.restoreMessagesFromStorage] ( { commit } ) {
         try {
-            const messages = new Map(JSON.parse(storage.permanent.getItem($states.messages)));
-            const messagesById = new Map(JSON.parse(storage.permanent.getItem($states.messagesById)));
-            const messageStateById = new Map(JSON.parse(storage.permanent.getItem($states.messageStateById)));
+            const messages = loadAndReviveMap($states.messages);
+            const messagesById = loadAndReviveMap($states.messagesById);
+            const messageStateById = loadAndReviveMap($states.messageStateById);
 
             commit($mutations.setMessages, messages);
             commit($mutations.setMessagesById, messagesById);
             commit($mutations.setMessageStateById, messageStateById);
         } catch (e) {
-
+            console.error("Couldn't restore messages from storage!", e);
         }
     }
 };
@@ -95,9 +97,9 @@ export const mutations = {
             state[$states.messageStateById].set(message.id, messageState)
 
         // TODO: store these in a more efficient manner
-        storage.permanent.setItem($states.messages, JSON.stringify(Array.from(state[$states.messages])));
-        storage.permanent.setItem($states.messagesById, JSON.stringify(Array.from(state[$states.messagesById])));
-        storage.permanent.setItem($states.messageStateById, JSON.stringify(Array.from(state[$states.messageStateById])));
+        saveMapFromStore(state, $states.messages);
+        saveMapFromStore(state, $states.messagesById);
+        saveMapFromStore(state, $states.messageStateById);
     },
 
     [$mutations.setMessage] ( state, { jid, message, state: messageState } ) {
@@ -108,14 +110,14 @@ export const mutations = {
             state[$states.messagesById].set(message.id, message);
 
         // TODO: store these in a more efficient manner
-        storage.permanent.setItem($states.messages, JSON.stringify(Array.from(state[$states.messages])));
-        storage.permanent.setItem($states.messagesById, JSON.stringify(Array.from(state[$states.messagesById])));
+        saveMapFromStore(state, $states.messages);
+        saveMapFromStore(state, $states.messagesById);
 
         if(messageState) {
             state[$states.messageStateById].set(message.id, messageState);
 
             // TODO: store these in a more efficient manner
-            storage.permanent.setItem($states.messageStateById, JSON.stringify(Array.from(state[$states.messageStateById])));
+            saveMapFromStore(state, $states.messageStateById);
         }
     },
 
@@ -123,7 +125,7 @@ export const mutations = {
         state[$states.messageStateById].set(id, messageState)
 
         // TODO: store these in a more efficient manner
-        storage.permanent.setItem($states.messageStateById, JSON.stringify(Array.from(state[$states.messageStateById])));
+        saveMapFromStore(state, $states.messageStateById);
     }
 };
 

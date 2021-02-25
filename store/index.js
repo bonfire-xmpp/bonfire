@@ -1,7 +1,9 @@
-import { Utils } from 'stanza';
+import { MessageStore } from "@/store/messages";
+
+import {Utils} from 'stanza';
 
 import * as storage from '@/assets/storage'
-import {loadFromSecure} from "@/assets/storage";
+import {loadFromSecure} from '@/assets/storage'
 
 const $states = {
     jid: 'JID',
@@ -97,15 +99,12 @@ export const getters = {
 };
 
 export const actions = {
-    async [$actions.tryRestoreSession]({ commit, dispatch }) {
+    async [$actions.tryRestoreSession]({ commit, dispatch, state }) {
         try {
-            const smString = storage.session.getItem($states.streamManagement);
-            const cached = JSON.parse(smString, Utils.reviveData);
+            const cached = JSON.parse(storage.session.getItem($states.streamManagement), Utils.reviveData);
 
-            if(cached) {
-                this.$stanza.client.sm.load(cached);
-                commit($mutations.setStreamManagement, cached)
-            }
+            this.$stanza.client.sm.load(cached);
+            commit($mutations.setStreamManagement, cached)
         } catch (e) {
             console.debug("Couldn't restore session management cache", e);
         }
@@ -115,10 +114,14 @@ export const actions = {
                 $states.jid, $states.server, $states.password, $states.transports
             );
 
-            if(jid && password)
-                await dispatch($actions.login, {jid, server, password, transports});
+            if(jid && password) await dispatch($actions.login, {jid, server, password, transports});
         } catch (e) {
             console.debug("Couldn't restore credentials", e);
+        }
+
+        // If we logged in, try restoring messages too
+        if(state[$states.loginState].loggedIn) {
+            await dispatch(`${MessageStore.namespace}/${MessageStore.$actions.restoreMessagesFromStorage}`);
         }
     },
 
@@ -166,26 +169,49 @@ export const actions = {
         }))]);
     }
 };
+
+
+/**
+ * Generates mutators by prepending SET_ to passed names.
+ * If `storage` is an object, it will generate mutations that also call storage.setItem(name, JSON.stringify(data))
+ * @param storage An object with method setItem(key, value). Optional.
+ * @param names Varargs list of $states field names
+ * @returns An object of mutations, for use with the object spread operator
+ */
+const generateMutations = (storage, ...names) => {
+    const mutations = {};
+
+    // Avoid putting this 'if' inside the generated functions, because it would get checked redundantly on each call
+    // The closest to a macro/constexpr if. Sadly, creates a lot of duplicate code
+    if( typeof storage === "object" ) {
+        for (let name of names) {
+            const mutationName = `SET_${name}`;
+
+            mutations[mutationName] = (state, data) => {
+                state[name] = data;
+                storage.setItem(name, JSON.stringify(data));
+            }
+        }
+    } else if( typeof storage === "string") {
+        names.push(storage);
+
+        const mutationName = `SET_${name}`;
+
+        for (let name of names) {
+            mutations[mutationName] = (state, data) => {
+                state[name] = data;
+            }
+        }
+    }
+
+    return mutations;
+}
+
 export const mutations = {
-    [$mutations.setJid] ( state, data ) {
-        state[$states.jid] = data;
-        storage.secure.setItem($states.jid, JSON.stringify(data));
-    },
+    ...generateMutations(storage.secure,
+        $states.jid, $states.password, $states.server, $states.transports),
 
-    [$mutations.setServer] ( state, data ) {
-        state[$states.server] = data;
-        storage.secure.setItem($states.server, JSON.stringify(data));
-    },
-
-    [$mutations.setPassword] ( state, data ) {
-        state[$states.password] = data;
-        storage.secure.setItem($states.password, JSON.stringify(data));
-    },
-
-    [$mutations.setTransports] ( state, data ) {
-        state[$states.transports] = data;
-        storage.secure.setItem($states.transports, JSON.stringify(data));
-    },
+    ...generateMutations($states.account, $states.roster),
 
     [$mutations.updateLoginState] ( state, data ) {
         state[$states.loginState] = Object.assign(state[$states.loginState], data);
@@ -195,14 +221,6 @@ export const mutations = {
         const string = JSON.stringify(data);
         storage.session.setItem($states.streamManagement, string);
         state[$states.streamManagement] = string;
-    },
-
-    [$mutations.setAccount] ( state, data ) {
-        state[$states.account] = data;
-    },
-
-    [$mutations.setRoster] ( state, data ) {
-        state[$states.roster] = data;
     },
 };
 
