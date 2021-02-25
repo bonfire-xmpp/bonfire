@@ -48,6 +48,7 @@ const setupListeners = ctx => {
         return ctx.store.getters[`${MessageStore.namespace}/${getter}`](...args);
     }
 
+    // TODO: Sometimes successful connections don't trigger session:started
     client.on('session:started', () => {
         client.getRoster().then(roster => {
             ctx.store.commit(Store.$mutations.setRoster, roster);
@@ -85,7 +86,6 @@ const setupListeners = ctx => {
     });
 
     client.on('message:acked', m => {
-        console.log("message:acked", m)
         if (get(MessageStore.$getters.hasMessage, m.id)) {
             commit(MessageStore.$mutations.updateMessageState, {
                 id: m.id,
