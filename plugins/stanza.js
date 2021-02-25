@@ -15,6 +15,16 @@ const determineMessageMapKey = (ctx, m) => {
 
 const generateFunctions = (ctx) => ({
     determineMessageMapKey: m => determineMessageMapKey(ctx, m),
+    disconnect: () => {
+        client.disconnect();
+        ctx.commit(Store.$mutations.updateLoginState, {
+            loggedIn: false,
+            loggingIn: false,
+            loginFailed: false,
+            authFailed: false,
+        });
+        ctx.commit(Store.$mutations.setPassword, null);
+    },
 });
 
 const setupListeners = ctx => {
