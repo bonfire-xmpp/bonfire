@@ -6,6 +6,7 @@
     "dev": "nuxt",
     "start": "nuxt start",
     "generate": "nuxt generate",
+    "open:android": "cap open android",
     "open:electron": "cap open @capacitor-community/electron",
     "build:electron": "cd electron && npm run electron:pack",
     "build:electron-windows": "cd electron && npm run electron:build-windows",
@@ -13,6 +14,7 @@
     "build:electron-linux": "cd electron && npm run electron:build-linux"
   },
   "dependencies": {
+    "@capacitor/android": "^2.4.6",
     "@nuxtjs/axios": "^5.13.1",
     "@nuxtjs/style-resources": "^1.0.0",
     "core-js": "^3.8.3",
