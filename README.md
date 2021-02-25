@@ -23,6 +23,7 @@ are coming up soon ahead.
 To build for Electron:
 ```shell
 cd electron && npm ci && cd .. # Install electron build dependencies
+npx cap sync @capacitor-community/electron
 npm run build:electron # or electron-windows for specific OS
 # Your build is now in electron/dist/
 ```
