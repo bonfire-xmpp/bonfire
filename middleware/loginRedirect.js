@@ -7,11 +7,11 @@ export default async function({ store, redirect, route }) {
     }
 
     // If not logged in, maybe we have a session/credentials stored; use those to log in.
-    if(!store.state[Store.$states.loggedIn]) {
+    if(!store.getters[Store.$getters.loggedIn]) {
         await store.dispatch(Store.$actions.tryRestoreSession);
 
         // Are we still not logged in?
-        if(!store.state[Store.$states.loggedIn])
+        if(!store.getters[Store.$getters.loggedIn])
             return redirect('/login');
     }
 }

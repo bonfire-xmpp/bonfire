@@ -16,10 +16,15 @@ const $states = {
     // @see stanza.js/createClient()
     transports: 'TRANSPORTS',
 
-    loggingIn: 'LOGIN_IN',
-    loggedIn: 'LOGGED_IN',
-    loginFailed: 'LOGIN_FAILED',
-    authFailed: 'AUTH_FAILED',
+    /**
+     * {
+     *     loggedIn: boolean,
+     *     loginFailed: boolean,
+     *     authFailed: boolean,
+     *     loggingIn: boolean
+     * }
+     */
+    loginState: 'LOGIN_STATE',
 
     streamManagement: 'STREAM_MANAGEMENT',
 
@@ -30,7 +35,12 @@ const $states = {
     roster: 'ROSTER',
 };
 
-const $getters = {};
+const $getters = {
+    loggedIn: 'LOGGED_IN',
+    loggingIn: 'LOGGING_IN',
+    loginFailed: 'LOGIN_FAILED',
+    authFailed: 'AUTH_FAILED',
+};
 
 const $actions = {
     login: 'LOGIN',
@@ -43,10 +53,7 @@ const $mutations = {
     setPassword: 'SET_PASSWORD',
     setTransports: 'SET_TRANSPORTS',
 
-    setLoggedIn: 'SET_LOGGED_IN',
-    setLoggingIn: 'SET_LOGGING_IN',
-    setLoginFailed: 'SET_LOGIN_FAILED',
-    setAuthFailed: 'SET_AUTH_FAILED',
+    updateLoginState: 'UPDATE_LOGIN_STATE',
 
     setStreamManagement: 'SET_STREAM_MANAGEMENT',
     setAccount: 'SET_ACCOUNT',
@@ -59,16 +66,36 @@ export const state = () => ({
     [$states.password]: '',
     [$states.transports]: {},
 
-    [$states.loggedIn]: false,
-    [$states.loggingIn]: false,
-    [$states.loginFailed]: false,
+    [$states.loginState]: {
+        loggedIn: false,
+        loginFailed: false,
+        authFailed: false,
+        loggingIn: false
+    },
 
     [$states.streamManagement]: null,
     [$states.account]: null,
     [$states.roster]: null,
 });
 
-export const getters = {};
+export const getters = {
+    [$getters.loggedIn] ( state ) {
+        return state[$states.loginState].loggedIn;
+    },
+
+    [$getters.authFailed] ( state ) {
+        return state[$states.loginState].authFailed;
+    },
+
+    [$getters.loginFailed] ( state ) {
+        return state[$states.loginState].loginFailed;
+    },
+
+    [$getters.loggingIn] ( state ) {
+        return state[$states.loginState].loggingIn;
+    },
+};
+
 export const actions = {
     async [$actions.tryRestoreSession]({ commit, dispatch }) {
         try {
@@ -77,7 +104,7 @@ export const actions = {
 
             if(cached) {
                 this.$stanza.client.sm.load(cached);
-                commit($mutations.setStreamManagement, smString)
+                commit($mutations.setStreamManagement, cached)
             }
         } catch (e) {
             console.debug("Couldn't restore session management cache", e);
@@ -88,31 +115,41 @@ export const actions = {
                 $states.jid, $states.server, $states.password, $states.transports
             );
 
-            await dispatch($actions.login, {jid, server, password, transports});
+            if(jid && password)
+                await dispatch($actions.login, {jid, server, password, transports});
         } catch (e) {
             console.debug("Couldn't restore credentials", e);
         }
     },
 
     async [$actions.login]({ commit }, { jid, password, server, transports }) {
-        console.debug("Indeed im trying to log in", jid, password, server, transports)
         let options = { jid, password, server: server || undefined, transports: transports || {bosh:true,websocket:true} };
         this.$stanza.client.updateConfig(options);
 
         this.$stanza.client.connect();
-        commit($mutations.setLoggingIn, true);
-
-        this.$stanza.client.on("auth:failed", () => {
-            commit($mutations.setLoggedIn, false);
-            commit($mutations.setLoginFailed, true);
-            commit($mutations.setAuthFailed, true);
+        commit($mutations.updateLoginState, {
+            loggedIn: false,
+            loginFailed: false,
+            authFailed: false,
+            loggingIn: true
         });
 
-        await Promise.any([new Promise(resolve => this.$stanza.client.once("connected", () => {
-            commit($mutations.setLoggedIn, true);
-            commit($mutations.setLoggingIn, false);
-            commit($mutations.setLoginFailed, false);
-            commit($mutations.setAuthFailed, false);
+        this.$stanza.client.on("auth:failed", () => {
+            commit($mutations.updateLoginState, {
+                loggedIn: false,
+                loginFailed: true,
+                authFailed: true,
+                loggingIn: false
+            });
+        });
+
+        await Promise.any([new Promise(resolve => this.$stanza.client.once("auth:success", () => {
+            commit($mutations.updateLoginState, {
+                loggedIn: true,
+                loginFailed: false,
+                authFailed: false,
+                loggingIn: false
+            });
 
             commit($mutations.setJid, jid);
             commit($mutations.setPassword, password);
@@ -120,19 +157,13 @@ export const actions = {
         })),
 
         new Promise(resolve => this.$stanza.client.once("disconnected", () => {
-            commit($mutations.setLoggedIn, false);
-            commit($mutations.setLoggingIn, false);
-            commit($mutations.setLoginFailed, true);
-            commit($mutations.setAuthFailed, false);
-
-            commit($mutations.setJid, "");
-            commit($mutations.setPassword, "");
+            commit($mutations.updateLoginState, {
+                loggedIn: false,
+                loginFailed: true,
+                loggingIn: false
+            });
             resolve()
         }))]);
-
-        this.$stanza.client.sm.cache(cache => {
-            commit($mutations.setStreamManagement, cache);
-        });
     }
 };
 export const mutations = {
@@ -156,20 +187,8 @@ export const mutations = {
         storage.secure.setItem($states.transports, JSON.stringify(data));
     },
 
-    [$mutations.setLoggingIn] ( state, data ) {
-        state[$states.loggingIn] = data;
-    },
-
-    [$mutations.setAuthFailed] ( state, data ) {
-        state[$states.authFailed] = data;
-    },
-
-    [$mutations.setLoginFailed] ( state, data ) {
-        state[$states.loginFailed] = data;
-    },
-
-    [$mutations.setLoggedIn] ( state, data ) {
-        state[$states.loggedIn] = data;
+    [$mutations.updateLoginState] ( state, data ) {
+        state[$states.loginState] = Object.assign(state[$states.loginState], data);
     },
 
     [$mutations.setStreamManagement] ( state, data ) {

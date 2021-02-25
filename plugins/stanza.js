@@ -107,6 +107,11 @@ const setupListeners = ctx => {
             });
         }
     });
+
+    /** STREAM MANAGEMENT RESUMPTION DATA CACHING **/
+    client.sm.cache(cache => {
+        ctx.store.commit(Store.$mutations.setStreamManagement, cache);
+    });
 }
 
 export default (ctx, inject) => {
