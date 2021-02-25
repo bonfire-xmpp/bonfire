@@ -14,16 +14,28 @@ const determineMessageMapKey = (ctx, m) => {
 }
 
 const generateFunctions = (ctx) => ({
-    determineMessageMapKey: m => determineMessageMapKey(ctx, m),
-    disconnect: () => {
+    determineMessageMapKey(m) {
+        determineMessageMapKey(ctx, m)
+    },
+    updateConfig(...args) {
+        client.updateConfig(...args);
+    },
+    connect() {
+        client.connect();
+    },
+    disconnect() {
         client.disconnect();
-        ctx.commit(Store.$mutations.updateLoginState, {
+    },
+    logout() {
+        this.disconnect();
+
+        ctx.store.commit(Store.$mutations.updateLoginState, {
             loggedIn: false,
             loggingIn: false,
             loginFailed: false,
             authFailed: false,
         });
-        ctx.commit(Store.$mutations.setPassword, null);
+        ctx.store.commit(Store.$mutations.unsetPassword, null);
     },
 });
 
