@@ -1,7 +1,7 @@
 <template>
   <login-dialog class="dialog"
                 @login="submit"
-                :loading="loading && !loggedIn"
+                :loading="loggingIn"
                 :both-field-errors="bothFieldErrors"
                 :jid-field-errors="jidFieldErrors"
   />
@@ -11,44 +11,31 @@
   import LoginDialog from "../components/Login/LoginDialog";
 
   import { Store } from '@/store';
-  import { mapState, mapActions } from "vuex";
+  import { mapGetters, mapActions } from "vuex";
 
   export default {
     name: "login",
     components: {LoginDialog},
-    data() {
-      return {
-        loading: false,
-        wrongCredentials: false,
-        serverConnectionIssues: false,
+
+    async middleware({store, redirect}) {
+      // You're logged in; you have no business being here. Scram
+      if(store.getters[Store.$getters.loggedIn]) {
+        return redirect('/');
       }
+
+
+      // Try restoring a saved session and logging in that way
+      await store.dispatch(Store.$actions.tryRestoreSession);
+
+      // If we logged in that way, redirect to /
+      if(store.getters[Store.$getters.loggedIn])
+        return redirect('/');
     },
+
     methods: {
-      submit({jid, password, transports}) {
-        this.wrongCredentials = false;
-        this.serverConnectionIssues = false;
-        this.loading = true;
-
-        this.login({jid, password, transports});
-
-        this.$stanza.client.on("auth:success", () => {
-          this.$router.push('/loggedIn')
-        });
-      },
-
-      failedAuth() {
-        this.wrongCredentials = true;
-      },
-
-      transportDisconnected() {
-        if (this.wrongCredentials) {
-          console.warn("Incorrect username or password");
-        } else {
-          this.serverConnectionIssues = true;
-          console.warn("Couldn't connect to XMPP server!");
-        }
-
-        this.loading = false;
+      async submit({jid, password, transports}) {
+        await this.login({jid, password, transports});
+        if(this.loggedIn) return this.$router.push('/');
       },
 
       ...mapActions({
@@ -57,28 +44,21 @@
     },
 
     computed: {
-      ...mapState({
-        'loggedIn': Store.$states.loggedIn,
+      ...mapGetters({
+        'loggedIn': Store.$getters.loggedIn,
+        'loggingIn': Store.$getters.loggingIn,
+        'loginFailed': Store.$getters.loginFailed,
+        'authFailed': Store.$getters.authFailed,
       }),
 
       bothFieldErrors() {
-        return this.wrongCredentials ? 'Invalid JID or password' : null;
+        return (this.authFailed && this.loginFailed) ? 'Invalid JID or password' : null;
       },
 
       jidFieldErrors() {
-        return this.serverConnectionIssues ? "Couldn't connect to server" : null;
+        return (this.loginFailed && !this.authFailed) ? "Couldn't connect to server" : null;
       },
     },
-
-    mounted() {
-      this.$stanza.client.on('auth:failed', this.failedAuth);
-      this.$stanza.client.on('--transport-disconnected', this.transportDisconnected);
-    },
-
-    destroyed() {
-      this.$stanza.client.off('auth:failed', this.failedAuth);
-      this.$stanza.client.off('--transport-disconnected', this.transportDisconnected);
-    }
   }
 </script>
 
