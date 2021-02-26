@@ -1,5 +1,69 @@
 // Ref: https://github.com/nuxt-community/vuetify-module#customvariables
 
+$black: (
+  "base": #282828,
+  "lighten": #32302f,
+  "darken": #1d2021
+);
+
+$white: (
+  'base': #ebdbb2,
+  "lighten": #fbf1c7,
+  "darken": #d5c4a1
+);
+
+$greys: (
+  "100": #3c3836,
+  "200": #504945,
+  "300": #665c54,
+  "400": #7c6f64,
+  "500": #928364,
+  "600": #a89984,
+  "700": #bdae93,
+  "800": #d5c4a1,
+  "900": #ebdbb2,
+);
+
+$red: (
+  "darken": #cc214d,
+  "lighten": #fb4934,
+);
+
+$orange: (
+  "darken": #d65d0e,
+  "lighten": #fe8019,
+);
+
+$yellow: (
+  "darken": #d79921,
+  "lighten": #fabd2f,
+);
+
+$green: (
+  "darken": #98971a,
+  "lighten": #b8bb26,
+);
+
+$aqua: (
+  "darken": #689d6a,
+  "lighten": #8ec07c,
+);
+
+$blue: (
+  "darken": #458558,
+  "lighten": #83a598,
+);
+
+$purple: (
+  "darken": #b16286,
+  "lighten": #d3869b,
+);
+
+$scrollbar-color: (
+  "foreground": map-get($black, "base"),
+  "background": transparent,
+);
+
 $body-font-family: "Mukta", sans-serif;
 
 @import "~vuetify/src/styles/styles.sass";
