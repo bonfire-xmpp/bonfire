@@ -113,7 +113,14 @@ export const mutations = {
         message.timestamp = new Date();
         message.with = bareJid;
 
-        state[$states.messages].get(bareJid).push(message);
+        const size = state[$states.messages].get(bareJid).push(message);
+
+        // Rolling buffer of 100 items/JID
+        if(size > 100) {
+            const message = state[$states.messages].get(bareJid).splice(0, 1);
+            state[$states.messagesById].delete(message[0].id);
+        }
+
         state[$states.messagesById].set(message.id, message);
 
         messageDb.messages.add(message);
