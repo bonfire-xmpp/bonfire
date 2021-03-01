@@ -37,7 +37,6 @@ const $mutations = {
     setMessageStateById: 'SET_MESSAGE_STATE_BY_ID',
 
     addMessage: 'ADD_MESSAGE',
-    setMessage: 'SET_MESSAGE',
     updateMessageState: 'SET_MESSAGE_STATE',
 }
 
@@ -127,23 +126,6 @@ export const mutations = {
 
         if(messageState) {
             state[$states.messageStateById].set(message.id, messageState)
-            messageDb.messageStates.put({id: message.id, ...messageState});
-        }
-    },
-
-    [$mutations.setMessage] ( state, { jid, message, state: messageState } ) {
-        message.timestamp = new Date();
-        if(jid) {
-            const bareJid = jid.replace(resourceRegex, "");
-            state[$states.messages].set(bareJid, message);
-        } else {
-            state[$states.messagesById].set(message.id, message);
-        }
-
-        messageDb.messages.put(message);
-
-        if(messageState) {
-            state[$states.messageStateById].set(message.id, messageState);
             messageDb.messageStates.put({id: message.id, ...messageState});
         }
     },
