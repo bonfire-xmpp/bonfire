@@ -1,7 +1,4 @@
-import * as storage from '@/assets/storage'
-const killMap = map => JSON.stringify(Array.from(map));
-const loadAndReviveMap = key => new Map(JSON.parse(storage.permanent.getItem(key)))
-const saveMapFromStore = ( state, key ) => storage.permanent.setItem(key, killMap(state[key]));
+import messageDb from '@/assets/messageDb.js';
 
 /**
  * Message state definition. Due to a lack of typescript, this will have to settle:
@@ -56,13 +53,36 @@ export const getters = {
     },
 };
 export const actions = {
-    [$actions.restoreMessagesFromStorage] ( { commit } ) {
+    async [$actions.restoreMessagesFromStorage] ( { commit } ) {
         try {
-            const messages = loadAndReviveMap($states.messages);
-            const messagesById = loadAndReviveMap($states.messagesById);
-            const messageStateById = loadAndReviveMap($states.messageStateById);
+            const withs = await messageDb.messages.orderBy('with').uniqueKeys();
 
-            commit($mutations.setMessages, messages);
+            const messagesByJid = new Map();
+            const messageStateById = new Map();
+            const messagesById = new Map();
+
+            for (const jid of withs) {
+                // Last 100 messages with each JID present
+                const lastHundred = (await messageDb.messages
+                    .where('with').equals(jid)
+                    .sortBy('timestamp'))
+                    .slice(0, 100);
+
+                console.log(jid, lastHundred);
+                messagesByJid.set(jid, lastHundred);
+
+                const ids = []
+                lastHundred.map(m => {
+                    messagesById.set(m.id, m);
+                    ids.push(m.id);
+                });
+
+                (await messageDb.messageStates
+                    .where('id').anyOf(ids)
+                    .toArray()).map(s => messageStateById.set(s.id, s));
+            }
+
+            commit($mutations.setMessages, messagesByJid);
             commit($mutations.setMessagesById, messagesById);
             commit($mutations.setMessageStateById, messageStateById);
         } catch (e) {
@@ -90,42 +110,41 @@ export const mutations = {
         if(!state[$states.messages].has(bareJid))
             state[$states.messages].set(bareJid, []);
 
+        message.timestamp = new Date();
+        message.with = bareJid;
+
         state[$states.messages].get(bareJid).push(message);
         state[$states.messagesById].set(message.id, message);
 
-        if(messageState)
-            state[$states.messageStateById].set(message.id, messageState)
+        messageDb.messages.add(message);
 
-        // TODO: store these in a more efficient manner
-        saveMapFromStore(state, $states.messages);
-        saveMapFromStore(state, $states.messagesById);
-        saveMapFromStore(state, $states.messageStateById);
+        if(messageState) {
+            state[$states.messageStateById].set(message.id, messageState)
+            messageDb.messageStates.put({id: message.id, ...messageState});
+        }
     },
 
     [$mutations.setMessage] ( state, { jid, message, state: messageState } ) {
-        // This tests if the two maps really point to the same objects...
-        if(data.jid)
-            state[$states.messages].set(jid, message);
-        else if(data.id)
+        message.timestamp = new Date();
+        if(jid) {
+            const bareJid = jid.replace(resourceRegex, "");
+            state[$states.messages].set(bareJid, message);
+        } else {
             state[$states.messagesById].set(message.id, message);
+        }
 
-        // TODO: store these in a more efficient manner
-        saveMapFromStore(state, $states.messages);
-        saveMapFromStore(state, $states.messagesById);
+        messageDb.messages.put(message);
 
         if(messageState) {
             state[$states.messageStateById].set(message.id, messageState);
-
-            // TODO: store these in a more efficient manner
-            saveMapFromStore(state, $states.messageStateById);
+            messageDb.messageStates.put({id: message.id, ...messageState});
         }
     },
 
     [$mutations.updateMessageState] (state, { id, state: messageState } ) {
         state[$states.messageStateById].set(id, messageState)
 
-        // TODO: store these in a more efficient manner
-        saveMapFromStore(state, $states.messageStateById);
+        messageDb.messageStates.put({id, ...messageState});
     }
 };
 

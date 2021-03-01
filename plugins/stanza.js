@@ -5,8 +5,8 @@ import { Store } from "@/store";
 const client = XMPP.createClient(undefined);
 
 const determineMessageMapKey = (ctx, m) => {
-    const me = ctx.store.state[ Store.$states.jid ];
-    if(m.from === me) {
+    // Lack of 'from' means it's from us
+    if(!m.from) {
         return m.to;
     }
 
@@ -37,6 +37,9 @@ const generateFunctions = (ctx) => ({
         });
         ctx.store.commit(Store.$mutations.unsetPassword, null);
     },
+    sendMessage(message) {
+        client.sendMessage(message);
+    }
 });
 
 const setupListeners = ctx => {
@@ -83,6 +86,11 @@ const setupListeners = ctx => {
                 retry: false
             }
         });
+
+        // Having a 'body' means it is not a receipt
+        if(m.body) {
+            client.emit('chat', m);
+        }
     });
 
     client.on('message:acked', m => {
