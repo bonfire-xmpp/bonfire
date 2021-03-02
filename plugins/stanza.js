@@ -4,19 +4,27 @@ import { Store } from "@/store";
 
 const client = XMPP.createClient(undefined);
 
-const determineMessageMapKey = (ctx, m) => {
+const determineRelatedParty = m => {
     // Lack of 'from' means it's from us
     if(!m.from) {
         return m.to;
     }
 
+    // If our bare JID matches up with the sender's bare JID, then it's also us
+    if(stripResource(m.from) === stripResource(client.jid)) {
+        return m.to;
+    }
+
+    // Otherwise, it's the sender
     return m.from;
 }
 
+const resourceRegex = new RegExp("\\/.+$");
+const stripResource = jid => jid.replace(resourceRegex, "");
+
 const generateFunctions = (ctx) => ({
-    determineMessageMapKey(m) {
-        determineMessageMapKey(ctx, m)
-    },
+    determineRelatedParty,
+    stripResource,
     updateConfig(...args) {
         client.updateConfig(...args);
     },
@@ -64,7 +72,7 @@ const setupListeners = ctx => {
      */
 
     client.on('chat', message => {
-        const jid = determineMessageMapKey(ctx, message);
+        const jid = determineRelatedParty(ctx, message);
         commit(MessageStore.$mutations.addMessage, {
             jid,
             message,
@@ -87,7 +95,7 @@ const setupListeners = ctx => {
             }
         });
 
-        // Having a 'body' means it is not a receipt
+        // Having a 'body' means it is not a receipt, which means we sent an actual message
         if(m.body) {
             client.emit('chat', m);
         }

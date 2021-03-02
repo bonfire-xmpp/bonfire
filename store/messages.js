@@ -1,4 +1,5 @@
 import messageDb from '@/assets/messageDb.js';
+import { Store } from "@/store/index";
 
 /**
  * Message state definition. Due to a lack of typescript, this will have to settle:
@@ -30,6 +31,7 @@ const $getters = {
 };
 const $actions = {
     restoreMessagesFromStorage: 'RESTORE_MESSAGES_FROM_STORAGE',
+    syncMessages: 'SYNC_MESSAGES',
 };
 const $mutations = {
     setMessages: 'SET_MESSAGES',
@@ -52,6 +54,59 @@ export const getters = {
     },
 };
 export const actions = {
+    async [$actions.syncMessages] ( { commit, rootState }, jid ) {
+        const loginDate = rootState[Store.$states.loginDate];
+        const lastMessageTimestamp = (await messageDb.messages
+            .where('with').equals(jid)
+            .and(m => m.timestamp < loginDate)
+            .reverse().sortBy('timestamp'))?.[0]?.timestamp;
+
+        const search = after => this.$stanza.client.searchHistory({
+            with: jid,
+            start: lastMessageTimestamp,
+            end: loginDate,
+            paging: {
+                max: 50,
+                after,
+            }
+        });
+
+        let messages = [];
+        let response = {};
+        const pageTimes = []
+        while(!response.complete) {
+            // const before = new Date();
+            response = await search(response.paging?.last);
+            // const after = new Date();
+            // console.log("It took " + (after - before) + "ms to get a page");
+            // pageTimes.push(after - before);
+
+            // console.log(response);
+            messages = messages.concat(response.results.filter(i => !!i.item.message.body).map(i => i.item))
+        }
+
+        // console.log("Total page time: " + pageTimes.reduce((acc, x) => acc + x, 0) + "ms");
+        // console.log("Average page time: " + pageTimes.reduce((acc, x) => acc + x, 0) / pageTimes.length + "ms");
+
+        const formattedMessages = messages.map(m => ({
+            timestamp: m.delay.timestamp,
+            with: this.$stanza.stripResource(this.$stanza.determineRelatedParty(m.message)),
+            ...m.message
+        }))
+
+        // Since they all ended up in an archive, it means they were delivered
+        const messageStates = formattedMessages.map(m => ({
+            id: m.id,
+            state: {
+                server: true,
+                muc: true,
+            }
+        }))
+
+        messageDb.messages.bulkPut(formattedMessages);
+        messageDb.messageStates.bulkPut(messageStates);
+    },
+
     async [$actions.restoreMessagesFromStorage] ( { commit } ) {
         try {
             const withs = await messageDb.messages.orderBy('with').uniqueKeys();
@@ -90,7 +145,6 @@ export const actions = {
     }
 };
 
-const resourceRegex = new RegExp("\\/.+$");
 export const mutations = {
     [$mutations.setMessages] ( state, data ) {
         state[$states.messages] = data;
@@ -105,7 +159,7 @@ export const mutations = {
     },
 
     [$mutations.addMessage] ( state, { jid, message, state: messageState } ) {
-        const bareJid = jid.replace(resourceRegex, "");
+        const bareJid = this.$stanza.stripResource(jid);
         if(!state[$states.messages].has(bareJid))
             state[$states.messages].set(bareJid, []);
 
