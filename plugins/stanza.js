@@ -72,7 +72,7 @@ const setupListeners = ctx => {
      */
 
     client.on('chat', message => {
-        const jid = determineRelatedParty(ctx, message);
+        const jid = determineRelatedParty(message);
         commit(MessageStore.$mutations.addMessage, {
             jid,
             message,
