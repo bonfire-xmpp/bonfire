@@ -4,19 +4,26 @@ import { Store } from "@/store";
 
 const client = XMPP.createClient(undefined);
 
-const determineMessageMapKey = (ctx, m) => {
-    const me = ctx.store.state[ Store.$states.jid ];
-    if(m.from === me) {
+const determineRelatedParty = m => {
+    // Lack of 'from' means it's from us
+    if(!m.from) {
         return m.to;
     }
 
+    // If our bare JID matches up with the sender's bare JID, then it's also us
+    if(XMPP.JID.equalBare(m.from, client.jid)) {
+        return m.to;
+    }
+
+    // Otherwise, it's the sender
     return m.from;
 }
 
+const stripResource = jid => XMPP.JID.toBare(jid);
+
 const generateFunctions = (ctx) => ({
-    determineMessageMapKey(m) {
-        determineMessageMapKey(ctx, m)
-    },
+    determineRelatedParty,
+    stripResource,
     updateConfig(...args) {
         client.updateConfig(...args);
     },
@@ -37,6 +44,9 @@ const generateFunctions = (ctx) => ({
         });
         ctx.store.commit(Store.$mutations.unsetPassword, null);
     },
+    sendMessage(message) {
+        client.sendMessage(message);
+    }
 });
 
 const setupListeners = ctx => {
@@ -61,7 +71,7 @@ const setupListeners = ctx => {
      */
 
     client.on('chat', message => {
-        const jid = determineMessageMapKey(ctx, message);
+        const jid = determineRelatedParty(message);
         commit(MessageStore.$mutations.addMessage, {
             jid,
             message,
@@ -83,6 +93,11 @@ const setupListeners = ctx => {
                 retry: false
             }
         });
+
+        // Having a 'body' means it is not a receipt, which means we sent an actual message
+        if(m.body) {
+            client.emit('chat', m);
+        }
     });
 
     client.on('message:acked', m => {

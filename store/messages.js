@@ -1,7 +1,5 @@
-import * as storage from '@/assets/storage'
-const killMap = map => JSON.stringify(Array.from(map));
-const loadAndReviveMap = key => new Map(JSON.parse(storage.permanent.getItem(key)))
-const saveMapFromStore = ( state, key ) => storage.permanent.setItem(key, killMap(state[key]));
+import messageDb from '@/assets/messageDb.js';
+import { Store } from "@/store/index";
 
 /**
  * Message state definition. Due to a lack of typescript, this will have to settle:
@@ -33,6 +31,7 @@ const $getters = {
 };
 const $actions = {
     restoreMessagesFromStorage: 'RESTORE_MESSAGES_FROM_STORAGE',
+    syncMessages: 'SYNC_MESSAGES',
 };
 const $mutations = {
     setMessages: 'SET_MESSAGES',
@@ -40,7 +39,6 @@ const $mutations = {
     setMessageStateById: 'SET_MESSAGE_STATE_BY_ID',
 
     addMessage: 'ADD_MESSAGE',
-    setMessage: 'SET_MESSAGE',
     updateMessageState: 'SET_MESSAGE_STATE',
 }
 
@@ -56,13 +54,89 @@ export const getters = {
     },
 };
 export const actions = {
-    [$actions.restoreMessagesFromStorage] ( { commit } ) {
-        try {
-            const messages = loadAndReviveMap($states.messages);
-            const messagesById = loadAndReviveMap($states.messagesById);
-            const messageStateById = loadAndReviveMap($states.messageStateById);
+    async [$actions.syncMessages] ( { commit, rootState }, jid ) {
+        const loginDate = rootState[Store.$states.loginDate];
+        const lastMessageTimestamp = (await messageDb.messages
+            .where('with').equals(jid)
+            .and(m => m.timestamp < loginDate)
+            .reverse().sortBy('timestamp'))?.[0]?.timestamp;
 
-            commit($mutations.setMessages, messages);
+        const search = after => this.$stanza.client.searchHistory({
+            with: jid,
+            start: lastMessageTimestamp,
+            end: loginDate,
+            paging: {
+                max: 50,
+                after,
+            }
+        });
+
+        let messages = [];
+        let response = {};
+        const pageTimes = []
+        while(!response.complete) {
+            // const before = new Date();
+            response = await search(response.paging?.last);
+            // const after = new Date();
+            // console.log("It took " + (after - before) + "ms to get a page");
+            // pageTimes.push(after - before);
+
+            // console.log(response);
+            messages = messages.concat(response.results.filter(i => !!i.item.message.body).map(i => i.item))
+        }
+
+        // console.log("Total page time: " + pageTimes.reduce((acc, x) => acc + x, 0) + "ms");
+        // console.log("Average page time: " + pageTimes.reduce((acc, x) => acc + x, 0) / pageTimes.length + "ms");
+
+        const formattedMessages = messages.map(m => ({
+            timestamp: m.delay.timestamp,
+            with: this.$stanza.stripResource(this.$stanza.determineRelatedParty(m.message)),
+            ...m.message
+        }))
+
+        // Since they all ended up in an archive, it means they were delivered
+        const messageStates = formattedMessages.map(m => ({
+            id: m.id,
+            state: {
+                server: true,
+                muc: true,
+            }
+        }))
+
+        messageDb.messages.bulkPut(formattedMessages);
+        messageDb.messageStates.bulkPut(messageStates);
+    },
+
+    async [$actions.restoreMessagesFromStorage] ( { commit } ) {
+        try {
+            const withs = await messageDb.messages.orderBy('with').uniqueKeys();
+
+            const messagesByJid = new Map();
+            const messageStateById = new Map();
+            const messagesById = new Map();
+
+            for (const jid of withs) {
+                // Last 100 messages with each JID present
+                const lastHundred = (await messageDb.messages
+                    .where('with').equals(jid)
+                    .sortBy('timestamp'))
+                    .slice(0, 100);
+
+                console.log(jid, lastHundred);
+                messagesByJid.set(jid, lastHundred);
+
+                const ids = []
+                lastHundred.map(m => {
+                    messagesById.set(m.id, m);
+                    ids.push(m.id);
+                });
+
+                (await messageDb.messageStates
+                    .where('id').anyOf(ids)
+                    .toArray()).map(s => messageStateById.set(s.id, s));
+            }
+
+            commit($mutations.setMessages, messagesByJid);
             commit($mutations.setMessagesById, messagesById);
             commit($mutations.setMessageStateById, messageStateById);
         } catch (e) {
@@ -71,7 +145,6 @@ export const actions = {
     }
 };
 
-const resourceRegex = new RegExp("\\/.+$");
 export const mutations = {
     [$mutations.setMessages] ( state, data ) {
         state[$states.messages] = data;
@@ -86,46 +159,35 @@ export const mutations = {
     },
 
     [$mutations.addMessage] ( state, { jid, message, state: messageState } ) {
-        const bareJid = jid.replace(resourceRegex, "");
+        const bareJid = this.$stanza.stripResource(jid);
         if(!state[$states.messages].has(bareJid))
             state[$states.messages].set(bareJid, []);
 
-        state[$states.messages].get(bareJid).push(message);
+        message.timestamp = new Date();
+        message.with = bareJid;
+
+        const size = state[$states.messages].get(bareJid).push(message);
+
+        // Rolling buffer of 100 items/JID
+        if(size > 100) {
+            const message = state[$states.messages].get(bareJid).splice(0, 1);
+            state[$states.messagesById].delete(message[0].id);
+        }
+
         state[$states.messagesById].set(message.id, message);
 
-        if(messageState)
-            state[$states.messageStateById].set(message.id, messageState)
-
-        // TODO: store these in a more efficient manner
-        saveMapFromStore(state, $states.messages);
-        saveMapFromStore(state, $states.messagesById);
-        saveMapFromStore(state, $states.messageStateById);
-    },
-
-    [$mutations.setMessage] ( state, { jid, message, state: messageState } ) {
-        // This tests if the two maps really point to the same objects...
-        if(data.jid)
-            state[$states.messages].set(jid, message);
-        else if(data.id)
-            state[$states.messagesById].set(message.id, message);
-
-        // TODO: store these in a more efficient manner
-        saveMapFromStore(state, $states.messages);
-        saveMapFromStore(state, $states.messagesById);
+        messageDb.messages.add(message);
 
         if(messageState) {
-            state[$states.messageStateById].set(message.id, messageState);
-
-            // TODO: store these in a more efficient manner
-            saveMapFromStore(state, $states.messageStateById);
+            state[$states.messageStateById].set(message.id, messageState)
+            messageDb.messageStates.put({id: message.id, ...messageState});
         }
     },
 
     [$mutations.updateMessageState] (state, { id, state: messageState } ) {
         state[$states.messageStateById].set(id, messageState)
 
-        // TODO: store these in a more efficient manner
-        saveMapFromStore(state, $states.messageStateById);
+        messageDb.messageStates.put({id, ...messageState});
     }
 };
 

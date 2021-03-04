@@ -28,6 +28,8 @@ const $states = {
      */
     loginState: 'LOGIN_STATE',
 
+    loginDate: 'LOGIN_DATE',
+
     streamManagement: 'STREAM_MANAGEMENT',
 
     // See stanza.js/AccountManagement
@@ -56,6 +58,8 @@ const $mutations = {
     unsetPassword: 'UNSET_PASSWORD',
     setTransports: 'SET_TRANSPORTS',
 
+    setLoginDate: 'SET_LOGIN_DATE',
+
     updateLoginState: 'UPDATE_LOGIN_STATE',
 
     setStreamManagement: 'SET_STREAM_MANAGEMENT',
@@ -69,6 +73,7 @@ export const state = () => ({
     [$states.password]: '',
     [$states.transports]: {},
 
+    [$states.loginDate]: undefined,
     [$states.loginState]: {
         loggedIn: false,
         loginFailed: false,
@@ -164,6 +169,8 @@ export const actions = {
                 loggingIn: false
             });
 
+            commit($mutations.setLoginDate, new Date());
+
             commit($mutations.setJid, jid);
             commit($mutations.setPassword, password);
             resolve()
@@ -221,7 +228,7 @@ export const mutations = {
     ...generateMutations(storage.secure,
         $states.jid, $states.password, $states.server, $states.transports),
 
-    ...generateMutations($states.account, $states.roster),
+    ...generateMutations($states.account, $states.roster, $states.loginDate),
 
     [$mutations.unsetPassword] ( state ) {
         state[$states.password] = "";
