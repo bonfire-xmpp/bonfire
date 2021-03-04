@@ -36,8 +36,7 @@ $height-width-helper-sizes: splitIntoSteps(100, 20);
 // Firefox has only this for scrollbar customization
 * {
   scrollbar-width: thin !important;
-  // TODO: define colour in a variable
-  scrollbar-color: #282828 #00000000;
+  scrollbar-color: map-get($scrollbar-color, "foreground") map-get($scrollbar-color, "background");
 }
 
 ::-webkit-scrollbar {
@@ -45,7 +44,6 @@ $height-width-helper-sizes: splitIntoSteps(100, 20);
   background: none;
 }
 ::-webkit-scrollbar-thumb {
-  // TODO: define colour in a variable
-  background: #282828;
+  background: map-get($scrollbar-color, "foreground");
   border-radius: 10px;
 }
