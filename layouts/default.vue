@@ -12,6 +12,22 @@
   </v-app>
 </template>
 
+<style lang="scss">
+  #app {
+    // Ensures the app container takes up just one screenful
+    position: absolute;
+    width: 100vw;
+    height: 100vh;
+
+    // Clips out everything that doesn't fit in the container
+    overflow: hidden;
+
+    // Solves some edge cases where on reload/HMR the view is stuck scrolled halfway
+    left: 0;
+    top: 0;
+  }
+</style>
+
 <script>
   import SystemBar from "@/components/SystemBar";
 
