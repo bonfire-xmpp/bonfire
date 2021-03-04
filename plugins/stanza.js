@@ -11,7 +11,7 @@ const determineRelatedParty = m => {
     }
 
     // If our bare JID matches up with the sender's bare JID, then it's also us
-    if(stripResource(m.from) === stripResource(client.jid)) {
+    if(XMPP.JID.equalBare(m.from, client.jid)) {
         return m.to;
     }
 
@@ -19,8 +19,7 @@ const determineRelatedParty = m => {
     return m.from;
 }
 
-const resourceRegex = new RegExp("\\/.+$");
-const stripResource = jid => jid.replace(resourceRegex, "");
+const stripResource = jid => XMPP.JID.toBare(jid);
 
 const generateFunctions = (ctx) => ({
     determineRelatedParty,
