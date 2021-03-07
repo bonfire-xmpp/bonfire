@@ -1,9 +1,11 @@
 import { MessageStore } from "@/store/messages";
 
-import {Utils} from 'stanza';
+import { Utils, JID } from 'stanza';
 
 import * as storage from '@/assets/storage'
 import {loadFromSecure} from '@/assets/storage'
+
+import Vue from 'vue';
 
 const $states = {
     jid: 'JID',
@@ -37,6 +39,9 @@ const $states = {
 
     // See stanza.js/Roster
     roster: 'ROSTER',
+
+    resources: 'RESOURCES',
+    presences: 'PRESENCES',
 };
 
 const $getters = {
@@ -44,6 +49,7 @@ const $getters = {
     loggingIn: 'LOGGING_IN',
     loginFailed: 'LOGIN_FAILED',
     authFailed: 'AUTH_FAILED',
+    presence: 'GET_PRESENCE',
 };
 
 const $actions = {
@@ -61,6 +67,8 @@ const $mutations = {
     setLoginDate: 'SET_LOGIN_DATE',
 
     updateLoginState: 'UPDATE_LOGIN_STATE',
+
+    updatePresence: 'UPDATE_PRESENCE',
 
     setStreamManagement: 'SET_STREAM_MANAGEMENT',
     setAccount: 'SET_ACCOUNT',
@@ -84,6 +92,8 @@ export const state = () => ({
     [$states.streamManagement]: null,
     [$states.account]: null,
     [$states.roster]: null,
+    [$states.resources]: {},
+    [$states.presences]: {},
 });
 
 export const getters = {
@@ -102,6 +112,10 @@ export const getters = {
     [$getters.loggingIn] ( state ) {
         return state[$states.loginState].loggingIn;
     },
+
+    [$getters.presence]: state => jid => {
+        return state[$states.presences]?.[JID.toBare(jid)]?.['_/computed'];
+    }
 };
 
 export const actions = {
@@ -243,6 +257,64 @@ export const mutations = {
         const string = JSON.stringify(data);
         storage.session.setItem($states.streamManagement, string);
         state[$states.streamManagement] = string;
+    },
+
+    [$mutations.updatePresence] ( state, data ) {
+        const bare = JID.toBare(data.from);
+        const resource = JID.getResource(data.from);
+
+        const priority = data.priority;
+        if(priority !== undefined) {
+            const oldResources = state[$states.resources][bare];
+            const oldResource = state[$states.resources][bare]?.[resource];
+            Vue.set(state[$states.resources], bare, {
+                ...oldResources,
+                [resource]: { ...oldResource, priority },
+            });
+        }
+
+        let oldPresences = state[$states.presences][bare];
+        Vue.set(state[$states.presences], bare, {
+            ...oldPresences,
+            [resource]: { show: data.show, status: data.status, available: data.available, },
+        });
+
+        let max = { available: false }
+        const onlineStatusOrder = [ 'xa', 'dnd', 'away' ];
+        for(const resource of Object.getOwnPropertyNames(state[$states.presences][bare])) {
+            // Workaround to iterate through Vuex store reactive object keys
+            // computed is ignored, as that's what we're calculating here
+            if(resource === '__ob__' || resource === '_/computed') continue;
+
+            // Create a deep copy to avoid race conditions
+            const presence = JSON.parse(JSON.stringify(state[$states.presences][bare][resource]));
+
+            // No `show` means 100% pure online; i.e. the most online you can be
+            if(presence.available && !presence.show) {
+                max = presence;
+                break;
+            }
+
+            // The current max is offline; anything that isn't offline is better
+            if(!max.available && presence.available) {
+                max = presence;
+                continue;
+            }
+
+            // Choose the 'most online' one out of the two.
+            if(onlineStatusOrder.findIndex(v => v === max.show)
+                < onlineStatusOrder.findIndex(v => v === presence.show)) {
+                max = presence;
+                continue;
+            }
+        }
+
+        oldPresences = state[$states.presences][bare];
+        Vue.set(state[$states.presences], bare, {
+            ...oldPresences,
+            // A name like this is guaranteed to never be a resource name
+            '_/computed': max,
+        });
     },
 };
 

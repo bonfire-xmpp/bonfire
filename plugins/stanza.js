@@ -59,12 +59,27 @@ const setupListeners = ctx => {
     }
 
     // TODO: Sometimes successful connections don't trigger session:started
-    client.on('session:started', () => {
+    client.on('auth:success', async () => {
+        // TODO: AVOIDING A RACE CONDITION WITH A SLEEP AAAAAAAAAAAAAAAAAAAAAAAAAA
+        await XMPP.Utils.sleep(100);
         client.getRoster().then(roster => {
             ctx.store.commit(Store.$mutations.setRoster, roster);
+            client.sendPresence();
         });
-        client.sendPresence();
     });
+
+    /**
+     * INCOMING PRESENCE/MOOD DATA
+     */
+
+    client.on('available', presence => {
+        ctx.store.commit(Store.$mutations.updatePresence, {available: true, ...presence});
+    })
+
+    client.on('unavailable', presence => {
+        ctx.store.commit(Store.$mutations.updatePresence, {available: false, ...presence});
+    })
+
 
     /**
      * INCOMING (DIRECT) CHAT MESSAGES
