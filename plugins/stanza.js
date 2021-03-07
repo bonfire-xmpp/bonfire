@@ -160,6 +160,18 @@ const setupListeners = ctx => {
         }
     });
 
+    client.on('iq:set:roster', ({roster}) => {
+        ctx.store.commit(Store.$mutations.setRoster, {
+            ...roster, 
+            items: roster.items.filter(x => x.subscription != "remove")
+        });
+    });
+
+    /** DEBUG  **/
+    client.on("*", (...args) => {
+        console.log(args);
+    });
+
     /** STREAM MANAGEMENT RESUMPTION DATA CACHING **/
     client.sm.cache(cache => {
         ctx.store.commit(Store.$mutations.setStreamManagement, cache);
