@@ -1,6 +1,6 @@
 <template>
   <v-app dark>
-    <div id="app" class="d-flex flex-column">
+    <div id="app" class="d-flex flex-column black">
       <system-bar v-if="displayTitlebar" dark/>
       <div :style="mainTitlebarCompensation" class="d-flex">
         <side-bar/>
