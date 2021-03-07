@@ -59,7 +59,7 @@ export const purple = {
 
 const generateGreys = greys => {
     let r = {};
-    for(const color in r) {
+    for(const color in greys) {
         if(greys.hasOwnProperty(color)) {
             r[`grey-${color}`] = greys[color];
         }
