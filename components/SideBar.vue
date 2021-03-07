@@ -1,31 +1,33 @@
 <template>
-  <div class="sidebar d-flex">
-    <v-list dense color="grey-100" class="sidebar-list pa-1 flex-grow-1">
-      <v-list-item link v-for="chan in channels" :key="chan">
-        <v-list-item-content>
-          {{chan}}
-        </v-list-item-content>
-      </v-list-item>
-    </v-list>
+  <div class="sidebar grey-100 py-2">
+    <roster-item v-for="(item, i) in rosterItems" :item="item" :key="i" :selected="i === 0" class="mb-1"/>
   </div>
 </template>
 
 <script>
-export default {
-  data() {
-    return {
-      channels: new Array(20).fill(0).map((_, i) => `#channel-${i}`)
+  import { Store } from "@/store";
+  import { mapState } from 'vuex';
+
+  export default {
+    computed: {
+      ...mapState({
+        roster: Store.$states.roster,
+      }),
+
+      rosterItems() {
+        return this.roster?.items;
+      }
     }
   }
-}
 </script>
 
 <style scoped lang="scss">
   .sidebar {
     width: 320px;
     min-width: 320px;
-    &-list {
-      overflow: hidden scroll;
+    &:hover {
+      overflow: hidden auto;
     }
+    overflow: hidden hidden;
   }
 </style>
