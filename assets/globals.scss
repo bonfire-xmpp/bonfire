@@ -31,6 +31,39 @@ $height-width-helper-sizes: splitIntoSteps(100, 20);
   }
 }
 
+.hide-overflow {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.border-circle-right {
+  border-bottom-right-radius: 50%;
+  border-top-right-radius: 50%;
+}
+
+.reset-link {
+  text-decoration: none !important;
+  cursor: pointer !important;
+  color: map-get($white, "lighten") !important;
+}
+
+// Vertically aligns by inserting an empty pseudo class with 100% height,
+// so that the entire height becomes line height
+.align-content-center-inline {
+  &:before {
+    content: '';
+    display: inline-block;
+    height: 100%;
+    vertical-align: middle;
+  }
+  & > * {
+    display: inline-block !important;
+    vertical-align: middle;
+  }
+}
+
+
 /** Scrollbar **/
 
 // Firefox has only this for scrollbar customization
