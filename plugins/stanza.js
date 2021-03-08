@@ -58,13 +58,20 @@ const setupListeners = ctx => {
         return ctx.store.getters[`${MessageStore.namespace}/${getter}`](...args);
     }
 
-    // TODO: Sometimes successful connections don't trigger session:started
-    client.on('auth:success', async () => {
-        // TODO: AVOIDING A RACE CONDITION WITH A SLEEP AAAAAAAAAAAAAAAAAAAAAAAAAA
-        await XMPP.Utils.sleep(100);
+    function bind() {
         client.getRoster().then(roster => {
             ctx.store.commit(Store.$mutations.setRoster, roster);
             client.sendPresence();
+        });
+    }
+
+    client.on('session:started', bind);
+    client.on('stream:management:resumed', bind);
+
+    client.on('iq:set:roster', ({roster}) => {
+        ctx.store.commit(Store.$mutations.setRoster, {
+            ...roster,
+            items: roster.items.filter(x => x.subscription !== "remove")
         });
     });
 
@@ -158,13 +165,6 @@ const setupListeners = ctx => {
                 }
             });
         }
-    });
-
-    client.on('iq:set:roster', ({roster}) => {
-        ctx.store.commit(Store.$mutations.setRoster, {
-            ...roster, 
-            items: roster.items.filter(x => x.subscription != "remove")
-        });
     });
 
     /** DEBUG  **/
