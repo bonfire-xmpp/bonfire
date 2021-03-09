@@ -81,11 +81,15 @@ const setupListeners = ctx => {
 
     client.on('available', presence => {
         ctx.store.commit(Store.$mutations.updatePresence, {available: true, ...presence});
-    })
+    });
 
     client.on('unavailable', presence => {
         ctx.store.commit(Store.$mutations.updatePresence, {available: false, ...presence});
-    })
+    });
+
+    client.on('avatar', event => {
+        ctx.store.dispatch(Store.$actions.downloadAvatar, {jid: event.jid});
+    });
 
 
     /**

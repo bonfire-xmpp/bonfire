@@ -40,6 +40,8 @@ const $states = {
     // See stanza.js/Roster
     roster: 'ROSTER',
 
+    avatars: 'AVATARS',
+
     resources: 'RESOURCES',
     presences: 'PRESENCES',
 };
@@ -55,6 +57,8 @@ const $getters = {
 const $actions = {
     login: 'LOGIN',
     tryRestoreSession: 'TRY_RESTORE_SESSION',
+    downloadAvatar: 'DOWNLOAD_AVATAR',
+    getAvatar: 'GET_AVATAR',
 };
 
 const $mutations = {
@@ -69,6 +73,7 @@ const $mutations = {
     updateLoginState: 'UPDATE_LOGIN_STATE',
 
     updatePresence: 'UPDATE_PRESENCE',
+    updateAvatar: 'UPDATE_AVATAR',
 
     setStreamManagement: 'SET_STREAM_MANAGEMENT',
     setAccount: 'SET_ACCOUNT',
@@ -91,7 +96,8 @@ export const state = () => ({
 
     [$states.streamManagement]: null,
     [$states.account]: null,
-    [$states.roster]: null,
+    [$states.roster]: {},
+    [$states.avatars]: {},
     [$states.resources]: {},
     [$states.presences]: {},
 });
@@ -118,6 +124,7 @@ export const getters = {
     }
 };
 
+const downloadAvatarJidThrottleMap = {};
 export const actions = {
     async [$actions.tryRestoreSession]({ commit, dispatch, state }) {
         try {
@@ -198,6 +205,53 @@ export const actions = {
             });
             resolve()
         }))]);
+    },
+
+    async [$actions.downloadAvatar]({ commit, state }, { jid }) {
+        const bare = JID.toBare(jid);
+        const download = async () => {
+            try {
+                const avatar = await this.$stanza.client.getAvatar(bare);
+                commit($mutations.updateAvatar, {jid, avatar: avatar.content.data})
+            } catch (e) {
+                console.error(e);
+                if(e?.error?.condition === "timeout") {
+                    return await download();
+                } else {
+                    commit($mutations.updateAvatar, {jid, default: true})
+                }
+            }
+
+            return state[$states.avatars][JID.toBare(jid)];
+        }
+
+        // If this JID's avatar is already being downloaded, return that promise instead
+        if(downloadAvatarJidThrottleMap[bare]) return downloadAvatarJidThrottleMap[bare];
+
+        // If not, get a fresh promise and add it to the map
+        const promise = download();
+        downloadAvatarJidThrottleMap[bare] = promise;
+
+        // Remove it from the map on completion
+        promise.then(() => delete downloadAvatarJidThrottleMap[bare]);
+
+        // And return it to the user
+        return promise;
+    },
+
+    async [$actions.getAvatar]({ dispatch, state }, { jid }) {
+        const bare = JID.toBare(jid);
+
+        const url = state[$states.avatars][bare];
+
+        // Default avatar
+        if(url === null) return null;
+
+        // Missing
+        if(!url) return await dispatch($actions.downloadAvatar, { jid });
+
+        // Downloaded
+        return url;
     }
 };
 
@@ -257,6 +311,26 @@ export const mutations = {
         const string = JSON.stringify(data);
         storage.session.setItem($states.streamManagement, string);
         state[$states.streamManagement] = string;
+    },
+
+    [$mutations.updateAvatar] ( state, data ) {
+        const bare = JID.toBare(data.jid);
+
+        // Default avatar
+        if(data.default) {
+            return Vue.set(state[$states.avatars], bare, null);
+        }
+
+        storage.permanent.setItem('avatar-' + bare, data.avatar)
+
+        if(state[$states.avatars][bare] !== null) {
+            URL.revokeObjectURL(state[$states.avatars][bare]);
+        }
+
+        const blob = new Blob([data.avatar], {'type': 'image/png'});
+        const url = URL.createObjectURL(blob);
+
+        Vue.set(state[$states.avatars], bare, url);
     },
 
     [$mutations.updatePresence] ( state, data ) {
