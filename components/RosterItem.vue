@@ -66,7 +66,7 @@
         getPresence: Store.$getters.presence,
       }),
 
-      name() { return this.item.name; },
+      name() { return JID.getLocal(this.item.jid); },
       domain() { return JID.getDomain(this.item.jid); },
       presence() { return this.getPresence(this.item.jid); },
 
