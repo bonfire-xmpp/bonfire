@@ -66,7 +66,7 @@
         getPresence: Store.$getters.presence,
       }),
 
-      name() { return this.item.name; },
+      name() { return JID.getLocal(this.item.jid); },
       domain() { return JID.getDomain(this.item.jid); },
       presence() { return this.getPresence(this.item.jid); },
 
@@ -92,10 +92,11 @@
 
 <style scoped lang="scss">
   // Constant height
+  $height: 50px;
   .main {
-    height: 42px;
-    min-height: 42px;
-    max-height: 42px;
+    height: $height;
+    min-height: $height;
+    max-height: $height;
   }
 
   // Hide options when the .main container _isn't_ hovered

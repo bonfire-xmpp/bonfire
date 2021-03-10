@@ -16,6 +16,7 @@
   export default {
     name: "login",
     components: {LoginDialog},
+    layout: "fullscreen",
 
     async middleware({store, redirect}) {
       // You're logged in; you have no business being here. Scram

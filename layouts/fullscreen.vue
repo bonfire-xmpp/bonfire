@@ -2,10 +2,9 @@
   <v-app dark>
     <div id="app" class="d-flex flex-column black">
       <system-bar v-if="displayTitlebar" dark/>
-      <div :style="mainTitlebarCompensation" class="d-flex flex-row flex-nowrap">
-        <side-bar/>
-        <v-main class="d-flex">
-          <nuxt class="d-flex flex-grow-1" style="height: 100%;"/>
+      <div :style="mainTitlebarCompensation" class="d-flex">
+        <v-main>
+          <nuxt/>
         </v-main>
       </div>
     </div>

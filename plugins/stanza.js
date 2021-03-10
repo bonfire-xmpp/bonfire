@@ -17,7 +17,9 @@ const determineRelatedParty = m => {
 
     // Otherwise, it's the sender
     return m.from;
-}
+};
+
+const determineSendingParty = m => m.from || client.jid;
 
 const stripResource = jid => XMPP.JID.toBare(jid);
 
@@ -54,6 +56,10 @@ const setupListeners = ctx => {
         return ctx.store.commit(`${MessageStore.namespace}/${mutation}`, ...args);
     }
 
+    function dispatch(action, ...args) {
+        return ctx.store.dispatch(`${MessageStore.namespace}/${action}`, ...args);
+    }
+
     function get(getter, ...args) {
         return ctx.store.getters[`${MessageStore.namespace}/${getter}`](...args);
     }
@@ -61,6 +67,7 @@ const setupListeners = ctx => {
     function bind() {
         client.getRoster().then(roster => {
             ctx.store.commit(Store.$mutations.setRoster, roster);
+            client.enableCarbons();
             client.sendPresence();
         });
     }
@@ -97,10 +104,12 @@ const setupListeners = ctx => {
      */
 
     client.on('chat', message => {
-        const jid = determineRelatedParty(message);
-        commit(MessageStore.$mutations.addMessage, {
-            jid,
-            message,
+        dispatch(MessageStore.$actions.addMessage, {
+            jid: determineRelatedParty(message),
+            message: {
+                ...message, 
+                origin: determineSendingParty(message),
+            }
         });
     });
 
@@ -169,6 +178,26 @@ const setupListeners = ctx => {
                 }
             });
         }
+    });
+
+    client.on('iq:set:roster', ({roster}) => {
+        let items = (ctx.store.state[Store.$states.roster] || {items: []}).items.slice();
+        for (let item of roster.items) {
+            let idx = items.findIndex(i => i.jid == item.jid);
+            if (idx > 0) {
+                if (item.subscription == "remove") {
+                    items.splice(idx, 1);
+                }
+            } else {
+                if (item.subscription != "remove") {
+                    items.push(item);
+                }
+            }
+        }
+        ctx.store.commit(Store.$mutations.setRoster, {
+            ...roster, 
+            items: items,
+        });
     });
 
     /** DEBUG  **/

@@ -1,5 +1,6 @@
 import messageDb from '@/assets/messageDb.js';
 import { Store } from "@/store/index";
+import Vue from "vue";
 
 /**
  * Message state definition. Due to a lack of typescript, this will have to settle:
@@ -32,25 +33,26 @@ const $getters = {
 const $actions = {
     restoreMessagesFromStorage: 'RESTORE_MESSAGES_FROM_STORAGE',
     syncMessages: 'SYNC_MESSAGES',
+    addMessage: "ADD_MESSAGE",
 };
 const $mutations = {
     setMessages: 'SET_MESSAGES',
     setMessagesById: 'SET_MESSAGES_BY_ID',
     setMessageStateById: 'SET_MESSAGE_STATE_BY_ID',
 
-    addMessage: 'ADD_MESSAGE',
+    addMessage: 'M_ADD_MESSAGE',
     updateMessageState: 'SET_MESSAGE_STATE',
 }
 
 export const state = () => ({
-    [$states.messages]: new Map(),
-    [$states.messagesById]: new Map(),
-    [$states.messageStateById]: new Map(),
+    [$states.messages]: {},
+    [$states.messagesById]: {},
+    [$states.messageStateById]: {},
 });
 
 export const getters = {
     [$getters.hasMessage]: state => id => {
-        return state[$states.messagesById].has(id);
+        return !!state[$states.messagesById][id];
     },
 };
 export const actions = {
@@ -111,9 +113,9 @@ export const actions = {
         try {
             const withs = await messageDb.messages.orderBy('with').uniqueKeys();
 
-            const messagesByJid = new Map();
-            const messageStateById = new Map();
-            const messagesById = new Map();
+            const messagesByJid = {};
+            const messageStateById = {};
+            const messagesById = {};
 
             for (const jid of withs) {
                 // Last 100 messages with each JID present
@@ -123,17 +125,17 @@ export const actions = {
                     .slice(0, 100);
 
                 console.log(jid, lastHundred);
-                messagesByJid.set(jid, lastHundred);
+                messagesByJid[jid] = lastHundred;
 
                 const ids = []
                 lastHundred.map(m => {
-                    messagesById.set(m.id, m);
+                    messagesById[m.id] = m;
                     ids.push(m.id);
                 });
 
                 (await messageDb.messageStates
                     .where('id').anyOf(ids)
-                    .toArray()).map(s => messageStateById.set(s.id, s));
+                    .toArray()).map(s => messageStateById[s.id] = s);
             }
 
             commit($mutations.setMessages, messagesByJid);
@@ -142,50 +144,65 @@ export const actions = {
         } catch (e) {
             console.error("Couldn't restore messages from storage!", e);
         }
+    },
+
+    async [$actions.addMessage] ({ commit }, { jid, message, state: messageState }) {
+        const bareJid = this.$stanza.stripResource(jid);
+        message.timestamp = new Date();
+        message.with = bareJid;
+
+        await messageDb.messages.add(message);
+        const query = messageDb.messages.where("with").equals(bareJid);
+        // TODO: implement message archiving
+        if ((await query.count()) > 10) {
+            // await query.delete();
+        }
+        commit($mutations.addMessage, { bareJid, message, messageState });
+
+        if (messageState) {
+            messageDb.messageStates.put({id: message.id, ...messageState});
+        }
     }
 };
 
 export const mutations = {
+    /** SET_MESSAGES **/
     [$mutations.setMessages] ( state, data ) {
         state[$states.messages] = data;
     },
-
+    
+    /** SET_MESSAGES_BY_ID **/
     [$mutations.setMessagesById] ( state, data ) {
         state[$states.messagesById] = data;
     },
-
+    
+    /** SET_MESSAGE_STATE_BY_ID **/
     [$mutations.setMessageStateById] ( state, data ) {
         state[$states.messageStateById] = data;
     },
 
-    [$mutations.addMessage] ( state, { jid, message, state: messageState } ) {
-        const bareJid = this.$stanza.stripResource(jid);
-        if(!state[$states.messages].has(bareJid))
-            state[$states.messages].set(bareJid, []);
+    /** ADD_MESSAGES **/
+    [$mutations.addMessage] ( state, { bareJid, message, messageState } ) {
+        if(!state[$states.messages][bareJid])
+            Vue.set(state[$states.messages], bareJid, []);
 
-        message.timestamp = new Date();
-        message.with = bareJid;
-
-        const size = state[$states.messages].get(bareJid).push(message);
+        const size = state[$states.messages][bareJid].push(message);
 
         // Rolling buffer of 100 items/JID
         if(size > 100) {
-            const message = state[$states.messages].get(bareJid).splice(0, 1);
+            const message = state[$states.messages][bareJid].splice(0, 1);
             state[$states.messagesById].delete(message[0].id);
         }
 
-        state[$states.messagesById].set(message.id, message);
-
-        messageDb.messages.add(message);
+        Vue.set(state[$states.messagesById], message.id, message);
 
         if(messageState) {
-            state[$states.messageStateById].set(message.id, messageState)
-            messageDb.messageStates.put({id: message.id, ...messageState});
+            Vue.set(state[$states.messageStateById], message.id, messageState);
         }
     },
 
     [$mutations.updateMessageState] (state, { id, state: messageState } ) {
-        state[$states.messageStateById].set(id, messageState)
+        Vue.set(state[$states.messageStateById], id, messageState);
 
         messageDb.messageStates.put({id, ...messageState});
     }
