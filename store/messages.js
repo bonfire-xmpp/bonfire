@@ -1,6 +1,8 @@
 import messageDb from '@/assets/messageDb.js';
 import { Store } from "@/store/index";
 import Vue from "vue";
+import * as msgpack from "@msgpack/msgpack";
+const lz4 = require("lz4js");
 
 /**
  * Message state definition. Due to a lack of typescript, this will have to settle:
@@ -56,6 +58,7 @@ export const getters = {
     },
 };
 export const actions = {
+    /** SYNC_MESSAGES **/
     async [$actions.syncMessages] ( { commit, rootState }, jid ) {
         const loginDate = rootState[Store.$states.loginDate];
         const lastMessageTimestamp = (await messageDb.messages
@@ -109,6 +112,7 @@ export const actions = {
         messageDb.messageStates.bulkPut(messageStates);
     },
 
+    /** RESTORE_MESSAGES_FROM_STORAGE **/
     async [$actions.restoreMessagesFromStorage] ( { commit } ) {
         try {
             const withs = await messageDb.messages.orderBy('with').uniqueKeys();
@@ -146,21 +150,25 @@ export const actions = {
         }
     },
 
+    /** ADD_MESSAGE **/
     async [$actions.addMessage] ({ commit }, { jid, message, state: messageState }) {
         const bareJid = this.$stanza.stripResource(jid);
         message.timestamp = new Date();
         message.with = bareJid;
-
-        await messageDb.messages.add(message);
-        const query = messageDb.messages.where("with").equals(bareJid);
-        // TODO: implement message archiving
-        if ((await query.count()) > 10) {
-            // await query.delete();
-        }
+        
         commit($mutations.addMessage, { bareJid, message, messageState });
-
         if (messageState) {
             messageDb.messageStates.put({id: message.id, ...messageState});
+        }
+        await messageDb.messages.add(message);
+
+        // message block archive
+        const query = messageDb.messages.where("with").equals(bareJid);
+        if ((await query.count()) > 10) {
+            let array = await query.toArray();
+            let compblock = lz4.compress(msgpack.encode(array));
+            await messageDb.messageArchive.add({block: compblock});
+            await query.delete();
         }
     }
 };

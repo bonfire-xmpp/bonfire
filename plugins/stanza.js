@@ -1,7 +1,6 @@
 import * as XMPP from 'stanza';
 import { MessageStore } from "@/store/messages";
 import { Store } from "@/store";
-import { console, setInterval } from 'globalthis/implementation';
 
 const client = XMPP.createClient(undefined);
 
