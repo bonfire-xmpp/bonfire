@@ -1,6 +1,7 @@
 import * as XMPP from 'stanza';
 import { MessageStore } from "@/store/messages";
 import { Store } from "@/store";
+import { console, setInterval } from 'globalthis/implementation';
 
 const client = XMPP.createClient(undefined);
 
@@ -64,22 +65,32 @@ const setupListeners = ctx => {
         return ctx.store.getters[`${MessageStore.namespace}/${getter}`](...args);
     }
 
-    function bind() {
-        client.getRoster().then(roster => {
+    async function bind() {
+        await client.getRoster().then(roster => {
             ctx.store.commit(Store.$mutations.setRoster, roster);
-            client.enableCarbons();
-            client.sendPresence();
         });
+        await client.enableCarbons();
+        client.sendPresence();
     }
 
     client.on('session:started', bind);
     client.on('stream:management:resumed', bind);
 
     client.on('iq:set:roster', ({roster}) => {
-        ctx.store.commit(Store.$mutations.setRoster, {
-            ...roster,
-            items: roster.items.filter(x => x.subscription !== "remove")
-        });
+        let items = ctx.store.state[Store.$states.roster]?.items || [];
+        for (let item of roster.items) {
+            const idx = items.findIndex(i => i.jid == item.jid);
+            if (idx > 0) {
+                if (item.subscription == "remove") {
+                    items.splice(idx, 1);
+                }
+            } else {
+                if (item.subscription == "to" || item.subscription == "both") {
+                    items.push(item);
+                }
+            }
+        }
+        ctx.store.commit(Store.$mutations.setRoster, {...roster, items});
     });
 
     /**
