@@ -86,7 +86,7 @@
         if(!this.available) return 'grey';
         if(!this.onlineStatus && this.available) return 'success';
       }
-    }
+    },
   }
 </script>
 

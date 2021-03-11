@@ -1,22 +1,50 @@
 <template>
   <div class="sidebar grey-100 py-2">
-    <roster-item v-for="(item, i) in rosterItems" :item="item" :key="i" :selected="i === 0" class="mb-1"/>
+    <roster-list :items="items" :selected-jid="selectedJid"/>
   </div>
 </template>
 
 <script>
   import { Store } from "@/store";
-  import { mapState } from 'vuex';
+  import { mapState, mapGetters } from 'vuex';
 
   export default {
     computed: {
       ...mapState({
         roster: Store.$states.roster,
+        activeState: Store.$states.activeChat,
+      }),
+
+      ...mapGetters({
+        presence: Store.$getters.presence,
       }),
 
       rosterItems() {
         return this.roster?.items;
+      },
+
+      selectedJid() {
+        return this.activeState.type === "chat" ? this.activeState.entity : undefined;
+      },
+
+      onlineItems() {
+        return { name: 'Online', items: this.rosterItems?.filter(i => this.presence(i.jid).available) };
+      },
+
+      offlineItems() {
+        return { name: 'Offline', items: this.rosterItems?.filter(i => !this.presence(i.jid).available) };
+      },
+
+      items() {
+        return [
+            this.onlineItems,
+            this.offlineItems,
+        ]
       }
+    },
+
+    mounted() {
+      console.log(this.roster.items)
     }
   }
 </script>
