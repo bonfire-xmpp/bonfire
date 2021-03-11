@@ -32,6 +32,14 @@ const $states = {
 
     loginDate: 'LOGIN_DATE',
 
+    /**
+     * {
+     *     type: muc | chat
+     *     entity: jid
+     * }
+     */
+    activeChat: 'ACTIVE_CHAT',
+
     streamManagement: 'STREAM_MANAGEMENT',
 
     // See stanza.js/AccountManagement
@@ -70,6 +78,8 @@ const $mutations = {
 
     setLoginDate: 'SET_LOGIN_DATE',
 
+    setActiveChat: 'SET_ACTIVE_CHAT',
+
     updateLoginState: 'UPDATE_LOGIN_STATE',
 
     updatePresence: 'UPDATE_PRESENCE',
@@ -98,6 +108,7 @@ export const state = () => ({
 
     [$states.streamManagement]: null,
     [$states.account]: null,
+    [$states.activeChat]: null,
     [$states.roster]: {},
     [$states.avatars]: {},
     [$states.resources]: {},
@@ -305,7 +316,7 @@ export const mutations = {
     ...generateMutations(storage.secure,
         $states.jid, $states.password, $states.server, $states.transports),
 
-    ...generateMutations($states.account, $states.roster, $states.loginDate),
+    ...generateMutations($states.account, $states.roster, $states.loginDate, $states.activeChat),
 
     [$mutations.unsetPassword] ( state ) {
         state[$states.password] = "";
