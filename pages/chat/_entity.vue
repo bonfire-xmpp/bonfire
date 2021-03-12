@@ -3,7 +3,7 @@
     <div><h1>{{this.$route.params.entity}}</h1></div>
     <div ref="messageList" class="flex-grow-1" style="overflow: hidden scroll;">
       <v-card dense flat v-for="mesg in messages" :key="mesg.id">
-        {{mesg.origin}} - {{mesg.body}}
+        {{mesg.from}} - {{mesg.body}}
       </v-card>
     </div>
     <form @submit.prevent="sendMessage">

@@ -114,13 +114,10 @@ const setupListeners = ctx => {
      */
 
     client.on('chat', message => {
-        dispatch(MessageStore.$actions.addMessage, {
-            jid: determineRelatedParty(message),
-            message: {
-                ...message, 
-                origin: determineSendingParty(message),
-            }
-        });
+        const jid = XMPP.JID.toBare(determineRelatedParty(message));
+        message.from ||= client.jid;
+        message.from = XMPP.JID.toBare(message.from);
+        dispatch(MessageStore.$actions.addMessage, { jid, message });
     });
 
     /**
