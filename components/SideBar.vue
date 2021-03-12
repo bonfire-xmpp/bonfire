@@ -32,12 +32,17 @@
       },
 
       offlineItems() {
-        return { name: 'Offline', items: this.rosterItems?.filter(i => !this.presence(i.jid)?.available) };
+        return { name: 'Offline', items: this.rosterItems?.filter(i => !this.presence(i.jid)?.available && !i.pending) };
+      },
+
+      pendingItems() {
+        return { name: 'Pending', items: this.rosterItems?.filter(i => i.pending) };
       },
 
       items() {
         return [
             this.onlineItems,
+            this.pendingItems,
             this.offlineItems,
         ]
       }
