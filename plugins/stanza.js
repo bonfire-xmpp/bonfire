@@ -46,6 +46,13 @@ const generateFunctions = (ctx) => ({
     },
     sendMessage(message) {
         client.sendMessage(message);
+    },
+    ranks: Object.freeze(['online', 'away', 'xa', 'dnd', 'offline']),
+    getRankFromOnlineState(state) {
+        return this.ranks.findIndex(s => s.toLowerCase() === state);
+    },
+    getOnlineStateFromRank(rank) {
+        this.ranks[rank];
     }
 });
 

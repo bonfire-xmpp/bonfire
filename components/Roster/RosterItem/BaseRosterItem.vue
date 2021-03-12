@@ -17,7 +17,7 @@
           <div class="main-container ml-2 pr-2 flex-grow-1 my-auto hide-overflow">
             <!-- Online status icon, username@domain -->
             <span>
-              <v-icon :class="statusColor + '--text'" :size="10">mdi-circle</v-icon>
+              <status-icon :status="onlineStatus"/>
               <span :class="selected ? '' : 'grey-700--text'">{{name}}</span>
               <span :class="selected ? '' : 'grey-500--text'">@{{domain}}</span>
             </span>
@@ -80,19 +80,11 @@
       available() { return this.presence?.available; },
       statusMessage() { return this.presence?.status; },
 
-      onlineStatus() { return this.presence?.show; },
-      statusColor() {
-        switch (this.onlineStatus) {
-          case 'xa':
-          case 'away':
-              return 'warning';
-          case 'dnd':
-            return 'error';
-        }
-
-        if(!this.available) return 'grey';
-        if(!this.onlineStatus && this.available) return 'success';
-      }
+      onlineStatus() {
+        if(!this.available) return 'offline';
+        if(!this.presence?.show && this.available) return 'online';
+        return this.presence?.show;
+      },
     },
   }
 </script>
