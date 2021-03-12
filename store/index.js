@@ -259,7 +259,7 @@ export const actions = {
         return promise;
     },
 
-    async [$actions.getAvatar]({ dispatch, state }, { jid }) {
+    async [$actions.getAvatar]({ dispatch, commit, state }, { jid }) {
         const bare = JID.toBare(jid);
 
         const url = state[$states.avatars][bare];
@@ -268,7 +268,18 @@ export const actions = {
         if(url === null) return null;
 
         // Missing
-        if(!url) return await dispatch($actions.downloadAvatar, { jid });
+        if(!url) {
+            // Try restoring from storage
+            const avatarBase64 = storage.permanent.getItem('avatar-' + bare)
+            if(avatarBase64) {
+                const avatar = await (await fetch(avatarBase64)).blob();
+                commit($mutations.updateAvatar, { jid, avatar, restore: true });
+                return state[$states.avatars][bare];
+            }
+
+            // Nothing in storage, download it
+            return await dispatch($actions.downloadAvatar, {jid});
+        }
 
         // Downloaded
         return url;
@@ -341,14 +352,23 @@ export const mutations = {
             return Vue.set(state[$states.avatars], bare, null);
         }
 
-        storage.permanent.setItem('avatar-' + bare, data.avatar)
-
         if(state[$states.avatars][bare] !== null) {
             URL.revokeObjectURL(state[$states.avatars][bare]);
         }
 
         const blob = new Blob([data.avatar], {'type': 'image/png'});
         const url = URL.createObjectURL(blob);
+
+        // Data passed is restored from storage; don't save it again
+        if(!data.restore) {
+            const reader = new FileReader();
+            reader.readAsDataURL(blob);
+            // This async callback is okay because it doesn't touch the store state
+            reader.onloadend = function() {
+                const base64data = reader.result;
+                storage.permanent.setItem('avatar-' + bare, base64data)
+            }
+        }
 
         Vue.set(state[$states.avatars], bare, url);
     },

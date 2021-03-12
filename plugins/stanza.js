@@ -88,6 +88,7 @@ const setupListeners = ctx => {
     });
 
     client.on('avatar', event => {
+        console.log(event);
         ctx.store.dispatch(Store.$actions.downloadAvatar, {jid: event.jid});
     });
 
@@ -173,7 +174,7 @@ const setupListeners = ctx => {
 
     /** DEBUG  **/
     client.on("*", (...args) => {
-        console.log(args);
+        // console.log(args);
     });
 
     /** STREAM MANAGEMENT RESUMPTION DATA CACHING **/
