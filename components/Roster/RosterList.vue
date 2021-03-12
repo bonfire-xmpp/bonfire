@@ -1,5 +1,6 @@
 <template>
   <div>
+    <pinned-items :items="pinned" :selected="selectedJid"/>
     <roster-section v-for="(item, i) in items"
                     :name="item.name" :items="item.items" :key="i"
                     :selected="i === selectedSection ? selectedItem : undefined"
@@ -8,9 +9,18 @@
 </template>
 
 <script>
+  import PinnedItems from "@/components/Roster/PinnedItems";
+  import RosterSection from "@/components/Roster/RosterList/RosterSection";
+
   export default {
     name: "RosterList",
+    components: {PinnedItems, RosterSection},
     props: {
+      pinned: {
+        type: Array,
+        optional: true,
+        default: [],
+      },
       items: Array,
       selectedJid: String,
     },

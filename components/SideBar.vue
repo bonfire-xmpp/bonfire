@@ -1,6 +1,9 @@
 <template>
   <div class="sidebar grey-100 py-2">
-    <roster-list :items="items" :selected-jid="selectedJid"/>
+    <roster-list
+        :pinned="[]"
+        :items="items"
+        :selected-jid="selectedJid"/>
   </div>
 </template>
 

@@ -42,6 +42,11 @@ $height-width-helper-sizes: splitIntoSteps(100, 20);
   border-top-right-radius: 50%;
 }
 
+.justify-content-between {
+  justify-content: space-between !important;
+  -ms-flex-pack: justify !important;
+}
+
 .reset-link {
   text-decoration: none !important;
   cursor: pointer !important;
@@ -56,6 +61,10 @@ $height-width-helper-sizes: splitIntoSteps(100, 20);
   -moz-user-select: none;
   -ms-user-select: none;
   user-select: none;
+}
+
+.clickable > * {
+  cursor: pointer;
 }
 
 // Vertically aligns by inserting an empty pseudo class with 100% height,
