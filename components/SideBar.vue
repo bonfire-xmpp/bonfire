@@ -20,23 +20,23 @@
       }),
 
       rosterItems() {
-        return this.roster?.items;
+        return this.roster?.items || [];
       },
 
       selectedJid() {
-        return this.activeState && this.activeState.type === "chat" ? this.activeState.entity : undefined;
+        return this.activeState?.type === "chat" ? this.activeState.entity : undefined;
       },
 
       onlineItems() {
-        return { name: 'Online', items: this.rosterItems?.filter(i => this.presence(i.jid)?.available) };
+        return { name: 'Online', items: this.rosterItems.filter(i => this.presence(i.jid)?.available) };
       },
 
       offlineItems() {
-        return { name: 'Offline', items: this.rosterItems?.filter(i => !this.presence(i.jid)?.available && !i.pending) };
+        return { name: 'Offline', items: this.rosterItems.filter(i => !this.presence(i.jid)?.available && !i.pending) };
       },
 
       pendingItems() {
-        return { name: 'Pending', items: this.rosterItems?.filter(i => i.pending) };
+        return { name: 'Pending', items: this.rosterItems.filter(i => i.pending) };
       },
 
       items() {
