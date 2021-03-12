@@ -398,7 +398,6 @@ export const mutations = {
         });
 
         let max = { available: false }
-        const onlineStatusOrder = [ 'xa', 'dnd', 'away' ];
         for(const resource of Object.getOwnPropertyNames(state[$states.presences][bare])) {
             // Workaround to iterate through Vuex store reactive object keys
             // computed is ignored, as that's what we're calculating here
@@ -420,8 +419,8 @@ export const mutations = {
             }
 
             // Choose the 'most online' one out of the two.
-            if(onlineStatusOrder.findIndex(v => v === max.show)
-                < onlineStatusOrder.findIndex(v => v === presence.show)) {
+            if(this.$stanza.getRankFromOnlineState(max.show)
+                < this.$stanza.getRankFromOnlineState(presence.show)) {
                 max = presence;
                 continue;
             }
