@@ -1,6 +1,5 @@
 <template>
   <v-container class="d-flex flex-grow-1 flex-column flex-nowrap justify-space-between">
-    <div><h1>{{this.$route.params.entity}}</h1></div>
     <div ref="messageList" class="flex-grow-1" style="overflow: hidden scroll;">
       <v-card dense flat v-for="mesg in messages" :key="mesg.id">
         {{mesg.from}} - {{mesg.body}}

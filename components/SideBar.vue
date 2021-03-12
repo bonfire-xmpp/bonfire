@@ -25,6 +25,8 @@
   .sidebar {
     width: 320px;
     min-width: 320px;
+    box-shadow: 0px 0px 10px transparentize(black, 0.6);
+    z-index: 10;
     &:hover {
       overflow: hidden auto;
     }

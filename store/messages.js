@@ -2,6 +2,7 @@ import messageDb from '@/assets/messageDb.js';
 import { Store } from "@/store/index";
 import Vue from "vue";
 import * as msgpack from "@msgpack/msgpack";
+import { populateSearchIndex } from "./search";
 const lz4 = require("lz4js");
 
 /**
@@ -164,10 +165,11 @@ export const actions = {
 
         // message block archive
         const query = messageDb.messages.where("with").equals(bareJid);
-        if ((await query.count()) > 10) {
+        if ((await query.count()) >= 10) {
             let array = await query.toArray();
             let compblock = lz4.compress(msgpack.encode(array));
-            await messageDb.messageArchive.add({block: compblock});
+            let id = await messageDb.messageArchive.add({block: compblock, with: bareJid});
+            populateSearchIndex(messageDb, id, array);
             await query.delete();
         }
     }
