@@ -4,7 +4,9 @@
                  :item="item" :key="i"
                  :class="i && 'mt-1'"
                  :selected="i === selected"
-                 :approve="pending"/>
+                 :approve="pending"
+                 @approve="approve"
+                 @reject="reject"/>
     <template #contracted v-if="selected !== undefined">
       <roster-item :item="items[selected]" selected :approve="pending"/>
     </template>
@@ -23,6 +25,15 @@
         type: Number,
         optional: true,
       }
+    },
+    methods: {
+      approve(item) {
+        this.$stanza.client.acceptSubscription(item.jid);
+      },
+
+      reject(item) {
+        this.$stanza.client.denySubscription(item.jid);
+      },
     },
   }
 </script>

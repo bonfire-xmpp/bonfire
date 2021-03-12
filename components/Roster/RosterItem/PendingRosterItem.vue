@@ -1,10 +1,10 @@
 <template>
   <base-roster-item :item="item" :selected="selected">
 
-    <v-btn icon small color="green">
+    <v-btn icon small color="green" @click="approve">
       <v-icon>mdi-check</v-icon>
     </v-btn>
-    <v-btn icon small color="red">
+    <v-btn icon small color="red" @click="reject">
       <v-icon>mdi-close</v-icon>
     </v-btn>
 
@@ -27,6 +27,15 @@
         required: false,
         default: false,
       },
-    }
+    },
+    methods: {
+      approve() {
+        this.$emit('approve', this.item);
+      },
+
+      reject() {
+        this.$emit('reject', this.item);
+      },
+    },
   }
 </script>
