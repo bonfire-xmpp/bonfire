@@ -73,8 +73,8 @@
         getPresence: Store.$getters.presence,
       }),
 
-      name() { return JID.getLocal(this.item.jid); },
-      domain() { return JID.getDomain(this.item.jid); },
+      name() { return this.$stanza.getLocal(this.item.jid); },
+      domain() { return this.$stanza.getDomain(this.item.jid); },
       presence() { return this.getPresence(this.item.jid); },
 
       available() { return this.presence?.available; },

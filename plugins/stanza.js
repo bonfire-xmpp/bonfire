@@ -19,11 +19,14 @@ const determineRelatedParty = m => {
     return m.from;
 }
 
-const stripResource = jid => XMPP.JID.toBare(jid);
+const toBare = jid => XMPP.JID.toBare(jid);
+const getResource = jid => XMPP.JID.getResource(jid);
+const getDomain = jid => XMPP.JID.getDomain(jid);
+const getLocal = jid => XMPP.JID.getLocal(jid);
 
 const generateFunctions = (ctx) => ({
     determineRelatedParty,
-    stripResource,
+    toBare, getResource, getDomain, getLocal,
     updateConfig(...args) {
         client.updateConfig(...args);
     },

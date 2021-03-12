@@ -1,6 +1,6 @@
 import { MessageStore } from "@/store/messages";
 
-import { Utils, JID } from 'stanza';
+import { Utils } from 'stanza';
 
 import * as storage from '@/assets/storage'
 import {loadFromSecure, loadFromSession} from '@/assets/storage'
@@ -132,9 +132,9 @@ export const getters = {
         return state[$states.loginState].loggingIn;
     },
 
-    [$getters.presence]: state => jid => {
-        return state[$states.presences]?.[JID.toBare(jid)]?.['_/computed'];
-    }
+    [$getters.presence] ( state ) { return function(jid) {
+        return state[$states.presences]?.[this.$stanza.toBare(jid)]?.['_/computed'];
+    }},
 };
 
 const downloadAvatarJidThrottleMap = {};
@@ -228,7 +228,7 @@ export const actions = {
     },
 
     async [$actions.downloadAvatar]({ commit, state }, { jid }) {
-        const bare = JID.toBare(jid);
+        const bare = this.$stanza.toBare(jid);
         const download = async () => {
             try {
                 const avatar = await this.$stanza.client.getAvatar(bare);
@@ -242,7 +242,7 @@ export const actions = {
                 }
             }
 
-            return state[$states.avatars][JID.toBare(jid)];
+            return state[$states.avatars][this.$stanza.toBare(jid)];
         }
 
         // If this JID's avatar is already being downloaded, return that promise instead
@@ -260,7 +260,7 @@ export const actions = {
     },
 
     async [$actions.getAvatar]({ dispatch, commit, state }, { jid }) {
-        const bare = JID.toBare(jid);
+        const bare = this.$stanza.toBare(jid);
 
         const url = state[$states.avatars][bare];
 
@@ -345,7 +345,7 @@ export const mutations = {
     },
 
     [$mutations.updateAvatar] ( state, data ) {
-        const bare = JID.toBare(data.jid);
+        const bare = this.$stanza.toBare(data.jid);
 
         // Default avatar
         if(data.default) {
@@ -378,8 +378,8 @@ export const mutations = {
     },
 
     [$mutations.updatePresence] ( state, data ) {
-        const bare = JID.toBare(data.from);
-        const resource = JID.getResource(data.from);
+        const bare = this.$stanza.toBare(data.from);
+        const resource = this.$stanza.getResource(data.from);
 
         const priority = data.priority;
         if(priority !== undefined) {

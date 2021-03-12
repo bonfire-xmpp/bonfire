@@ -6,7 +6,6 @@
 <script>
   import { mapState, mapActions } from 'vuex';
   import { Store } from "@/store";
-  import { JID } from 'stanza';
 
   export default {
     name: "Avatar",
@@ -28,7 +27,7 @@
       }),
 
       avatar() {
-        return this.avatars[JID.toBare(this.jid)];
+        return this.avatars[this.$stanza.toBare(this.jid)];
       },
 
       color() {
