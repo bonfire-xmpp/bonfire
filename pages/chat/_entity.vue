@@ -1,7 +1,7 @@
 <template>
   <v-container class="d-flex flex-grow-1 flex-column flex-nowrap justify-space-between">
     <div><h1>{{this.$route.params.entity}}</h1></div>
-    <div class="flex-grow-1">
+    <div ref="messageList" class="flex-grow-1" style="overflow: hidden scroll;">
       <v-card dense flat v-for="mesg in messages" :key="mesg.id">
         {{mesg.origin}} - {{mesg.body}}
       </v-card>
@@ -28,6 +28,12 @@ export default {
   },
   computed: {
     messages () {
+      let list = this.$refs.messageList;
+      if (list && (list.scrollHeight - list.scrollTop - list.clientHeight) == 0) {
+        setImmediate(() => {
+          list.scrollTop = list.scrollHeight;
+        });
+      }
       return this.$store.state
         [MessageStore.namespace]
         [MessageStore.$states.messages]
