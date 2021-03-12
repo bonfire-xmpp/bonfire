@@ -3,9 +3,10 @@
     <roster-item v-for="(item, i) in items"
                  :item="item" :key="i"
                  :class="i && 'mt-1'"
-                 :selected="i === selected"/>
+                 :selected="i === selected"
+                 :approve="pending"/>
     <template #contracted v-if="selected !== undefined">
-      <roster-item :item="items[selected]" selected/>
+      <roster-item :item="items[selected]" selected :approve="pending"/>
     </template>
   </contractible-list>
 </template>
@@ -17,6 +18,7 @@
       name: String,
       color: String,
       items: Array,
+      pending: Boolean,
       selected: {
         type: Number,
         optional: true,

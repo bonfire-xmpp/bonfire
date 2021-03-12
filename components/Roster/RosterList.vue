@@ -2,7 +2,8 @@
   <div>
     <roster-section v-for="(item, i) in items"
                     :name="item.name" :items="item.items" :key="i"
-                    :selected="i === selectedSection ? selectedItem : undefined"/>
+                    :selected="i === selectedSection ? selectedItem : undefined"
+                    :pending="item.name === 'Pending'"/>
   </div>
 </template>
 
