@@ -28,11 +28,11 @@
       },
 
       onlineItems() {
-        return { name: 'Online', items: this.rosterItems?.filter(i => this.presence(i.jid).available) };
+        return { name: 'Online', items: this.rosterItems?.filter(i => this.presence(i.jid)?.available) };
       },
 
       offlineItems() {
-        return { name: 'Offline', items: this.rosterItems?.filter(i => !this.presence(i.jid).available) };
+        return { name: 'Offline', items: this.rosterItems?.filter(i => !this.presence(i.jid)?.available) };
       },
 
       items() {
