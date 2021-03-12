@@ -1,6 +1,6 @@
 <template>
   <div>
-    <div class="w-100 d-flex clickable"
+    <div class="w-100 d-flex clickable unselectable"
          @click="contract"
          @mouseenter="updateHover"
          @mouseleave="updateHover"
