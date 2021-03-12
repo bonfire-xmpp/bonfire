@@ -24,7 +24,7 @@
       },
 
       selectedJid() {
-        return this.activeState.type === "chat" ? this.activeState.entity : undefined;
+        return this.activeState && this.activeState.type === "chat" ? this.activeState.entity : undefined;
       },
 
       onlineItems() {
