@@ -1,5 +1,5 @@
 <template>
-  <v-img v-if="avatar" :width="size" :height="size" :src="avatar" class="rounded-circle"/>
+  <v-img v-if="avatar" :width="size" :height="size" :src="avatar" class="rounded-circle" eager :transition="false"/>
   <default-avatar :size="size" :color="color" v-else/>
 </template>
 
