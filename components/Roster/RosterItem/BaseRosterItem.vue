@@ -10,7 +10,7 @@
         <nuxt-link :to="`/chat/${item.jid}`" class="reset-link flex-grow-1 d-flex hide-overflow">
 
           <!-- Vertical align Avatar -->
-          <div class="align-content-center-inline ml-2">
+          <div class="align-content-center-inline ml-2" style="width: 36px">
             <avatar :size="36" :jid="item.jid"/>
           </div>
 
@@ -51,9 +51,11 @@
 
   import { Store } from "@/store";
   import { mapGetters } from 'vuex';
+  import Avatar from "@/components/Avatar";
 
   export default {
     name: "RosterItem",
+    components: { Avatar },
     props: {
       item: {
         type: Object,
