@@ -3,7 +3,6 @@
 
     <!-- Header -->
     <v-container fluid style="height: 64px; z-index: 4;" class="no-select grey-100 d-flex flex-row align-center">
-      <!-- <h2 class="align-self-center">{{this.$route.params.entity}}</h2> -->
       <roster-item :item="currentItem"/>
       <v-spacer/>
       <v-text-field
@@ -71,13 +70,18 @@
 import { mapState, mapMutations } from 'vuex';
 import { Store } from "@/store";
 import { MessageStore } from '@/store/messages';
+import messageDb from '@/assets/messageDb.js';
+import * as msgpack from "@msgpack/msgpack";
+const lz4 = require("lz4js");
 
 export default {
   data () {
     return {
       message: "",
       resultsActive: false,
-      searchText: ""
+      searchText: "",
+      loadedMessages: [],
+      entity: this.$route.params.entity,
     };
   },
   computed: {
@@ -88,15 +92,13 @@ export default {
           list.scrollTop = list.scrollHeight;
         });
       }
-      return this.$store.state
-        [MessageStore.namespace]
-        [MessageStore.$states.messages]
-        [this.$route.params.entity];
+      let curblock = this.$store.state[MessageStore.namespace][MessageStore.$states.messages][this.entity];
+      return this.loadedMessages.concat(curblock).filter(x => !!x);
     },
     currentItem() {
       if (!this.$store.state[Store.$states.roster] || !this.$store.state[Store.$states.avatars]) return {};
       if (!this.$store.state[Store.$states.roster]?.items) return {};
-      return this.$store.state[Store.$states.roster].items.find(x => x.jid == this.$route.params.entity);
+      return this.$store.state[Store.$states.roster].items.find(x => x.jid == this.entity);
     }
   },
   methods: {
@@ -111,8 +113,17 @@ export default {
     },
     ...mapMutations({ setActiveChat: Store.$mutations.setActiveChat })
   },
-  mounted() {
+  async mounted () {
     this.setActiveChat({type: 'chat', entity: this.$route.params.entity});
+    // get blocks from archive in correct order
+    let blocks = await messageDb.messageArchive
+      .where("with").equals(this.entity)
+      .reverse().limit(10).sortBy("timestamp");
+    blocks.reverse();
+    // combine messages and sort to ascending order
+    this.loadedMessages = blocks.reduce((acc, {block}) => 
+      acc.concat(msgpack.decode(lz4.decompress(block))), []
+    );
   }
 }
 </script>

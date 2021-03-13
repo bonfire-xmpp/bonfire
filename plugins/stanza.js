@@ -210,7 +210,7 @@ const setupListeners = ctx => {
 
     /** DEBUG  **/
     client.on("*", (...args) => {
-        console.log(args);
+        // console.log(args);
     });
 
     /** STREAM MANAGEMENT RESUMPTION DATA CACHING **/

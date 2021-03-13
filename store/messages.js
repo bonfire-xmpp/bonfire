@@ -18,6 +18,16 @@ const lz4 = require("lz4js");
  * Messages really only have a couple of delivery states:
  *  NotReceived (sending, retrying, hibernated), Received (MUC and server), Failed (failed or error)
  *
+ * Message definition
+ * {
+ *     body: String
+ *     from: String
+ *     to: String
+ *     originId: String
+ *     timestamp: String
+ *     type: String
+ *     with: String
+ * }
  */
 const $states = {
     // Map< JID -> [Message] >
@@ -43,7 +53,7 @@ const $mutations = {
     setMessagesById: 'SET_MESSAGES_BY_ID',
     setMessageStateById: 'SET_MESSAGE_STATE_BY_ID',
 
-    addMessage: 'M_ADD_MESSAGE',
+    addMessage: 'ADD_MESSAGE',
     updateMessageState: 'SET_MESSAGE_STATE',
 }
 
@@ -154,7 +164,7 @@ export const actions = {
     /** ADD_MESSAGE **/
     async [$actions.addMessage] ({ commit }, { jid, message, state: messageState }) {
         const bareJid = this.$stanza.stripResource(jid);
-        message.timestamp = new Date();
+        message.timestamp = Date.now();
         message.with = bareJid;
         
         commit($mutations.addMessage, { bareJid, message, messageState });
@@ -166,9 +176,14 @@ export const actions = {
         // message block archive
         const query = messageDb.messages.where("with").equals(bareJid);
         if ((await query.count()) >= 10) {
-            let array = await query.toArray();
-            let compblock = lz4.compress(msgpack.encode(array));
-            let id = await messageDb.messageArchive.add({block: compblock, with: bareJid});
+            let array = await query.sortBy("timestamp");
+            let timestamp = Date.parse(array[array.length - 1].timestamp);
+            let compblock = lz4.compress(Buffer.from(msgpack.encode(array)));
+            let id = await messageDb.messageArchive.add({
+                block: compblock, 
+                timestamp,
+                with: bareJid
+            });
             populateSearchIndex(messageDb, id, array);
             await query.delete();
         }
