@@ -3,7 +3,7 @@ import { MessageStore } from "@/store/messages";
 import { Utils, JID } from 'stanza';
 
 import * as storage from '@/assets/storage'
-import {loadFromSecure} from '@/assets/storage'
+import {loadFromSecure, loadFromSession} from '@/assets/storage'
 
 import Vue from 'vue';
 
@@ -31,6 +31,14 @@ const $states = {
     loginState: 'LOGIN_STATE',
 
     loginDate: 'LOGIN_DATE',
+
+    /**
+     * {
+     *     type: muc | chat
+     *     entity: jid
+     * }
+     */
+    activeChat: 'ACTIVE_CHAT',
 
     streamManagement: 'STREAM_MANAGEMENT',
 
@@ -70,9 +78,13 @@ const $mutations = {
 
     setLoginDate: 'SET_LOGIN_DATE',
 
+    setActiveChat: 'SET_ACTIVE_CHAT',
+
     updateLoginState: 'UPDATE_LOGIN_STATE',
 
     updatePresence: 'UPDATE_PRESENCE',
+    setPresence: 'SET_PRESENCE',
+
     updateAvatar: 'UPDATE_AVATAR',
 
     setStreamManagement: 'SET_STREAM_MANAGEMENT',
@@ -96,6 +108,7 @@ export const state = () => ({
 
     [$states.streamManagement]: null,
     [$states.account]: null,
+    [$states.activeChat]: null,
     [$states.roster]: {},
     [$states.avatars]: {},
     [$states.resources]: {},
@@ -151,6 +164,13 @@ export const actions = {
         // If we logged in, try restoring messages too
         if(state[$states.loginState].loggedIn) {
             await dispatch(`${MessageStore.namespace}/${MessageStore.$actions.restoreMessagesFromStorage}`);
+
+            const [presenceData] = loadFromSession($states.presences);
+            if(presenceData) {
+                for (const presenceDatum in presenceData)
+                    Vue.set(presenceData, presenceDatum, presenceData[presenceDatum]);
+                commit($mutations.setPresence, presenceData);
+            }
         }
     },
 
@@ -296,7 +316,7 @@ export const mutations = {
     ...generateMutations(storage.secure,
         $states.jid, $states.password, $states.server, $states.transports),
 
-    ...generateMutations($states.account, $states.roster, $states.loginDate),
+    ...generateMutations($states.account, $states.roster, $states.loginDate, $states.activeChat),
 
     [$mutations.unsetPassword] ( state ) {
         state[$states.password] = "";
@@ -331,6 +351,10 @@ export const mutations = {
         const url = URL.createObjectURL(blob);
 
         Vue.set(state[$states.avatars], bare, url);
+    },
+
+    [$mutations.setPresence] ( state, data ) {
+        state[$states.presences] = data;
     },
 
     [$mutations.updatePresence] ( state, data ) {
@@ -389,6 +413,11 @@ export const mutations = {
             // A name like this is guaranteed to never be a resource name
             '_/computed': max,
         });
+
+        // Presences don't get updated on stream resumption
+        // ...and stream resumption uses data cached in sessionStorage
+        // So, cache presences in sessionStorage, too
+        storage.session.setItem($states.presences, JSON.stringify(state[$states.presences]));
     },
 };
 

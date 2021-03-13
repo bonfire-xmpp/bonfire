@@ -65,11 +65,13 @@ const setupListeners = ctx => {
     }
 
     async function bind() {
-        await client.getRoster().then(roster => {
-            ctx.store.commit(Store.$mutations.setRoster, roster);
-        });
-        await client.enableCarbons();
         client.sendPresence();
+        await client.enableCarbons();
+        setTimeout(async () => {
+            await client.getRoster().then(roster => {
+                ctx.store.commit(Store.$mutations.setRoster, roster);
+            });
+        }, 500);
     }
 
     client.on('session:started', bind);

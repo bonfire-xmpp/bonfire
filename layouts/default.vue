@@ -1,34 +1,11 @@
 <template>
   <v-app dark>
     <div id="app" class="d-flex flex-column black">
-      <system-bar v-if="displayTitlebar" dark/>
+      <system-bar v-if="displayTitlebar" dark class="grey-100 material-shadow" style="z-index: 11;"/>
       <div :style="mainTitlebarCompensation" class="d-flex flex-row flex-nowrap">
-        <side-bar/>
-        <v-main class="d-flex flex-column">
-          <v-container fluid style="height: 64px;" class="grey-100 d-flex flex-row align-start">
-            <h1 class="align-self-center">{{this.$route.params.entity}}</h1>
-            <v-spacer/>
-            <div>
-              <v-text-field
-                @focus="resultsActive = true"
-                single-line 
-                dense 
-                solo 
-                hide-details 
-                style="max-width: 300px;"
-              ></v-text-field>
-              <div style="position: fixed; left: 0px; top: 0px; width: 100vw; height: 100vh;" v-if="resultsActive" @click="resultsActive = false">
-              </div>
-              <v-card class="grey-100 pa-4 my-8" v-if="resultsActive">
-                <h1>test</h1>
-                <h1>test</h1>
-                <h1>test</h1>
-                <h1>test</h1>
-                <h1>test</h1>
-              </v-card>
-            </div>
-          </v-container>
-          <nuxt class="d-flex flex-grow-1" width="200" style="height: 100%;"/>
+        <side-bar class="no-select material-shadow"/>
+        <v-main class="flex-grow-1">
+          <nuxt style="position: absolute; width: 100%; height: 100%;"/>
         </v-main>
       </div>
     </div>
@@ -41,15 +18,7 @@
   export default {
     layout: 'default',
     components: {SystemBar},
-    data () {
-      return {
-        resultsActive: false,
-      };
-    },
     methods: {
-      toggle() {
-        this.resultsActive = !this.resultsActive;
-      }
     },
     computed: {
       displayTitlebar() {

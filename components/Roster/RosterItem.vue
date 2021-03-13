@@ -18,8 +18,9 @@
             <!-- Online status icon, username@domain -->
             <span>
               <v-icon :class="statusColor + '--text'" :size="10">mdi-circle</v-icon>
-              <span :class="selected ? '' : 'grey-700--text'">{{name}}</span>
-              <span :class="selected ? '' : 'grey-500--text'">@{{domain}}</span>
+              <span :class="selected ? '' : 'grey-700--text'">
+                {{name}}<span :class="selected ? '' : 'grey-400--text'">@{{domain}}</span>
+              </span>
             </span>
 
             <br>
@@ -86,7 +87,7 @@
         if(!this.available) return 'grey';
         if(!this.onlineStatus && this.available) return 'success';
       }
-    }
+    },
   }
 </script>
 

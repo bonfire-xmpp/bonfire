@@ -36,7 +36,7 @@
     methods: {
       async submit({jid, password, transports}) {
         await this.login({jid, password, transports});
-        if(this.loggedIn) return this.$router.push('/');
+        this.$router.push('/');
       },
 
       ...mapActions({

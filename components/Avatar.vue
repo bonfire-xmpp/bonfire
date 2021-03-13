@@ -1,5 +1,6 @@
 <template>
-  <v-img :width="size" :height="size" :src="avatar" class="rounded-circle"/>
+  <v-img v-if="avatar" :width="size" :height="size" :src="avatar" class="rounded-circle"/>
+  <default-avatar :size="size" :color="color" v-else/>
 </template>
 
 <script>
@@ -28,6 +29,12 @@
 
       avatar() {
         return this.avatars[JID.toBare(this.jid)];
+      },
+
+      color() {
+        return `hsl(${this.jid.charCodeAt(0) || 20 + this.jid.charCodeAt(7) || 92},` +
+        `${Math.min(this.jid.charCodeAt(0) * this.jid.length, 60)}%,` +
+        `${Math.min(this.jid.charCodeAt(1) * this.jid.length, 60)}%)`;
       },
     },
 

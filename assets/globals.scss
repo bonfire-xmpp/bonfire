@@ -48,6 +48,16 @@ $height-width-helper-sizes: splitIntoSteps(100, 20);
   color: map-get($white, "lighten") !important;
 }
 
+.material-shadow {
+  box-shadow: 0px 0px 10px transparentize(black, 0.75);
+}
+
+.no-select {
+  user-select: none;
+  -moz-user-select: none;
+  -webkit-user-select: none;
+}
+
 // Vertically aligns by inserting an empty pseudo class with 100% height,
 // so that the entire height becomes line height
 .align-content-center-inline {
@@ -62,7 +72,6 @@ $height-width-helper-sizes: splitIntoSteps(100, 20);
     vertical-align: middle;
   }
 }
-
 
 /** Scrollbar **/
 
