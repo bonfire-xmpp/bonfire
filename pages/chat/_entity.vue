@@ -94,6 +94,8 @@ export default {
         [this.$route.params.entity];
     },
     currentItem() {
+      if (!this.$store.state[Store.$states.roster] || !this.$store.state[Store.$states.avatars]) return {};
+      if (!this.$store.state[Store.$states.roster]?.items) return {};
       return this.$store.state[Store.$states.roster].items.find(x => x.jid == this.$route.params.entity);
     }
   },

@@ -40,6 +40,7 @@ const $states = {
      */
     activeChat: 'ACTIVE_CHAT',
 
+    stanzaInitialized: 'STANZA_INITIALIZED',
     streamManagement: 'STREAM_MANAGEMENT',
 
     // See stanza.js/AccountManagement
@@ -76,6 +77,7 @@ const $mutations = {
     unsetPassword: 'UNSET_PASSWORD',
     setTransports: 'SET_TRANSPORTS',
 
+    stanzaInitialized: 'STANZA_INITIALIZED',
     setLoginDate: 'SET_LOGIN_DATE',
 
     setActiveChat: 'SET_ACTIVE_CHAT',
@@ -106,6 +108,7 @@ export const state = () => ({
         loggingIn: false
     },
 
+    [$states.stanzaInitialized]: false,
     [$states.streamManagement]: null,
     [$states.account]: null,
     [$states.activeChat]: null,
@@ -317,6 +320,10 @@ export const mutations = {
         $states.jid, $states.password, $states.server, $states.transports),
 
     ...generateMutations($states.account, $states.roster, $states.loginDate, $states.activeChat),
+
+    [$mutations.stanzaInitialized] ( state ) {
+        state[$states.stanzaInitialized] = true;
+    },
 
     [$mutations.unsetPassword] ( state ) {
         state[$states.password] = "";
