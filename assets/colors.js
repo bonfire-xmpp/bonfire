@@ -81,5 +81,11 @@ export default {
     error: red.lighten,
     success: green.lighten,
 
+    online: green.lighten,
+    away: yellow.lighten,
+    xa: orange.lighten,
+    dnd: red.lighten,
+    offline: greys[500],
+
     ...generateGreys(greys),
 }

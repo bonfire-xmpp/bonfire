@@ -1,6 +1,6 @@
 import { MessageStore } from "@/store/messages";
 
-import { Utils, JID } from 'stanza';
+import { Utils } from 'stanza';
 
 import * as storage from '@/assets/storage'
 import {loadFromSecure, loadFromSession} from '@/assets/storage'
@@ -135,9 +135,9 @@ export const getters = {
         return state[$states.loginState].loggingIn;
     },
 
-    [$getters.presence]: state => jid => {
-        return state[$states.presences]?.[JID.toBare(jid)]?.['_/computed'];
-    }
+    [$getters.presence] ( state ) { return function(jid) {
+        return state[$states.presences]?.[this.$stanza.toBare(jid)]?.['_/computed'];
+    }},
 };
 
 const downloadAvatarJidThrottleMap = {};
@@ -231,7 +231,7 @@ export const actions = {
     },
 
     async [$actions.downloadAvatar]({ commit, state }, { jid }) {
-        const bare = JID.toBare(jid);
+        const bare = this.$stanza.toBare(jid);
         const download = async () => {
             try {
                 const avatar = await this.$stanza.client.getAvatar(bare);
@@ -245,7 +245,7 @@ export const actions = {
                 }
             }
 
-            return state[$states.avatars][JID.toBare(jid)];
+            return state[$states.avatars][this.$stanza.toBare(jid)];
         }
 
         // If this JID's avatar is already being downloaded, return that promise instead
@@ -262,8 +262,8 @@ export const actions = {
         return promise;
     },
 
-    async [$actions.getAvatar]({ dispatch, state }, { jid }) {
-        const bare = JID.toBare(jid);
+    async [$actions.getAvatar]({ dispatch, commit, state }, { jid }) {
+        const bare = this.$stanza.toBare(jid);
 
         const url = state[$states.avatars][bare];
 
@@ -271,7 +271,18 @@ export const actions = {
         if(url === null) return null;
 
         // Missing
-        if(!url) return await dispatch($actions.downloadAvatar, { jid });
+        if(!url) {
+            // Try restoring from storage
+            const avatarBase64 = storage.permanent.getItem('avatar-' + bare)
+            if(avatarBase64) {
+                const avatar = await (await fetch(avatarBase64)).blob();
+                commit($mutations.updateAvatar, { jid, avatar, restore: true });
+                return state[$states.avatars][bare];
+            }
+
+            // Nothing in storage, download it
+            return await dispatch($actions.downloadAvatar, {jid});
+        }
 
         // Downloaded
         return url;
@@ -341,14 +352,12 @@ export const mutations = {
     },
 
     [$mutations.updateAvatar] ( state, data ) {
-        const bare = JID.toBare(data.jid);
+        const bare = this.$stanza.toBare(data.jid);
 
         // Default avatar
         if(data.default) {
             return Vue.set(state[$states.avatars], bare, null);
         }
-
-        storage.permanent.setItem('avatar-' + bare, data.avatar)
 
         if(state[$states.avatars][bare] !== null) {
             URL.revokeObjectURL(state[$states.avatars][bare]);
@@ -356,6 +365,17 @@ export const mutations = {
 
         const blob = new Blob([data.avatar], {'type': 'image/png'});
         const url = URL.createObjectURL(blob);
+
+        // Data passed is restored from storage; don't save it again
+        if(!data.restore) {
+            const reader = new FileReader();
+            reader.readAsDataURL(blob);
+            // This async callback is okay because it doesn't touch the store state
+            reader.onloadend = function() {
+                const base64data = reader.result;
+                storage.permanent.setItem('avatar-' + bare, base64data)
+            }
+        }
 
         Vue.set(state[$states.avatars], bare, url);
     },
@@ -365,8 +385,8 @@ export const mutations = {
     },
 
     [$mutations.updatePresence] ( state, data ) {
-        const bare = JID.toBare(data.from);
-        const resource = JID.getResource(data.from);
+        const bare = this.$stanza.toBare(data.from);
+        const resource = this.$stanza.getResource(data.from);
 
         const priority = data.priority;
         if(priority !== undefined) {
@@ -383,9 +403,8 @@ export const mutations = {
             ...oldPresences,
             [resource]: { show: data.show, status: data.status, available: data.available, },
         });
-
-        let max = { available: false }
-        const onlineStatusOrder = [ 'xa', 'dnd', 'away' ];
+        
+        let max = { available: false };
         for(const resource of Object.getOwnPropertyNames(state[$states.presences][bare])) {
             // Workaround to iterate through Vuex store reactive object keys
             // computed is ignored, as that's what we're calculating here
@@ -407,8 +426,8 @@ export const mutations = {
             }
 
             // Choose the 'most online' one out of the two.
-            if(onlineStatusOrder.findIndex(v => v === max.show)
-                < onlineStatusOrder.findIndex(v => v === presence.show)) {
+            if(this.$stanza.getRankFromOnlineState(max.show)
+                < this.$stanza.getRankFromOnlineState(presence.show)) {
                 max = presence;
                 continue;
             }

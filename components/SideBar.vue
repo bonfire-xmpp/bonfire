@@ -1,6 +1,9 @@
 <template>
-  <div class="d-flex flex-column justify-space-between sidebar grey-100 pt-2">
-    <roster-list :items="items" ref="rosterlist" :selected-jid="selectedJid"/>
+  <div class="sidebar grey-100 py-2">
+    <roster-list
+        :pinned="[]"
+        :items="items"
+        :selected-jid="selectedJid"/>
   </div>
 </template>
 
@@ -20,30 +23,29 @@
       }),
 
       rosterItems() {
-        return this.roster?.items;
+        return this.roster?.items || [];
       },
 
       selectedJid() {
-        return this.activeState && this.activeState.type === "chat" ? this.activeState.entity : undefined;
+        return this.activeState?.type === "chat" ? this.activeState.entity : undefined;
       },
 
       onlineItems() {
-        return { 
-          name: 'Online', 
-          items: this.rosterItems?.filter(i => this.presence(i.jid)?.available) 
-        };
+        return { name: 'Online', items: this.rosterItems.filter(i => this.presence(i.jid)?.available) };
       },
 
       offlineItems() {
-        return { 
-          name: 'Offline', 
-          items: this.rosterItems?.filter(i => !this.presence(i.jid)?.available) 
-        };
+        return { name: 'Offline', items: this.rosterItems.filter(i => !this.presence(i.jid)?.available && !i.pending) };
+      },
+
+      pendingItems() {
+        return { name: 'Pending', items: this.rosterItems.filter(i => i.pending) };
       },
 
       items() {
         return [
             this.onlineItems,
+            this.pendingItems,
             this.offlineItems,
         ]
       }

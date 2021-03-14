@@ -1,55 +1,17 @@
 <template>
-  <div class="d-flex">
-
-    <!-- Indicator light gutter -->
-    <span class="gutter indicator-light border-circle-right flex-shrink-0" :class="selected ? 'grey-800' : ''"/>
-
-    <!-- Roster item card  -->
-    <div class="flex-grow-1 hide-overflow d-flex rounded main" :aria-selected="selected">
-        <!-- Wrap everything except vertical ... into a NuxtLink -->
-        <nuxt-link :to="`/chat/${item.jid}`" class="reset-link flex-grow-1 d-flex hide-overflow">
-
-          <!-- Vertical align Avatar -->
-          <div class="align-content-center-inline ml-2">
-            <avatar :size="36" :jid="item.jid"/>
-          </div>
-
-          <div class="main-container ml-2 pr-2 flex-grow-1 my-auto hide-overflow">
-            <!-- Online status icon, username@domain -->
-            <span>
-              <v-icon :class="statusColor + '--text'" :size="10">mdi-circle</v-icon>
-              <span :class="selected ? '' : 'grey-700--text'">
-                {{name}}<span :class="selected ? '' : 'grey-400--text'">@{{domain}}</span>
-              </span>
-            </span>
-
-            <br>
-
-            <!-- Status message under that -->
-            <span class="grey-700--text" style="font-size: 12px;">{{statusMessage}}</span>
-          </div>
-        </nuxt-link>
-
-        <div class="options-container my-auto mr-2">
-          <v-btn icon small color="white">
-            <v-icon>mdi-dots-vertical</v-icon>
-          </v-btn>
-        </div>
-    </div>
-
-    <!-- Empty right-side gutter -->
-    <span class="gutter flex-shrink-0"/>
-  </div>
+  <pending-roster-item v-if="approve" :selected="selected" :item="item"/>
+  <menu-roster-item v-else-if="menu" :selected="selected" :item="item"/>
 </template>
 
 <script>
-  import { JID } from 'stanza';
-
+  import MenuRosterItem from "@/components/Roster/RosterItem/MenuRosterItem";
+  import PendingRosterItem from "@/components/Roster/RosterItem/PendingRosterItem";
   import { Store } from "@/store";
-  import { mapGetters } from 'vuex';
+  import { mapGetters } from "vuex";
 
   export default {
     name: "RosterItem",
+    components: { MenuRosterItem, PendingRosterItem },
     props: {
       item: {
         type: Object,
@@ -59,9 +21,18 @@
         type: Boolean,
         required: false,
         default: false,
-      }
+      },
+      approve: {
+        type: Boolean,
+        required: false,
+        default: false,
+      },
+      menu: {
+        type: Boolean,
+        required: false,
+        default: true,
+      },
     },
-
     computed: {
       ...mapGetters({
         getPresence: Store.$getters.presence,
@@ -114,24 +85,7 @@
 
     &[aria-selected] {
       background: map-get($greys, "300");
+      
     }
-  }
-
-  // 8px total = right padding on the card
-  .gutter {
-    width: 3px;
-    margin-right: 5px;
-  }
-
-  .indicator-light {
-    margin-top: auto;
-    margin-bottom: auto;
-
-    height: 16px;
-  }
-
-  // Vuetify sets line-height to 1.5/24px, so we reset it here
-  .main-container {
-    line-height: 1;
   }
 </style>

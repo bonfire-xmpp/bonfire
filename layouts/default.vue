@@ -3,7 +3,7 @@
     <div id="app" class="d-flex flex-column black">
       <system-bar v-if="displayTitlebar" dark class="grey-100 material-shadow" style="z-index: 11;"/>
       <div :style="mainTitlebarCompensation" class="d-flex flex-row flex-nowrap">
-        <side-bar class="no-select material-shadow"/>
+        <side-bar class="unselectable material-shadow"/>
         <v-main class="flex-grow-1">
           <nuxt style="position: absolute; width: 100%; height: 100%;"/>
         </v-main>

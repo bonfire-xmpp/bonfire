@@ -21,11 +21,14 @@ const determineRelatedParty = m => {
 
 const determineSendingParty = m => m.from || client.jid;
 
-const stripResource = jid => XMPP.JID.toBare(jid);
+const toBare = jid => XMPP.JID.toBare(jid);
+const getResource = jid => XMPP.JID.getResource(jid);
+const getDomain = jid => XMPP.JID.getDomain(jid);
+const getLocal = jid => XMPP.JID.getLocal(jid);
 
 const generateFunctions = (ctx) => ({
     determineRelatedParty,
-    stripResource,
+    toBare, getResource, getDomain, getLocal,
     updateConfig(...args) {
         client.updateConfig(...args);
     },
@@ -48,6 +51,13 @@ const generateFunctions = (ctx) => ({
     },
     sendMessage(message) {
         client.sendMessage(message);
+    },
+    ranks: Object.freeze(['online', 'away', 'xa', 'dnd', 'offline']),
+    getRankFromOnlineState(state) {
+        return this.ranks.findIndex(s => s.toLowerCase() === state);
+    },
+    getOnlineStateFromRank(rank) {
+        this.ranks[rank];
     }
 });
 

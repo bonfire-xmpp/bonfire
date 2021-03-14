@@ -2,8 +2,8 @@
   <div class="d-flex flex-nowrap flex-column flex-grow-1">
 
     <!-- Header -->
-    <v-container fluid style="height: 64px; z-index: 4;" class="no-select grey-100 d-flex flex-row align-center">
-      <roster-item :item="currentItem"/>
+    <v-container fluid style="height: 64px; z-index: 4;" class="unselectable grey-100 d-flex flex-row align-center">
+      <user-card :item="currentItem"/>
       <v-spacer/>
       <v-text-field
         @focus="resultsActive = true" @click="resultsActive = true" v-model="searchText"
@@ -22,7 +22,7 @@
           style="min-height: 0; overflow: hidden scroll;"
           class="flex-grow-1 flex-shrink-1"
         >
-          <v-card dense flat v-for="mesg in messages" class="mb-1 pa-1" :key="mesg.id">
+          <v-card dense flat v-for="mesg in messages" class="mb-1 pa-1" :key="mesg.timestamp">
             {{mesg.from}} - {{mesg.body}}
           </v-card>
         </div>
@@ -67,7 +67,7 @@
 </style>
 
 <script>
-import { mapState, mapMutations } from 'vuex';
+import { mapMutations } from 'vuex';
 import { Store } from "@/store";
 import { MessageStore } from '@/store/messages';
 import messageDb from '@/assets/messageDb.js';

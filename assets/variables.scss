@@ -59,6 +59,12 @@ $purple: (
   "lighten": #d3869b,
 );
 
+$online: map-get($green, "lighten");
+$away: map-get($yellow, "lighten");
+$xa: map-get($orange, "lighten");
+$dnd: map-get($red, "lighten");
+$offline: map-get($greys, "500");
+
 $scrollbar-color: (
   "foreground": map-get($black, "base"),
   "background": transparent,
@@ -67,3 +73,6 @@ $scrollbar-color: (
 $body-font-family: "Mukta", sans-serif;
 
 @import "~vuetify/src/styles/styles.sass";
+$badge-dot-width: 11px;
+$badge-dot-height: $badge-dot-width;
+$badge-dot-border-radius: $badge-dot-width;

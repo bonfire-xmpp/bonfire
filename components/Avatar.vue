@@ -1,12 +1,11 @@
 <template>
-  <v-img v-if="avatar" :width="size" :height="size" :src="avatar" class="rounded-circle"/>
+  <v-img v-if="avatar" :width="size" :height="size" :src="avatar" class="rounded-circle" eager :transition="false"/>
   <default-avatar :size="size" :color="color" v-else/>
 </template>
 
 <script>
   import { mapState, mapActions } from 'vuex';
   import { Store } from "@/store";
-  import { JID } from 'stanza';
 
   export default {
     name: "Avatar",
@@ -28,7 +27,7 @@
       }),
 
       avatar() {
-        return this.avatars[JID.toBare(this.jid)];
+        return this.avatars[this.$stanza.toBare(this.jid)];
       },
 
       color() {

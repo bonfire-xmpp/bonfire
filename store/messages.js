@@ -3,6 +3,7 @@ import { Store } from "@/store/index";
 import Vue from "vue";
 import * as msgpack from "@msgpack/msgpack";
 import { populateSearchIndex } from "./search";
+import * as XMPP from 'stanza';
 const lz4 = require("lz4js");
 
 /**
@@ -106,7 +107,7 @@ export const actions = {
 
         const formattedMessages = messages.map(m => ({
             timestamp: m.delay.timestamp,
-            with: this.$stanza.stripResource(this.$stanza.determineRelatedParty(m.message)),
+            with: XMPP.JID.toBare(this.$stanza.determineRelatedParty(m.message)),
             ...m.message
         }))
 
@@ -163,7 +164,7 @@ export const actions = {
 
     /** ADD_MESSAGE **/
     async [$actions.addMessage] ({ commit }, { jid, message, state: messageState }) {
-        const bareJid = this.$stanza.stripResource(jid);
+        const bareJid = XMPP.JID.toBare(jid);
         message.timestamp = Date.now();
         message.with = bareJid;
         
@@ -171,13 +172,18 @@ export const actions = {
         if (messageState) {
             messageDb.messageStates.put({id: message.id, ...messageState});
         }
-        await messageDb.messages.add(message);
+
+        try {
+            await messageDb.messages.add(message);
+        } catch (_) {
+            return;
+        }
 
         // message block archive
         const query = messageDb.messages.where("with").equals(bareJid);
         if ((await query.count()) >= 10) {
             let array = await query.sortBy("timestamp");
-            let timestamp = Date.parse(array[array.length - 1].timestamp);
+            let timestamp = array[array.length - 1].timestamp;
             let compblock = lz4.compress(Buffer.from(msgpack.encode(array)));
             let id = await messageDb.messageArchive.add({
                 block: compblock, 
