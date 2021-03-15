@@ -181,7 +181,7 @@ export const actions = {
 
         // message block archive
         const query = messageDb.messages.where("with").equals(bareJid);
-        if ((await query.count()) >= 10) {
+        if ((await query.count()) >= 100) {
             let array = await query.sortBy("timestamp");
             let timestamp = array[array.length - 1].timestamp;
             let compblock = lz4.compress(Buffer.from(msgpack.encode(array)));

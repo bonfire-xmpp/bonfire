@@ -6,8 +6,9 @@
       <user-card :item="currentItem"/>
       <v-spacer/>
       <v-text-field
-        @focus="resultsActive = true" @click="resultsActive = true" v-model="searchText"
-        @keydown.esc="resultsActive = false; searchText = '';"
+        @focus="openSearch" @click="resultsActive = true"
+        @keydown.esc="closeSearch" @keydown="searchUpdate" 
+        v-model="searchText"
         single-line dense solo clearable hide-details 
         label="Search" class="searchbar"
       />
@@ -19,11 +20,11 @@
         <!-- Message List -->
         <div 
           ref="messageList" 
-          style="min-height: 0; overflow: hidden scroll;"
+          style="min-height: 0; overflow: hidden scroll !important;"
           class="flex-grow-1 flex-shrink-1"
         >
-          <v-card dense flat v-for="mesg in messages" class="mb-1 pa-1" :key="mesg.timestamp">
-            {{mesg.from}} - {{mesg.body}}
+          <v-card style="white-space: normal;" dense flat v-for="mesg in messages" class="mb-1 pa-1" :key="mesg.timestamp">
+            [{{new Date(mesg.timestamp).toLocaleTimeString()}}] {{mesg.from}} - {{mesg.body}}
           </v-card>
         </div>
         
@@ -35,28 +36,40 @@
 
       <!-- Search Results -->
       <div 
-        @click="resultsActive = false; searchText = '';" 
+        @click="closeSearch"
         style="position: fixed; left: 0px; top: 0px; width: 100vw; height: 100vh; z-index: 10;" 
-        v-if="resultsActive"
+        v-if="searchActive"
       />
-      <v-card tile flat
-        class="grey-100" 
-        :class="[this.resultsActive ? 'searchmenu-shown' : 'searchmenu-hidden']" 
-        style="z-index: 10; overflow: hidden scroll; min-width: 0; transition: 0.4s;">
-      </v-card>
+      <div tile flat
+        class="d-flex flex-row align-start justify-center grey-100 searchmenu" 
+        :class="[this.searchActive ? 'searchmenu-shown' : 'searchmenu-hidden']" 
+        style="z-index: 10; transition: 0.4s;"
+      >
+        <div style="width: 100%; overflow: hidden scroll;" class="d-flex flex-column">
+          <div v-for="match in matches" :key="match.id" class="mb-4">
+            <p class="ma-0 px-2">{{new Date(match.timestamp).toLocaleTimeString()}}</p>
+            <p class="ma-0 px-2 flex-shrink-1" style="white-space: normal;">
+              <b>{{localPart(match.from)}}</b> - {{match.body}}
+            </p>
+          </div>
+        </div>
+      </div>
     </div>
 
   </div>
 </template>
 
 <style lang="scss">
+$width: 400px;
 .searchmenu {
+  width: $width !important;
+  min-width: $width !important;
+  max-width: $width !important;
   &-shown {
-    width: 350px !important;
-    min-width: 350px !important;
+    margin-right: 0px;
   }
   &-hidden {
-    width: 0px !important;
+    margin-right: -$width;
   }
 }
 .searchbar {
@@ -70,6 +83,8 @@
 import { mapMutations } from 'vuex';
 import { Store } from "@/store";
 import { MessageStore } from '@/store/messages';
+import { search, searchBlock } from "@/store/search";
+import * as XMPP from "stanza";
 import messageDb from '@/assets/messageDb.js';
 import * as msgpack from "@msgpack/msgpack";
 const lz4 = require("lz4js");
@@ -78,10 +93,13 @@ export default {
   data () {
     return {
       message: "",
-      resultsActive: false,
-      searchText: "",
       loadedMessages: [],
       entity: this.$route.params.entity,
+
+      searchActive: false,
+      searchText: "",
+      searchTimeout: null,
+      matches: [],
     };
   },
   computed: {
@@ -95,13 +113,14 @@ export default {
       let curblock = this.$store.state[MessageStore.namespace][MessageStore.$states.messages][this.entity];
       return this.loadedMessages.concat(curblock).filter(x => !!x);
     },
-    currentItem() {
+    currentItem () {
       if (!this.$store.state[Store.$states.roster] || !this.$store.state[Store.$states.avatars]) return {};
       if (!this.$store.state[Store.$states.roster]?.items) return {};
       return this.$store.state[Store.$states.roster].items.find(x => x.jid == this.entity);
     }
   },
   methods: {
+    /** MESSAGES **/
     sendMessage () {
       if (!this.message.length) return;
       this.$stanza.client.sendMessage({
@@ -111,16 +130,60 @@ export default {
       });
       this.message = "";
     },
+
+    /** SEARCH **/
+    async searchUpdate () {
+      if (this.searchTimeout) {
+        clearTimeout(this.searchTimeout);
+        if (!this.searchText.length) return;
+      }
+      this.searchTimeout = setTimeout(this.search, 100);
+    },
+    async search () {
+      let matches = [];
+      let blocks = await Promise.all([
+        messageDb.messages
+          .where("with")
+          .equals(this.entity)
+          .toArray()
+          .then(x => [x.sort((a, b) => a.timestamp - b.timestamp)]),
+        search(this.searchText)
+          .then(eblocks => eblocks.map(eblock => 
+            msgpack.decode(lz4.decompress(eblock.block))
+          )),
+      ]).then(x => x.flat(1));
+      for (let block of blocks) {
+        for (let msg of searchBlock(block, this.searchText)) {
+          matches.push(msg);
+        }
+      }
+      this.matches = matches;
+    },
+    openSearch () {
+      this.matches = [];
+      this.searchActive = true;
+    },
+    closeSearch () {
+      this.matches = [];
+      this.searchActive = false;
+      this.searchText = "";
+    },
+
+    /** STANZA **/
+    localPart (jid) {
+      return XMPP.JID.getLocal(jid);
+    },
+
     ...mapMutations({ setActiveChat: Store.$mutations.setActiveChat })
   },
   async mounted () {
-    this.setActiveChat({type: 'chat', entity: this.$route.params.entity});
+    this.setActiveChat({ type: 'chat', entity: this.$route.params.entity });
     // get blocks from archive in correct order
     let blocks = await messageDb.messageArchive
       .where("with").equals(this.entity)
       .reverse().limit(10).sortBy("timestamp");
     blocks.reverse();
-    // combine messages and sort to ascending order
+    // combine messages
     this.loadedMessages = blocks.reduce((acc, {block}) => 
       acc.concat(msgpack.decode(lz4.decompress(block))), []
     );

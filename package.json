@@ -19,6 +19,7 @@
     "core-js": "^3.8.3",
     "dexie": "^3.0.3",
     "electron-localshortcut": "^3.2.1",
+    "fuzzy-matching": "^0.4.3",
     "lz4js": "^0.2.0",
     "nuxt": "^2.14.12",
     "stanza": "^12.15.0"

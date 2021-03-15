@@ -1,66 +1,31 @@
+const FuzzyMatching = require("fuzzy-matching");
+
 const kWhitespaceRegex = new RegExp(/\s+/);
 const kNotLetterRegex = new RegExp(/\P{L}/gu);
+const toWords = string => string
+    .split(kWhitespaceRegex)
+    .map(x => x.replaceAll(kNotLetterRegex, "").toLowerCase())
+    .filter(x => !!x.length);
 const toPrefixes = 
-    string => new Set(
+    string => Array.from(new Set(
         string
             .split(kWhitespaceRegex)
-            .map(x => x.replaceAll(kNotLetterRegex, "").toLowerCase().slice(0, 4)))
-            .filter(x => !!x.length);
+            .map(x => x.replaceAll(kNotLetterRegex, "").toLowerCase().slice(0, 4))
+    )).filter(x => !!x.length);
 
-function intersect(sets) {
-    sets = sets.sort((a, b) => a.length > b.length ? -1 : 1);
-    if (!sets[sets.length - 1].size) return [];
-    for (let i = sets.length - 2; i >= 0; --i) {
-        let set = new Set();
-        for (let x of sets[i + 1]) {
-            if (sets[i].has(x)) set.add(x);
-        }
-        sets[i] = set;
-        sets.pop();
-    }
-    return sets[0];
-}
 
 function fuzzyIntersect(sets) {
-    let counts = {};
+    let counts = new Map();
     for (let set of sets) {
         for (let x of set) {
-            counts[x] ||= 0;
-            ++counts[x];
+            if (!counts.has(x)) counts.set(x, 0)
+            counts.set(x, counts.get(x) + 1);
         }
     }
-    return new Set(
-        Object.entries(counts)
-            .filter(([, v]) => v >= sets.length * 0.6)
-            .map(([k,]) => k))
-}
-
-function condenseRanges(array) {
-    if (!array.length) return [];
-    let ranges = [];
-    let start = 0;
-    let end = 0;
-    let last = array[0];
-    for (let i = 1; i < array.length; ++i) {
-        if (array[i] - last == 1) {
-            ++end;
-        } else {
-            if (end - start == 0) {
-                ranges.push(start);
-            } else {
-                ranges.push([start, end]);
-            }
-            start = array[i];
-            end = array[i];
-        }
-        last = array[i];
-    }
-    if (end - start == 0) {
-        ranges.push(start);
-    } else {
-        ranges.push([start, end]);
-    }
-    return ranges;
+    return Array
+        .from(counts.entries())
+        .filter(([, v]) => v > (sets.length - 1) * 0.6)
+        .map(([k]) => k);
 }
 
 export function populateSearchIndex(db, blockID, messages) {
@@ -78,4 +43,34 @@ export function populateSearchIndex(db, blockID, messages) {
             query.modify(x => x.blocks.push(blockID));
         });
     }
+}
+
+export async function search(query) {
+    let entries = await db.prefixIndex
+        .where("prefix")
+        .startsWithAnyOf(toPrefixes(query))
+        .toArray();
+    return await db.messageArchive
+        .where("id")
+        .anyOf(fuzzyIntersect(entries.map(x => x?.blocks || [])))
+        .toArray();
+}
+
+function scoreMessage(mesg, words) {
+    let score = 0.0;
+    let fm = new FuzzyMatching(toWords(mesg));
+    for (let queryword of words) {
+        let { value, distance } = fm.get(queryword);
+        if (!value) continue;
+        score += distance * (value.length / queryword.length);
+    }
+    return score / words.length;
+}
+
+export function searchBlock(block, query) {
+    return block
+        .map(mesg => [mesg, scoreMessage(mesg.body, toWords(query))])
+        .filter(([, score]) => score > 0.6)
+        .sort(([, as], [, bs]) => as - bs)
+        .map(([mesg]) => mesg);
 }
