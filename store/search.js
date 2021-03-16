@@ -67,10 +67,9 @@ function scoreMessage(mesg, words) {
     return score / words.length;
 }
 
-export function searchBlock(block, query) {
-    return block
+export const searchBlock = (block, query) =>
+    block
         .map(mesg => [mesg, scoreMessage(mesg.body, toWords(query))])
         .filter(([, score]) => score > 0.6)
-        .sort(([, as], [, bs]) => as - bs)
+        .sort(([, as], [, bs]) => bs - as)
         .map(([mesg]) => mesg);
-}
