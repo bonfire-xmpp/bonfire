@@ -31,12 +31,6 @@ $height-width-helper-sizes: splitIntoSteps(100, 20);
   }
 }
 
-.hide-overflow {
-  overflow: hidden;
-  white-space: nowrap;
-  text-overflow: ellipsis;
-}
-
 .border-circle-right {
   border-bottom-right-radius: 50%;
   border-top-right-radius: 50%;
@@ -47,28 +41,8 @@ $height-width-helper-sizes: splitIntoSteps(100, 20);
   -ms-flex-pack: justify !important;
 }
 
-.reset-link {
-  text-decoration: none !important;
-  cursor: pointer !important;
-  color: map-get($white, "lighten") !important;
-}
-
-.no-transition {
-  transition: none !important;
-}
-
 .material-shadow {
   box-shadow: 0px 0px 10px transparentize(black, 0.75);
-}
-
-// Unselectable text
-.unselectable {
-  -webkit-touch-callout: none;
-  -webkit-user-select: none;
-  -khtml-user-select: none;
-  -moz-user-select: none;
-  -ms-user-select: none;
-  user-select: none;
 }
 
 .clickable > * {
@@ -88,21 +62,4 @@ $height-width-helper-sizes: splitIntoSteps(100, 20);
     display: inline-block !important;
     vertical-align: middle;
   }
-}
-
-/** Scrollbar **/
-
-// Firefox has only this for scrollbar customization
-* {
-  scrollbar-width: thin !important;
-  scrollbar-color: map-get($scrollbar-color, "foreground") map-get($scrollbar-color, "background");
-}
-
-::-webkit-scrollbar {
-  width: 5px;
-  background: none;
-}
-::-webkit-scrollbar-thumb {
-  background: map-get($scrollbar-color, "foreground");
-  border-radius: 10px;
 }

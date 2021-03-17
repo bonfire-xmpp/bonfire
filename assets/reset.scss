@@ -1,0 +1,43 @@
+.reset-link {
+  text-decoration: none !important;
+  cursor: pointer !important;
+  color: map-get($white, "lighten") !important;
+}
+
+.no-transition {
+  transition: none !important;
+}
+
+// Unselectable text
+.unselectable {
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  -khtml-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
+}
+
+.hide-overflow {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+
+/** Scrollbar **/
+
+// Firefox has only this for scrollbar customization
+* {
+  scrollbar-width: thin !important;
+  scrollbar-color: map-get($scrollbar-color, "foreground") map-get($scrollbar-color, "background");
+}
+
+::-webkit-scrollbar {
+  width: 5px;
+  background: none;
+}
+::-webkit-scrollbar-thumb {
+  background: map-get($scrollbar-color, "foreground");
+  border-radius: 10px;
+}
