@@ -70,10 +70,4 @@ $scrollbar-color: (
   "background": transparent,
 );
 
-@import url('https://fonts.googleapis.com/css2?family=Mukta:wght@200;300;400;500;600;700;800&display=swap');
-$body-font-family: "Mukta", sans-serif;
-
 @import "~vuetify/src/styles/styles.sass";
-$badge-dot-width: 11px;
-$badge-dot-height: $badge-dot-width;
-$badge-dot-border-radius: $badge-dot-width;

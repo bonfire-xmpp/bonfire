@@ -1,0 +1,5 @@
+@mixin ensure-height($height) {
+  min-height: $height;
+  max-height: $height;
+  height: $height;
+}

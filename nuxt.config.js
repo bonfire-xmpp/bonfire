@@ -32,13 +32,14 @@ export default {
 
   // Global CSS: https://go.nuxtjs.dev/config-css
   css: [
-      '@/assets/globals.scss',
       '@/assets/reset.scss',
+      '@/assets/utilities.scss',
   ],
 
   styleResources: {
     scss: [
-      './assets/_vars.scss',
+        '@/assets/_sizes.scss',
+        '@/assets/_mixins.scss',
     ]
   },
 
@@ -63,7 +64,10 @@ export default {
 
   // Vuetify module configuration: https://go.nuxtjs.dev/config-vuetify
   vuetify: {
-    customVariables: ['~/assets/variables.scss'],
+    customVariables: [
+        '~/assets/_baseColors.scss',
+        '~/assets/fonts.scss',
+    ],
     // Custom variables don't work without this enabled (which is true only for production builds)
     treeShake: true,
     icons: {
