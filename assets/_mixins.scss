@@ -3,3 +3,9 @@
   max-height: $height;
   height: $height;
 }
+
+@mixin v-badge-border-color($color) {
+  &::v-deep .v-badge__badge::after {
+    border-color: $color !important;
+  }
+}
