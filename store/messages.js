@@ -1,5 +1,10 @@
 import messageDb from '@/assets/messageDb.js';
 import { Store } from "@/store/index";
+import Vue from "vue";
+import * as msgpack from "@msgpack/msgpack";
+import { populateSearchIndex } from "./search";
+import * as XMPP from 'stanza';
+const lz4 = require("lz4js");
 
 /**
  * Message state definition. Due to a lack of typescript, this will have to settle:
@@ -14,6 +19,16 @@ import { Store } from "@/store/index";
  * Messages really only have a couple of delivery states:
  *  NotReceived (sending, retrying, hibernated), Received (MUC and server), Failed (failed or error)
  *
+ * Message definition
+ * {
+ *     body: String
+ *     from: String
+ *     to: String
+ *     originId: String
+ *     timestamp: String
+ *     type: String
+ *     with: String
+ * }
  */
 const $states = {
     // Map< JID -> [Message] >
@@ -32,6 +47,7 @@ const $getters = {
 const $actions = {
     restoreMessagesFromStorage: 'RESTORE_MESSAGES_FROM_STORAGE',
     syncMessages: 'SYNC_MESSAGES',
+    addMessage: "ADD_MESSAGE",
 };
 const $mutations = {
     setMessages: 'SET_MESSAGES',
@@ -43,17 +59,18 @@ const $mutations = {
 }
 
 export const state = () => ({
-    [$states.messages]: new Map(),
-    [$states.messagesById]: new Map(),
-    [$states.messageStateById]: new Map(),
+    [$states.messages]: {},
+    [$states.messagesById]: {},
+    [$states.messageStateById]: {},
 });
 
 export const getters = {
     [$getters.hasMessage]: state => id => {
-        return state[$states.messagesById].has(id);
+        return !!state[$states.messagesById][id];
     },
 };
 export const actions = {
+    /** SYNC_MESSAGES **/
     async [$actions.syncMessages] ( { commit, rootState }, jid ) {
         const loginDate = rootState[Store.$states.loginDate];
         const lastMessageTimestamp = (await messageDb.messages
@@ -90,7 +107,7 @@ export const actions = {
 
         const formattedMessages = messages.map(m => ({
             timestamp: m.delay.timestamp,
-            with: this.$stanza.stripResource(this.$stanza.determineRelatedParty(m.message)),
+            with: XMPP.JID.toBare(this.$stanza.determineRelatedParty(m.message)),
             ...m.message
         }))
 
@@ -107,13 +124,14 @@ export const actions = {
         messageDb.messageStates.bulkPut(messageStates);
     },
 
+    /** RESTORE_MESSAGES_FROM_STORAGE **/
     async [$actions.restoreMessagesFromStorage] ( { commit } ) {
         try {
             const withs = await messageDb.messages.orderBy('with').uniqueKeys();
 
-            const messagesByJid = new Map();
-            const messageStateById = new Map();
-            const messagesById = new Map();
+            const messagesByJid = {};
+            const messageStateById = {};
+            const messagesById = {};
 
             for (const jid of withs) {
                 // Last 100 messages with each JID present
@@ -123,17 +141,17 @@ export const actions = {
                     .slice(0, 100);
 
                 console.log(jid, lastHundred);
-                messagesByJid.set(jid, lastHundred);
+                messagesByJid[jid] = lastHundred;
 
                 const ids = []
                 lastHundred.map(m => {
-                    messagesById.set(m.id, m);
+                    messagesById[m.id] = m;
                     ids.push(m.id);
                 });
 
                 (await messageDb.messageStates
                     .where('id').anyOf(ids)
-                    .toArray()).map(s => messageStateById.set(s.id, s));
+                    .toArray()).map(s => messageStateById[s.id] = s);
             }
 
             commit($mutations.setMessages, messagesByJid);
@@ -142,50 +160,80 @@ export const actions = {
         } catch (e) {
             console.error("Couldn't restore messages from storage!", e);
         }
+    },
+
+    /** ADD_MESSAGE **/
+    async [$actions.addMessage] ({ commit }, { jid, message, state: messageState }) {
+        const bareJid = XMPP.JID.toBare(jid);
+        message.timestamp = Date.now();
+        message.with = bareJid;
+        
+        commit($mutations.addMessage, { bareJid, message, messageState });
+        if (messageState) {
+            messageDb.messageStates.put({id: message.id, ...messageState});
+        }
+
+        try {
+            await messageDb.messages.add(message);
+        } catch (_) {
+            return;
+        }
+
+        // message block archive
+        const query = messageDb.messages.where("with").equals(bareJid);
+        if ((await query.count()) >= 100) {
+            let array = await query.sortBy("timestamp");
+            let timestamp = array[array.length - 1].timestamp;
+            let compblock = lz4.compress(Buffer.from(msgpack.encode(array)));
+            let id = await messageDb.messageArchive.add({
+                block: compblock, 
+                timestamp,
+                with: bareJid
+            });
+            populateSearchIndex(messageDb, id, array);
+            await query.delete();
+        }
     }
 };
 
 export const mutations = {
+    /** SET_MESSAGES **/
     [$mutations.setMessages] ( state, data ) {
         state[$states.messages] = data;
     },
-
+    
+    /** SET_MESSAGES_BY_ID **/
     [$mutations.setMessagesById] ( state, data ) {
         state[$states.messagesById] = data;
     },
-
+    
+    /** SET_MESSAGE_STATE_BY_ID **/
     [$mutations.setMessageStateById] ( state, data ) {
         state[$states.messageStateById] = data;
     },
 
-    [$mutations.addMessage] ( state, { jid, message, state: messageState } ) {
-        const bareJid = this.$stanza.stripResource(jid);
-        if(!state[$states.messages].has(bareJid))
-            state[$states.messages].set(bareJid, []);
+    /** ADD_MESSAGES **/
+    [$mutations.addMessage] ( state, { bareJid, message, messageState } ) {
+        if(!state[$states.messages][bareJid])
+            Vue.set(state[$states.messages], bareJid, []);
 
-        message.timestamp = new Date();
-        message.with = bareJid;
-
-        const size = state[$states.messages].get(bareJid).push(message);
+        const size = state[$states.messages][bareJid].push(message);
 
         // Rolling buffer of 100 items/JID
         if(size > 100) {
-            const message = state[$states.messages].get(bareJid).splice(0, 1);
+            const message = state[$states.messages][bareJid].splice(0, 1);
             state[$states.messagesById].delete(message[0].id);
         }
 
-        state[$states.messagesById].set(message.id, message);
-
-        messageDb.messages.add(message);
+        Vue.set(state[$states.messagesById], message.id, message);
 
         if(messageState) {
-            state[$states.messageStateById].set(message.id, messageState)
-            messageDb.messageStates.put({id: message.id, ...messageState});
+            Vue.set(state[$states.messageStateById], message.id, messageState);
         }
     },
 
     [$mutations.updateMessageState] (state, { id, state: messageState } ) {
-        state[$states.messageStateById].set(id, messageState)
+        Vue.set(state[$states.messageStateById], id, messageState);
 
         messageDb.messageStates.put({id, ...messageState});
     }

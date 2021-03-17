@@ -1,5 +1,5 @@
 <template>
-  <v-system-bar :light="light" :dark="dark" class="move-window pa-0">
+  <v-system-bar :light="light" :dark="dark" class="move-window pa-0 d-flex align-center">
     <p class="ma-0 brand">BONFIRE</p>
     <v-spacer/>
     <button @click="minimize"><v-icon>mdi-window-minimize</v-icon></button>
@@ -43,8 +43,8 @@
   }
 
   .brand {
-    font-weight: 400;
-
+    font-weight: 1000;
+    font-size: 14px;
     &:before {
       content: "";
       display: inline-block;

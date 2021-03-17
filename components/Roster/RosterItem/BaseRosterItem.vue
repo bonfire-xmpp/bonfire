@@ -11,15 +11,18 @@
 
           <!-- Vertical align Avatar -->
           <div class="align-content-center-inline ml-2" style="width: 36px">
-            <avatar :size="36" :jid="item.jid"/>
+            <v-badge bottom dot offset-x="11" offset-y="11" bordered :color="onlineStatus">
+              <avatar :size="36" :jid="item.jid"/>
+            </v-badge>
           </div>
 
           <div class="main-container ml-2 pr-2 flex-grow-1 my-auto hide-overflow">
             <!-- Online status icon, username@domain -->
             <span>
-              <status-icon :status="onlineStatus"/>
-              <span :class="selected ? '' : 'grey-700--text'">{{name}}</span>
-              <span :class="selected ? '' : 'grey-500--text'">@{{domain}}</span>
+              <span :class="selected ? '' : 'grey-700--text'">
+                {{name}}<span :class="selected ? '' : 'grey-400--text'">@{{domain}}</span>
+              </span>
+              
             </span>
 
             <br>

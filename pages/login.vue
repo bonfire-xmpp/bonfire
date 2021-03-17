@@ -16,6 +16,7 @@
   export default {
     name: "login",
     components: {LoginDialog},
+    layout: "fullscreen",
 
     async middleware({store, redirect}) {
       // You're logged in; you have no business being here. Scram
@@ -35,7 +36,7 @@
     methods: {
       async submit({jid, password, transports}) {
         await this.login({jid, password, transports});
-        if(this.loggedIn) return this.$router.push('/');
+        this.$router.push('/');
       },
 
       ...mapActions({

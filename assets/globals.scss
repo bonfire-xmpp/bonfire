@@ -53,6 +53,10 @@ $height-width-helper-sizes: splitIntoSteps(100, 20);
   color: map-get($white, "lighten") !important;
 }
 
+.material-shadow {
+  box-shadow: 0px 0px 10px transparentize(black, 0.75);
+}
+
 // Unselectable text
 .unselectable {
   -webkit-touch-callout: none;
@@ -81,7 +85,6 @@ $height-width-helper-sizes: splitIntoSteps(100, 20);
     vertical-align: middle;
   }
 }
-
 
 /** Scrollbar **/
 

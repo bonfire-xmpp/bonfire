@@ -19,7 +19,7 @@
       }),
 
       ...mapGetters({
-        presence: Store.$getters.presence,
+        presence: Store.$getters.presence
       }),
 
       rosterItems() {
@@ -52,18 +52,31 @@
     },
 
     mounted() {
-      console.log(this.roster.items)
+      console.log(this.roster.items);
     }
   }
 </script>
 
 <style scoped lang="scss">
+  $systembar-brand-left: 10px !default;
+
   .sidebar {
     width: 320px;
     min-width: 320px;
+    z-index: 10;
     &:hover {
       overflow: hidden auto;
     }
     overflow: hidden hidden;
+  }
+  .brand {
+    font-weight: 400;
+    font-size: 16px;
+
+    &:before {
+      content: "";
+      display: inline-block;
+      width: $systembar-brand-left;
+    }
   }
 </style>

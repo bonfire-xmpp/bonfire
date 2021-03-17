@@ -40,6 +40,7 @@ const $states = {
      */
     activeChat: 'ACTIVE_CHAT',
 
+    stanzaInitialized: 'STANZA_INITIALIZED',
     streamManagement: 'STREAM_MANAGEMENT',
 
     // See stanza.js/AccountManagement
@@ -76,6 +77,7 @@ const $mutations = {
     unsetPassword: 'UNSET_PASSWORD',
     setTransports: 'SET_TRANSPORTS',
 
+    stanzaInitialized: 'STANZA_INITIALIZED',
     setLoginDate: 'SET_LOGIN_DATE',
 
     setActiveChat: 'SET_ACTIVE_CHAT',
@@ -106,6 +108,7 @@ export const state = () => ({
         loggingIn: false
     },
 
+    [$states.stanzaInitialized]: false,
     [$states.streamManagement]: null,
     [$states.account]: null,
     [$states.activeChat]: null,
@@ -329,6 +332,10 @@ export const mutations = {
 
     ...generateMutations($states.account, $states.roster, $states.loginDate, $states.activeChat),
 
+    [$mutations.stanzaInitialized] ( state ) {
+        state[$states.stanzaInitialized] = true;
+    },
+
     [$mutations.unsetPassword] ( state ) {
         state[$states.password] = "";
         storage.secure.removeItem($states.password);
@@ -396,8 +403,8 @@ export const mutations = {
             ...oldPresences,
             [resource]: { show: data.show, status: data.status, available: data.available, },
         });
-
-        let max = { available: false }
+        
+        let max = { available: false };
         for(const resource of Object.getOwnPropertyNames(state[$states.presences][bare])) {
             // Workaround to iterate through Vuex store reactive object keys
             // computed is ignored, as that's what we're calculating here
