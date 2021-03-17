@@ -1,5 +1,6 @@
 <template>
-  <div class="sidebar grey-100 py-2">
+  <div class="sidebar grey-100">
+    <header-bar pad-bottom/>
     <roster-list
         :pinned="[]"
         :items="items"

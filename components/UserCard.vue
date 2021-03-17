@@ -1,19 +1,26 @@
 <template>
-  <div class="d-flex">
-    <!-- Roster item card  -->
-    <div class="flex-grow-1 hide-overflow d-flex rounded main" :aria-selected="selected" >
-      <!-- Vertical align Avatar -->
-      <div class="align-content-center-inline ml-2 mr-1" style="width: 36px">
-        <v-badge bottom dot offset-x="11" offset-y="11" bordered :color="onlineStatus">
-          <avatar :size="36" :jid="item.jid"/>
-        </v-badge>
-      </div>
-      <div class="main-container ml-2 pr-2 flex-grow-1 my-auto hide-overflow">
-        <!-- Online status icon, username@domain -->
-        <span :class="selected ? '' : 'grey-700--text'">
-          {{name}}<span :class="selected ? '' : 'grey-400--text'">@{{domain}}</span>
-        </span>
-      </div>
+  <!-- Roster item card  -->
+  <div class="d-flex main white--text unselectable" :aria-selected="selected" >
+    <!-- Vertical align Avatar -->
+    <div class="align-content-center-inline mr-1" style="width: 36px">
+      <v-badge bottom dot offset-x="11" offset-y="11" bordered :color="onlineStatus">
+        <avatar :size="36" :jid="item.jid"/>
+      </v-badge>
+    </div>
+
+    <div class="ml-2 pr-2 my-auto" :class="selected || 'grey-700--text'">
+      <!-- username -->
+      <span :class="selected && 'font-weight-bold'">{{name}}</span>
+
+      <!-- @ -->
+      <span style="margin-left: -2px; margin-right: -2px;">
+          <v-icon class="no-transition" color="grey-400" size="1em">mdi-at</v-icon>
+      </span>
+
+      <!-- domain -->
+      <span class="grey-500--text">
+        {{domain}}
+      </span>
     </div>
   </div>
 </template>
@@ -60,10 +67,8 @@
 </script>
 
 <style scoped lang="scss">
-// Constant height
-.main {
-  height: 42px;
-  min-height: 42px;
-  max-height: 42px;
-}
+  // Constant height
+  .main {
+    @include ensure-height(42px);
+  }
 </style>

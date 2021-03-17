@@ -1,33 +1,36 @@
 <template>
   <div class="d-flex flex-nowrap flex-column flex-grow-1">
     <!-- Header -->
-    <v-container fluid style="height: 64px; z-index: 4;" class="unselectable grey-100 d-flex flex-row align-center">
-      <user-card :item="currentItem"/>
+    <header-bar class="d-flex grey-200 px-4 align-center">
+      <user-card :item="currentItem" selected/>
       <v-spacer/>
-      <v-text-field
-        @focus="openSearch" @click="openSearch"
-        @keydown.esc="closeSearch" @keydown="searchUpdate" 
-        v-model="searchText"
-        single-line dense solo clearable hide-details 
-        label="Search" class="searchbar"
-      />
-    </v-container>
+      <div class="py-2">
+        <v-text-field
+          @focus="openSearch" @click="openSearch"
+          @keydown.esc="closeSearch" @keydown="searchUpdate"
+          v-model="searchText"
+          single-line dense solo clearable hide-details flat
+          background-color="grey-100"
+          label="Search" class="searchbar"
+        />
+      </div>
+    </header-bar>
 
     <!-- Main Section -->
-    <div class="d-flex flex-nowrap flex-row flex-grow-1 hide-overflow">
+    <div class="d-flex flex-nowrap flex-row flex-grow-1 hide-overflow grey-200">
       <div class="d-flex flex-column flex-grow-1 justify-space-between">
         <!-- Message List -->
         <div
-          ref="messageList" 
+          ref="messageList"
           style="min-height: 0; overflow: hidden scroll !important;"
           class="flex-grow-1 flex-shrink-1 pt-4"
         >
           <message-group
-            v-for="group in messageGroups(messages)" 
+            v-for="group in messageGroups(messages)"
             :key="'group:' + group[0].timestamp"
             :group="group"/>
         </div>
-        
+
         <!-- Message Field -->
         <form @submit.prevent="sendMessage">
           <v-text-field outlined dense single-line hide-details append-icon="mdi-send" v-model="message"/>
@@ -35,14 +38,14 @@
       </div>
 
       <!-- Search Results -->
-      <div 
+      <div
         @click="closeSearch"
-        style="position: fixed; left: 0px; top: 0px; width: 100vw; height: 100vh; z-index: 10;" 
+        style="position: fixed; left: 0px; top: 0px; width: 100vw; height: 100vh; z-index: 10;"
         v-if="searchActive"
       />
       <div tile flat
-        class="d-flex flex-row align-start justify-center grey-100 searchmenu" 
-        :class="[this.searchActive ? 'searchmenu-shown' : 'searchmenu-hidden']" 
+        class="d-flex flex-row align-start justify-center grey-100 searchmenu"
+        :class="[this.searchActive ? 'searchmenu-shown' : 'searchmenu-hidden']"
         style="z-index: 10; transition: 0.2s; overflow: hidden scroll;"
       >
         <div style="width: 100%;" class="d-flex flex-column">
@@ -73,7 +76,7 @@ $width: 400px;
 }
 .searchbar {
   min-width: 300px !important;
-  width: 300px !important; 
+  width: 300px !important;
   max-width: 300px !important;
 }
 </style>
@@ -125,8 +128,8 @@ export default {
     sendMessage () {
       if (!this.message.length) return;
       this.$stanza.client.sendMessage({
-        type: "chat", 
-        to: this.$route.params.entity, 
+        type: "chat",
+        to: this.$route.params.entity,
         body: this.message,
       });
       this.message = "";
@@ -171,7 +174,7 @@ export default {
           .toArray()
           .then(x => [x.sort((a, b) => a.timestamp - b.timestamp)]),
         search(this.searchText)
-          .then(eblocks => eblocks.map(eblock => 
+          .then(eblocks => eblocks.map(eblock =>
             msgpack.decode(lz4.decompress(eblock.block))
           )),
       ]).then(x => x.flat(1));
@@ -207,7 +210,7 @@ export default {
       .reverse().limit(10).sortBy("timestamp");
     blocks.reverse();
     // combine messages
-    this.loadedMessages = blocks.reduce((acc, {block}) => 
+    this.loadedMessages = blocks.reduce((acc, {block}) =>
       acc.concat(msgpack.decode(lz4.decompress(block))), []
     );
   }
