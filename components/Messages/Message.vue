@@ -1,17 +1,16 @@
 <template>
-  <div class="message d-flex align-center">
-    <span class="time unselectable ma-0" :class="[showTime ? '' : 'hidetime']">
+  <div class="message d-flex align-center px-4">
+    <span class="time unselectable ma-0 caption text--secondary" :class="[showTime ? '' : 'hidetime']">
       {{time}}
     </span>
     <span class="mx-2"/>
-    <span>{{body}}</span>
+    <span class="text--secondary">{{body}}</span>
   </div>
 </template>
 
 <style lang="scss">
 .message {
   white-space: normal;
-  border-radius: 3px;
   .time {
     width: 50px;
     font-size: 12px;

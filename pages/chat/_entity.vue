@@ -15,14 +15,14 @@
 
     <!-- Main Section -->
     <div class="d-flex flex-nowrap flex-row flex-grow-1 hide-overflow">
-      <v-container class="d-flex flex-column flex-grow-1 justify-space-between">
+      <div class="d-flex flex-column flex-grow-1 justify-space-between">
         <!-- Message List -->
         <div
           ref="messageList" 
           style="min-height: 0; overflow: hidden scroll !important;"
-          class="flex-grow-1 flex-shrink-1"
+          class="flex-grow-1 flex-shrink-1 pt-4"
         >
-          <message-group 
+          <message-group
             v-for="group in messageGroups(messages)" 
             :key="'group:' + group[0].timestamp"
             :group="group"/>
@@ -32,7 +32,7 @@
         <form @submit.prevent="sendMessage">
           <v-text-field outlined dense single-line hide-details append-icon="mdi-send" v-model="message"/>
         </form>
-      </v-container>
+      </div>
 
       <!-- Search Results -->
       <div 

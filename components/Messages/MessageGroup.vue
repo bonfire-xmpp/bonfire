@@ -1,13 +1,13 @@
 <template>
   <div class="mb-2">
-    <div class="d-flex flex-column groupheader">
-      <div class="d-flex">
+    <div class="d-flex flex-column groupheader pt-1">
+      <div class="d-flex px-4">
         <span class="flex-grow-0" style="width: 50px !important;">
           <avatar :jid="group[0].from" :size="48"/>
         </span>
         <span class="mx-2"/>
         <span class="unselectable">
-          <b>{{group[0].from}}</b>
+          {{group[0].from}}
           <span class="ml-1 text--secondary caption">{{formatTime(new Date(group[0].timestamp))}}</span>
         </span>
       </div>
