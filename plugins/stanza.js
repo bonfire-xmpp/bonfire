@@ -55,7 +55,7 @@ const generateFunctions = (ctx) => ({
         return this.ranks.findIndex(s => s.toLowerCase() === state);
     },
     getOnlineStateFromRank(rank) {
-        this.ranks[rank];
+        return this.ranks[rank];
     }
 });
 
