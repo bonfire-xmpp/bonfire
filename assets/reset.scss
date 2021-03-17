@@ -1,3 +1,8 @@
+// Remove default outlines that draw sometimes on selects
+* {
+  outline: none;
+}
+
 .reset-link {
   text-decoration: none !important;
   cursor: pointer !important;
