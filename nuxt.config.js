@@ -54,7 +54,6 @@ export default {
   buildModules: [
     // https://go.nuxtjs.dev/vuetify
     '@nuxtjs/vuetify',
-    '@nuxtjs/axios',
     '@nuxtjs/style-resources',
   ],
 

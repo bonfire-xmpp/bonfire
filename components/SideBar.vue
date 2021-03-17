@@ -1,31 +1,69 @@
 <template>
-  <div class="sidebar d-flex">
-    <v-list dense color="grey-100" class="sidebar-list pa-1 flex-grow-1">
-      <v-list-item link v-for="chan in channels" :key="chan">
-        <v-list-item-content>
-          {{chan}}
-        </v-list-item-content>
-      </v-list-item>
-    </v-list>
+  <div class="sidebar grey-100 py-2">
+    <roster-list
+        :pinned="[]"
+        :items="items"
+        :selected-jid="selectedJid"/>
   </div>
 </template>
 
 <script>
-export default {
-  data() {
-    return {
-      channels: new Array(20).fill(0).map((_, i) => `#channel-${i}`)
+  import { Store } from "@/store";
+  import { mapState, mapGetters } from 'vuex';
+
+  export default {
+    computed: {
+      ...mapState({
+        roster: Store.$states.roster,
+        activeState: Store.$states.activeChat,
+      }),
+
+      ...mapGetters({
+        presence: Store.$getters.presence,
+      }),
+
+      rosterItems() {
+        return this.roster?.items || [];
+      },
+
+      selectedJid() {
+        return this.activeState?.type === "chat" ? this.activeState.entity : undefined;
+      },
+
+      onlineItems() {
+        return { name: 'Online', items: this.rosterItems.filter(i => this.presence(i.jid)?.available) };
+      },
+
+      offlineItems() {
+        return { name: 'Offline', items: this.rosterItems.filter(i => !this.presence(i.jid)?.available && !i.pending) };
+      },
+
+      pendingItems() {
+        return { name: 'Pending', items: this.rosterItems.filter(i => i.pending) };
+      },
+
+      items() {
+        return [
+            this.onlineItems,
+            this.pendingItems,
+            this.offlineItems,
+        ]
+      }
+    },
+
+    mounted() {
+      console.log(this.roster.items)
     }
   }
-}
 </script>
 
 <style scoped lang="scss">
   .sidebar {
     width: 320px;
     min-width: 320px;
-    &-list {
-      overflow: hidden scroll;
+    &:hover {
+      overflow: hidden auto;
     }
+    overflow: hidden hidden;
   }
 </style>

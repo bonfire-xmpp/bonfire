@@ -19,11 +19,14 @@ const determineRelatedParty = m => {
     return m.from;
 }
 
-const stripResource = jid => XMPP.JID.toBare(jid);
+const toBare = jid => XMPP.JID.toBare(jid);
+const getResource = jid => XMPP.JID.getResource(jid);
+const getDomain = jid => XMPP.JID.getDomain(jid);
+const getLocal = jid => XMPP.JID.getLocal(jid);
 
 const generateFunctions = (ctx) => ({
     determineRelatedParty,
-    stripResource,
+    toBare, getResource, getDomain, getLocal,
     updateConfig(...args) {
         client.updateConfig(...args);
     },
@@ -46,6 +49,13 @@ const generateFunctions = (ctx) => ({
     },
     sendMessage(message) {
         client.sendMessage(message);
+    },
+    ranks: Object.freeze(['online', 'away', 'xa', 'dnd', 'offline']),
+    getRankFromOnlineState(state) {
+        return this.ranks.findIndex(s => s.toLowerCase() === state);
+    },
+    getOnlineStateFromRank(rank) {
+        return this.ranks[rank];
     }
 });
 
@@ -58,13 +68,51 @@ const setupListeners = ctx => {
         return ctx.store.getters[`${MessageStore.namespace}/${getter}`](...args);
     }
 
-    // TODO: Sometimes successful connections don't trigger session:started
-    client.on('session:started', () => {
-        client.getRoster().then(roster => {
+    async function bind() {
+        await client.getRoster().then(roster => {
             ctx.store.commit(Store.$mutations.setRoster, roster);
         });
+        await client.enableCarbons();
         client.sendPresence();
+    }
+
+    client.on('session:started', bind);
+    client.on('stream:management:resumed', bind);
+
+    client.on('iq:set:roster', ({roster}) => {
+        let items = ctx.store.state[Store.$states.roster]?.items || [];
+        for (let item of roster.items) {
+            const idx = items.findIndex(i => i.jid == item.jid);
+            if (idx > 0) {
+                if (item.subscription == "remove") {
+                    items.splice(idx, 1);
+                }
+            } else {
+                if (item.subscription == "to" || item.subscription == "both") {
+                    items.push(item);
+                }
+            }
+        }
+        ctx.store.commit(Store.$mutations.setRoster, {...roster, items});
     });
+
+    /**
+     * INCOMING PRESENCE/MOOD DATA
+     */
+
+    client.on('available', presence => {
+        ctx.store.commit(Store.$mutations.updatePresence, {available: true, ...presence});
+    });
+
+    client.on('unavailable', presence => {
+        ctx.store.commit(Store.$mutations.updatePresence, {available: false, ...presence});
+    });
+
+    client.on('avatar', event => {
+        console.log(event);
+        ctx.store.dispatch(Store.$actions.downloadAvatar, {jid: event.jid});
+    });
+
 
     /**
      * INCOMING (DIRECT) CHAT MESSAGES
@@ -143,6 +191,11 @@ const setupListeners = ctx => {
                 }
             });
         }
+    });
+
+    /** DEBUG  **/
+    client.on("*", (...args) => {
+        // console.log(args);
     });
 
     /** STREAM MANAGEMENT RESUMPTION DATA CACHING **/

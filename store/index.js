@@ -1,9 +1,11 @@
 import { MessageStore } from "@/store/messages";
 
-import {Utils} from 'stanza';
+import { Utils } from 'stanza';
 
 import * as storage from '@/assets/storage'
-import {loadFromSecure} from '@/assets/storage'
+import {loadFromSecure, loadFromSession} from '@/assets/storage'
+
+import Vue from 'vue';
 
 const $states = {
     jid: 'JID',
@@ -30,6 +32,14 @@ const $states = {
 
     loginDate: 'LOGIN_DATE',
 
+    /**
+     * {
+     *     type: muc | chat
+     *     entity: jid
+     * }
+     */
+    activeChat: 'ACTIVE_CHAT',
+
     streamManagement: 'STREAM_MANAGEMENT',
 
     // See stanza.js/AccountManagement
@@ -37,6 +47,11 @@ const $states = {
 
     // See stanza.js/Roster
     roster: 'ROSTER',
+
+    avatars: 'AVATARS',
+
+    resources: 'RESOURCES',
+    presences: 'PRESENCES',
 };
 
 const $getters = {
@@ -44,11 +59,14 @@ const $getters = {
     loggingIn: 'LOGGING_IN',
     loginFailed: 'LOGIN_FAILED',
     authFailed: 'AUTH_FAILED',
+    presence: 'GET_PRESENCE',
 };
 
 const $actions = {
     login: 'LOGIN',
     tryRestoreSession: 'TRY_RESTORE_SESSION',
+    downloadAvatar: 'DOWNLOAD_AVATAR',
+    getAvatar: 'GET_AVATAR',
 };
 
 const $mutations = {
@@ -60,7 +78,14 @@ const $mutations = {
 
     setLoginDate: 'SET_LOGIN_DATE',
 
+    setActiveChat: 'SET_ACTIVE_CHAT',
+
     updateLoginState: 'UPDATE_LOGIN_STATE',
+
+    updatePresence: 'UPDATE_PRESENCE',
+    setPresence: 'SET_PRESENCE',
+
+    updateAvatar: 'UPDATE_AVATAR',
 
     setStreamManagement: 'SET_STREAM_MANAGEMENT',
     setAccount: 'SET_ACCOUNT',
@@ -83,7 +108,11 @@ export const state = () => ({
 
     [$states.streamManagement]: null,
     [$states.account]: null,
-    [$states.roster]: null,
+    [$states.activeChat]: null,
+    [$states.roster]: {},
+    [$states.avatars]: {},
+    [$states.resources]: {},
+    [$states.presences]: {},
 });
 
 export const getters = {
@@ -102,8 +131,13 @@ export const getters = {
     [$getters.loggingIn] ( state ) {
         return state[$states.loginState].loggingIn;
     },
+
+    [$getters.presence] ( state ) { return function(jid) {
+        return state[$states.presences]?.[this.$stanza.toBare(jid)]?.['_/computed'];
+    }},
 };
 
+const downloadAvatarJidThrottleMap = {};
 export const actions = {
     async [$actions.tryRestoreSession]({ commit, dispatch, state }) {
         try {
@@ -130,6 +164,13 @@ export const actions = {
         // If we logged in, try restoring messages too
         if(state[$states.loginState].loggedIn) {
             await dispatch(`${MessageStore.namespace}/${MessageStore.$actions.restoreMessagesFromStorage}`);
+
+            const [presenceData] = loadFromSession($states.presences);
+            if(presenceData) {
+                for (const presenceDatum in presenceData)
+                    Vue.set(presenceData, presenceDatum, presenceData[presenceDatum]);
+                commit($mutations.setPresence, presenceData);
+            }
         }
     },
 
@@ -184,6 +225,64 @@ export const actions = {
             });
             resolve()
         }))]);
+    },
+
+    async [$actions.downloadAvatar]({ commit, state }, { jid }) {
+        const bare = this.$stanza.toBare(jid);
+        const download = async () => {
+            try {
+                const avatar = await this.$stanza.client.getAvatar(bare);
+                commit($mutations.updateAvatar, {jid, avatar: avatar.content.data})
+            } catch (e) {
+                console.error(e);
+                if(e?.error?.condition === "timeout") {
+                    return await download();
+                } else {
+                    commit($mutations.updateAvatar, {jid, default: true})
+                }
+            }
+
+            return state[$states.avatars][this.$stanza.toBare(jid)];
+        }
+
+        // If this JID's avatar is already being downloaded, return that promise instead
+        if(downloadAvatarJidThrottleMap[bare]) return downloadAvatarJidThrottleMap[bare];
+
+        // If not, get a fresh promise and add it to the map
+        const promise = download();
+        downloadAvatarJidThrottleMap[bare] = promise;
+
+        // Remove it from the map on completion
+        promise.then(() => delete downloadAvatarJidThrottleMap[bare]);
+
+        // And return it to the user
+        return promise;
+    },
+
+    async [$actions.getAvatar]({ dispatch, commit, state }, { jid }) {
+        const bare = this.$stanza.toBare(jid);
+
+        const url = state[$states.avatars][bare];
+
+        // Default avatar
+        if(url === null) return null;
+
+        // Missing
+        if(!url) {
+            // Try restoring from storage
+            const avatarBase64 = storage.permanent.getItem('avatar-' + bare)
+            if(avatarBase64) {
+                const avatar = await (await fetch(avatarBase64)).blob();
+                commit($mutations.updateAvatar, { jid, avatar, restore: true });
+                return state[$states.avatars][bare];
+            }
+
+            // Nothing in storage, download it
+            return await dispatch($actions.downloadAvatar, {jid});
+        }
+
+        // Downloaded
+        return url;
     }
 };
 
@@ -228,7 +327,7 @@ export const mutations = {
     ...generateMutations(storage.secure,
         $states.jid, $states.password, $states.server, $states.transports),
 
-    ...generateMutations($states.account, $states.roster, $states.loginDate),
+    ...generateMutations($states.account, $states.roster, $states.loginDate, $states.activeChat),
 
     [$mutations.unsetPassword] ( state ) {
         state[$states.password] = "";
@@ -243,6 +342,101 @@ export const mutations = {
         const string = JSON.stringify(data);
         storage.session.setItem($states.streamManagement, string);
         state[$states.streamManagement] = string;
+    },
+
+    [$mutations.updateAvatar] ( state, data ) {
+        const bare = this.$stanza.toBare(data.jid);
+
+        // Default avatar
+        if(data.default) {
+            return Vue.set(state[$states.avatars], bare, null);
+        }
+
+        if(state[$states.avatars][bare] !== null) {
+            URL.revokeObjectURL(state[$states.avatars][bare]);
+        }
+
+        const blob = new Blob([data.avatar], {'type': 'image/png'});
+        const url = URL.createObjectURL(blob);
+
+        // Data passed is restored from storage; don't save it again
+        if(!data.restore) {
+            const reader = new FileReader();
+            reader.readAsDataURL(blob);
+            // This async callback is okay because it doesn't touch the store state
+            reader.onloadend = function() {
+                const base64data = reader.result;
+                storage.permanent.setItem('avatar-' + bare, base64data)
+            }
+        }
+
+        Vue.set(state[$states.avatars], bare, url);
+    },
+
+    [$mutations.setPresence] ( state, data ) {
+        state[$states.presences] = data;
+    },
+
+    [$mutations.updatePresence] ( state, data ) {
+        const bare = this.$stanza.toBare(data.from);
+        const resource = this.$stanza.getResource(data.from);
+
+        const priority = data.priority;
+        if(priority !== undefined) {
+            const oldResources = state[$states.resources][bare];
+            const oldResource = state[$states.resources][bare]?.[resource];
+            Vue.set(state[$states.resources], bare, {
+                ...oldResources,
+                [resource]: { ...oldResource, priority },
+            });
+        }
+
+        let oldPresences = state[$states.presences][bare];
+        Vue.set(state[$states.presences], bare, {
+            ...oldPresences,
+            [resource]: { show: data.show, status: data.status, available: data.available, },
+        });
+
+        let max = { available: false }
+        for(const resource of Object.getOwnPropertyNames(state[$states.presences][bare])) {
+            // Workaround to iterate through Vuex store reactive object keys
+            // computed is ignored, as that's what we're calculating here
+            if(resource === '__ob__' || resource === '_/computed') continue;
+
+            // Create a deep copy to avoid race conditions
+            const presence = JSON.parse(JSON.stringify(state[$states.presences][bare][resource]));
+
+            // No `show` means 100% pure online; i.e. the most online you can be
+            if(presence.available && !presence.show) {
+                max = presence;
+                break;
+            }
+
+            // The current max is offline; anything that isn't offline is better
+            if(!max.available && presence.available) {
+                max = presence;
+                continue;
+            }
+
+            // Choose the 'most online' one out of the two.
+            if(this.$stanza.getRankFromOnlineState(max.show)
+                < this.$stanza.getRankFromOnlineState(presence.show)) {
+                max = presence;
+                continue;
+            }
+        }
+
+        oldPresences = state[$states.presences][bare];
+        Vue.set(state[$states.presences], bare, {
+            ...oldPresences,
+            // A name like this is guaranteed to never be a resource name
+            '_/computed': max,
+        });
+
+        // Presences don't get updated on stream resumption
+        // ...and stream resumption uses data cached in sessionStorage
+        // So, cache presences in sessionStorage, too
+        storage.session.setItem($states.presences, JSON.stringify(state[$states.presences]));
     },
 };
 

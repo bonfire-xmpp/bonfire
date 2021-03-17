@@ -59,7 +59,7 @@ export const purple = {
 
 const generateGreys = greys => {
     let r = {};
-    for(const color in r) {
+    for(const color in greys) {
         if(greys.hasOwnProperty(color)) {
             r[`grey-${color}`] = greys[color];
         }
@@ -80,6 +80,12 @@ export default {
     warning: yellow.darken,
     error: red.lighten,
     success: green.lighten,
+
+    online: green.lighten,
+    away: yellow.lighten,
+    xa: orange.lighten,
+    dnd: red.lighten,
+    offline: greys[500],
 
     ...generateGreys(greys),
 }
