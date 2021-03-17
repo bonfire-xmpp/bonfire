@@ -20,9 +20,14 @@
             <!-- Online status icon, username@domain -->
             <span>
               <span :class="selected ? '' : 'grey-700--text'">
-                {{name}}<span :class="selected ? '' : 'grey-400--text'">@{{domain}}</span>
+                {{name}}
               </span>
-              
+
+              <span style="margin-left: -2px; margin-right: -2px;">
+                <v-icon class="no-transition" :color="selected ? 'white' : 'grey-400'" size="1em">mdi-at</v-icon>
+              </span><span :class="selected ? '' : 'grey-400--text'">
+                {{domain}}
+              </span>
             </span>
 
             <br>
