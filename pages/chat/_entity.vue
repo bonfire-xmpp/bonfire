@@ -32,13 +32,7 @@
         </div>
 
         <!-- Message Field -->
-        <form @submit.prevent="sendMessage" class="px-4 mb-6 message-form mt-n2">
-          <v-textarea solo flat dense
-                      no-resize hide-details single-line
-                      auto-grow :rows="1"
-                      background-color="grey-300"
-                      append-icon="mdi-send" v-model="message"/>
-        </form>
+        <chat-message-form @message="sendMessage"/>
       </div>
 
       <!-- Search Results -->
@@ -85,29 +79,6 @@ $width: 400px;
   max-width: 300px !important;
 }
 
-.message-form {
-  background-color: transparent;
-
-  @mixin smooth-transition() {
-    background: linear-gradient(180deg, rgba(0,0,0,0) 0, map-get($greys, "200"));
-    content: "";
-    position: absolute;
-    top: 0;
-    height: .5rem;
-    width: 16px;
-  }
-
-  &::before {
-    @include smooth-transition;
-    left: 0;
-  }
-
-  &::after {
-    @include smooth-transition;
-    right: 0;
-  }
-}
-
 .scroller > *:last-child {
   padding-bottom: 1rem !important;
 }
@@ -118,14 +89,18 @@ import { mapMutations } from 'vuex';
 import { Store } from "@/store";
 import { MessageStore } from '@/store/messages';
 import { search, searchBlock } from "@/store/search";
+
 import MessageGroup from "@/components/Messages/MessageGroup";
+import ChatMessageForm from "@/components/Messages/ChatMessageForm";
+
 import * as XMPP from "stanza";
+
 import messageDb from '@/assets/messageDb.js';
 import * as msgpack from "@msgpack/msgpack";
 const lz4 = require("lz4js");
 
 export default {
-  components: { MessageGroup },
+  components: { MessageGroup, ChatMessageForm },
   data () {
     return {
       message: "",
@@ -141,7 +116,7 @@ export default {
   computed: {
     messages () {
       let list = this.$refs.messageList;
-      if (list && (list.scrollHeight - list.scrollTop - list.clientHeight) == 0) {
+      if (list && (list.scrollHeight - list.scrollTop - list.clientHeight) === 0) {
         setImmediate(() => {
           list.scrollTop = list.scrollHeight;
         });
@@ -152,20 +127,18 @@ export default {
     currentItem () {
       if (!this.$store.state[Store.$states.roster] || !this.$store.state[Store.$states.avatars]) return {};
       if (!this.$store.state[Store.$states.roster]?.items) return {};
-      return this.$store.state[Store.$states.roster].items.find(x => x.jid == this.entity);
+      return this.$store.state[Store.$states.roster].items.find(x => x.jid === this.entity);
     }
   },
   methods: {
-    /** MESSAGES **/
-    sendMessage () {
-      if (!this.message.length) return;
+    sendMessage(message) {
       this.$stanza.client.sendMessage({
         type: "chat",
-        to: this.$route.params.entity,
-        body: this.message,
+        to: this.$stanza.toBare(this.$route.params.entity),
+        body: message,
       });
-      this.message = "";
     },
+
     formatTime (date) {
       let hours = date.getHours();
       let ampm = "AM";
@@ -180,7 +153,7 @@ export default {
       let groups = [[messages[0]]];
       for (let i = 1; i < messages.length; ++i) {
         let lastgroup = groups[groups.length - 1];
-        if (lastgroup[0].from != messages[i].from || lastgroup.length >= 10) {
+        if (lastgroup[0].from !== messages[i].from || lastgroup.length >= 10) {
           groups.push([messages[i]]);
         } else {
           lastgroup.push(messages[i]);
