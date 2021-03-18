@@ -2,7 +2,7 @@
   <div class="d-flex flex-column grey-200">
     <!-- Header -->
     <header-bar class="flex-shrink-0 d-flex px-4 align-center">
-      <user-card :item="currentItem" selected/>
+      <user-card :item="currentItem" selected class="user-card"/>
       <v-spacer/>
       <div class="py-2">
         <v-text-field
@@ -45,14 +45,18 @@
   </div>
 </template>
 
-<style lang="scss">
-.searchbar {
-  @include ensure-width(300px)
-}
+<style lang="scss" scoped>
+  .searchbar {
+    @include ensure-width(300px)
+  }
 
-.scroller > *:last-child {
-  padding-bottom: 1rem !important;
-}
+  .user-card {
+    @include v-badge-border-color(map-get($greys, "200"))
+  }
+
+  .scroller > *:last-child {
+    padding-bottom: 1rem !important;
+  }
 </style>
 
 <script>
