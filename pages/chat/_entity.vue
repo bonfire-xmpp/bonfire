@@ -12,6 +12,7 @@
           single-line dense solo clearable hide-details flat
           background-color="grey-100"
           label="Search" class="searchbar"
+          ref="searchBar"
         />
       </div>
     </header-bar>
@@ -35,48 +36,18 @@
         <chat-message-form @message="sendMessage"/>
       </div>
 
-      <!-- Search Results -->
-      <div
-        @click="closeSearch"
-        style="position: fixed; left: 0px; top: 0px; width: 100vw; height: 100vh; z-index: 10;"
-        v-if="searchActive"
-      />
+      <search-results
+          :hidden="searchActive"
+          :results="matches"
+          v-click-outside="searchResultsClickOutside"/>
 
-      <div
-        class="d-flex flex-row align-start justify-center grey-100 searchmenu"
-        :class="[this.searchActive ? 'searchmenu-shown' : 'searchmenu-hidden']"
-        style="z-index: 10; transition: 0.2s; overflow: hidden scroll;"
-      >
-        <div style="width: 100%;" class="d-flex flex-column">
-          <div v-for="match in matches" :key="match.id" class="mb-4">
-            <p class="ma-0 px-2">{{formatTime(new Date(match.timestamp))}}</p>
-            <p class="ma-0 px-2 flex-shrink-1" style="white-space: normal;">
-              <b>{{localPart(match.from)}}</b> - {{match.body}}
-            </p>
-          </div>
-        </div>
-      </div>
     </div>
   </div>
 </template>
 
 <style lang="scss">
-$width: 400px;
-.searchmenu {
-  width: $width !important;
-  min-width: $width !important;
-  max-width: $width !important;
-  &-shown {
-    margin-right: 0px;
-  }
-  &-hidden {
-    margin-right: -$width;
-  }
-}
 .searchbar {
-  min-width: 300px !important;
-  width: 300px !important;
-  max-width: 300px !important;
+  @include ensure-width(300px)
 }
 
 .scroller > *:last-child {
@@ -92,6 +63,7 @@ import { search, searchBlock } from "@/store/search";
 
 import MessageGroup from "@/components/Messages/MessageGroup";
 import ChatMessageForm from "@/components/Messages/ChatMessageForm";
+import SearchResults from "@/components/Messages/SearchResults";
 
 import * as XMPP from "stanza";
 
@@ -100,7 +72,7 @@ import * as msgpack from "@msgpack/msgpack";
 const lz4 = require("lz4js");
 
 export default {
-  components: { MessageGroup, ChatMessageForm },
+  components: { MessageGroup, ChatMessageForm, SearchResults },
   data () {
     return {
       message: "",
@@ -113,11 +85,20 @@ export default {
       matches: [],
     };
   },
+
   computed: {
+    searchResultsClickOutside() {
+      return {
+        handler: this.closeSearch,
+        closeConditional: this.searchActive,
+        include: () => [this.$refs.searchBar.$el]
+      };
+    },
+
     messages () {
       let list = this.$refs.messageList;
       if (list && (list.scrollHeight - list.scrollTop - list.clientHeight) === 0) {
-        setImmediate(() => {
+        this.$nextTick(() => {
           list.scrollTop = list.scrollHeight;
         });
       }
@@ -128,26 +109,18 @@ export default {
       if (!this.$store.state[Store.$states.roster] || !this.$store.state[Store.$states.avatars]) return {};
       if (!this.$store.state[Store.$states.roster]?.items) return {};
       return this.$store.state[Store.$states.roster].items.find(x => x.jid === this.entity);
-    }
+    },
   },
+
   methods: {
     sendMessage(message) {
       this.$stanza.client.sendMessage({
         type: "chat",
-        to: this.$stanza.toBare(this.$route.params.entity),
+        to: this.$route.params.entity,
         body: message,
       });
     },
 
-    formatTime (date) {
-      let hours = date.getHours();
-      let ampm = "AM";
-      if (hours > 12) {
-        ampm = "PM";
-        hours -= 12;
-      }
-      return `${hours}:${date.getMinutes().toString().padStart(2, "0")} ${ampm}`;
-    },
     messageGroups (messages) {
       if (!messages.length) return [];
       let groups = [[messages[0]]];
