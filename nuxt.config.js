@@ -66,6 +66,7 @@ export default {
   vuetify: {
     customVariables: [
         '~/assets/_baseColors.scss',
+        '~/assets/_sizes.scss',
         '~/assets/fonts.scss',
     ],
     // Custom variables don't work without this enabled (which is true only for production builds)

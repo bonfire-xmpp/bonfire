@@ -87,26 +87,11 @@ $position-values: (absolute, relative, fixed, static);
   }
 }
 
-.lighten-1 {
-  @extend .position-relative;
-
-  & > * {
-    @extend .position-relative;
-    z-index: 5;
-  }
-
-  &::before {
-    content: "";
-
-    @extend .position-absolute, .w-100, .h-100;
-
-    z-index: 1;
-
-    background: map-get($white, "base");
-    filter: opacity(0.01);
-  }
-}
-
 .light-shadow {
   box-shadow: 0 1px 0 rgba(4,4,5,0.2),0 1.5px 0 rgba(6,6,7,0.05),0 2px 0 rgba(4,4,5,0.05);;
+}
+
+// TODO: Interim fix for https://github.com/vuetifyjs/vuetify/pull/13296
+.v-badge--bordered .v-badge__badge::after {
+  border-radius: 100% !important;
 }
