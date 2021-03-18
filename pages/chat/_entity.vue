@@ -163,7 +163,10 @@ export default {
       }
       this.matches = matches;
     },
+
     openSearch () {
+      if(this.searchActive) return;
+
       this.matches = [];
       this.searchActive = true;
     },
