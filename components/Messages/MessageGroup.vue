@@ -12,7 +12,7 @@
         </span>
       </div>
       <message
-        v-for="mesg in [group[0]]" 
+        v-for="mesg in [group[0]]"
         style="margin-top: -22px;"
         :key="'msg:' + mesg.timestamp"
         :jid="mesg.from"
@@ -22,7 +22,7 @@
       </div>
       <div style="margin-top: -2px;">
       <message
-        v-for="mesg in group.slice(1)" 
+        v-for="mesg in group.slice(1)"
         :key="'msg:' + mesg.timestamp"
         :jid="mesg.from"
         :body="mesg.body"
@@ -34,7 +34,7 @@
 <style lang="scss">
 .groupheader {
   &:hover {
-    background: darken(map-get($greys, "100"), 5%) !important;
+    background: darken(map-get($greys, "200"), 3%) !important;
   }
 }
 </style>

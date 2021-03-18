@@ -20,7 +20,7 @@
     .time:not(.hidetime) {
       visibility: visible !important;
     }
-    background: darken(map-get($greys, "100"), 5%) !important;
+    background: darken(map-get($greys, "200"), 3%) !important;
   }
 }
 </style>

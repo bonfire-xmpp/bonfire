@@ -1,7 +1,7 @@
 <template>
-  <div class="d-flex flex-nowrap flex-column flex-grow-1">
+  <div class="d-flex flex-column grey-200">
     <!-- Header -->
-    <header-bar class="d-flex grey-200 px-4 align-center">
+    <header-bar class="flex-shrink-0 d-flex px-4 align-center">
       <user-card :item="currentItem" selected/>
       <v-spacer/>
       <div class="py-2">
@@ -17,13 +17,13 @@
     </header-bar>
 
     <!-- Main Section -->
-    <div class="d-flex flex-nowrap flex-row flex-grow-1 hide-overflow grey-200">
-      <div class="d-flex flex-column flex-grow-1 justify-space-between">
+    <div class="d-flex flex-row flex-grow-1 hide-overflow">
+      <div class="d-flex flex-column flex-grow-1">
         <!-- Message List -->
         <div
           ref="messageList"
-          style="min-height: 0; overflow: hidden scroll !important;"
-          class="flex-grow-1 flex-shrink-1 pt-4"
+          style="overflow: hidden scroll !important;"
+          class="flex-grow-1 flex-shrink-1 pt-4 hide-overflow scroller"
         >
           <message-group
             v-for="group in messageGroups(messages)"
@@ -32,8 +32,12 @@
         </div>
 
         <!-- Message Field -->
-        <form @submit.prevent="sendMessage">
-          <v-text-field outlined dense single-line hide-details append-icon="mdi-send" v-model="message"/>
+        <form @submit.prevent="sendMessage" class="px-4 mb-6 message-form mt-n2">
+          <v-textarea solo flat dense
+                      no-resize hide-details single-line
+                      auto-grow :rows="1"
+                      background-color="grey-300"
+                      append-icon="mdi-send" v-model="message"/>
         </form>
       </div>
 
@@ -43,7 +47,8 @@
         style="position: fixed; left: 0px; top: 0px; width: 100vw; height: 100vh; z-index: 10;"
         v-if="searchActive"
       />
-      <div tile flat
+
+      <div
         class="d-flex flex-row align-start justify-center grey-100 searchmenu"
         :class="[this.searchActive ? 'searchmenu-shown' : 'searchmenu-hidden']"
         style="z-index: 10; transition: 0.2s; overflow: hidden scroll;"
@@ -78,6 +83,33 @@ $width: 400px;
   min-width: 300px !important;
   width: 300px !important;
   max-width: 300px !important;
+}
+
+.message-form {
+  background-color: transparent;
+
+  @mixin smooth-transition() {
+    background: linear-gradient(180deg, rgba(0,0,0,0) 0, map-get($greys, "200"));
+    content: "";
+    position: absolute;
+    top: 0;
+    height: .5rem;
+    width: 16px;
+  }
+
+  &::before {
+    @include smooth-transition;
+    left: 0;
+  }
+
+  &::after {
+    @include smooth-transition;
+    right: 0;
+  }
+}
+
+.scroller > *:last-child {
+  padding-bottom: 1rem !important;
 }
 </style>
 
