@@ -39,7 +39,6 @@
   .search-menu {
     @include ensure-width($chat-search-results-width);
 
-    transition: .2s;
     &[hidden] {
       margin-right: 0;
     }
