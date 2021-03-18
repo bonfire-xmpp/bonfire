@@ -36,9 +36,8 @@
 </script>
 
 <style scoped lang="scss">
-  $width: 400px;
   .search-menu {
-    @include ensure-width($width);
+    @include ensure-width($chat-search-results-width);
 
     transition: .2s;
     &[hidden] {
@@ -46,7 +45,7 @@
     }
 
     &:not([hidden]) {
-      margin-right: -$width;
+      margin-right: -$chat-search-results-width;
     }
   }
 </style>
