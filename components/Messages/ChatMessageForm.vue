@@ -7,6 +7,7 @@
                 background-color="grey-300"
                 append-icon="mdi-send"
                 v-model="message"
+                :placeholder="label"
                 @keydown="keypress"/>
     <div class="gutter white--text">
       <slot/>
@@ -17,6 +18,14 @@
 <script>
   export default {
     name: "ChatMessageForm",
+
+    props: {
+      label: {
+        type: String,
+        optional: true,
+        default: '',
+      }
+    },
 
     data() {
       return {

@@ -18,7 +18,7 @@
     </header-bar>
 
     <!-- Main Section -->
-    <div class="d-flex flex-row flex-grow-1 hide-overflow">
+    <main class="d-flex flex-row flex-grow-1 hide-overflow">
       <div class="d-flex flex-column flex-grow-1">
         <!-- Message List -->
         <div
@@ -33,7 +33,7 @@
         </div>
 
         <!-- Message Field -->
-        <chat-message-form @message="sendMessage"/>
+        <chat-message-form @message="sendMessage" :label="`Message ${bare}`"/>
       </div>
 
       <search-results
@@ -41,7 +41,7 @@
           :results="matches"
           v-click-outside="searchResultsClickOutside"/>
 
-    </div>
+    </main>
   </div>
 </template>
 
@@ -94,6 +94,8 @@ export default {
         include: () => [this.$refs.searchBar.$el]
       };
     },
+
+    bare() { return this.$stanza.toBare(this.$route.params.entity); },
 
     messages () {
       let list = this.$refs.messageList;
