@@ -6,10 +6,11 @@
 
 <script>
   import Message from "@/components/Chat/Message";
+  import HeadingMessage from "@/components/Chat/Message/HeadingMessage";
 
   export default {
     name: "SearchResult",
-    components: {Message},
+    components: {Message, HeadingMessage},
     props: {
       result: Object,
     },
