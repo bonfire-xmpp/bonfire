@@ -31,7 +31,7 @@
   import Avatar from "@/components/Avatar";
 
   export default {
-    name: "RosterItem",
+    name: "UserCard",
     components: { Avatar },
     props: {
       item: {

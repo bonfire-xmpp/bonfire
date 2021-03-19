@@ -1,6 +1,6 @@
-<template>
-  <heading-message v-if="heading" v-bind="$props"/>
-  <body-message v-else v-bind="$props"/>
+<template functional>
+  <heading-message v-if="props.heading" v-bind="props"/>
+  <body-message v-else v-bind="props"/>
 </template>
 
 <script>

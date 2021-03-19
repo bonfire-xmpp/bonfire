@@ -1,11 +1,11 @@
-<template>
-  <div class="body-message d-flex px-4 white--text w-100" :class="{'darken-on-hover': darkenOnHover}">
+<template functional>
+  <div class="body-message d-flex px-4 white--text w-100" :class="{'darken-on-hover': props.darkenOnHover}">
 
     <div class="gutter flex-shrink-0 unselectable">
-      <span class="timestamp grey-600--text">{{formatTime(new Date(timestamp))}}</span>
+      <span class="timestamp grey-600--text">{{$options.formatTime(new Date(props.timestamp))}}</span>
     </div>
 
-    <div class="ml-4 content">{{messageBody}}</div>
+    <div class="ml-4 content">{{props.body.trim()}}</div>
   </div>
 </template>
 
@@ -30,49 +30,41 @@ export default {
     }
   },
 
-  computed: {
-    messageBody() {
-      return this.body.trim();
-    }
-  },
+  formatTime(date) {
+    let hours = date.getHours();
 
-  methods: {
-    formatTime(date) {
-      let hours = date.getHours();
+    let ampm = hours > 12 ? 'PM' : 'AM';
+    hours = hours % 12;
 
-      let ampm = hours > 12 ? 'PM' : 'AM';
-      hours = hours % 12;
-
-      return `${hours.toString().padStart(2, "0")}:${date.getMinutes().toString().padStart(2, "0")} ${ampm}`;
-    },
+    return `${hours.toString().padStart(2, "0")}:${date.getMinutes().toString().padStart(2, "0")} ${ampm}`;
   },
 }
 </script>
 
 <style scoped lang="scss">
-  .body-message {
-    min-height: 1.5rem;
+.body-message {
+  min-height: 1.5rem;
 
-    &:not(:hover) .timestamp { display: none; }
-  }
+  &:not(:hover) .timestamp { display: none; }
+}
 
-  .darken-on-hover {
-    &:hover {
-      background: darken(map-get($greys, "200"), 3%) !important;
-    }
+.darken-on-hover {
+  &:hover {
+    background: darken(map-get($greys, "200"), 3%) !important;
   }
+}
 
-  .gutter {
-    width: 40px;
-  }
+.gutter {
+  width: 40px;
+}
 
-  .content {
-    font-weight: 300;
-    overflow-wrap: anywhere;
-    white-space: pre-line;
-  }
+.content {
+  font-weight: 300;
+  overflow-wrap: anywhere;
+  white-space: pre-line;
+}
 
-  .timestamp {
-    font-size: .75em;
-  }
+.timestamp {
+  font-size: .75em;
+}
 </style>

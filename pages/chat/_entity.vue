@@ -26,8 +26,8 @@
           class="flex-grow-1 flex-shrink-1 pt-4 hide-horizontal scroller"
         >
           <message-group
-            v-for="group in messageGroups(messages)"
-            :key="'group:' + group[0].timestamp"
+            v-for="(group, i) in messageGroups(messages)"
+            :key="i"
             :group="group"/>
         </div>
 
@@ -67,6 +67,9 @@ import { search, searchBlock } from "@/store/search";
 import MessageGroup from "@/components/Chat/MessageGroup";
 import ChatMessageForm from "@/components/Chat/ChatMessageForm";
 import SearchResults from "@/components/Chat/SearchResults";
+import Message from "@/components/Chat/Message";
+import HeadingMessage from "@/components/Chat/Message/HeadingMessage";
+import BodyMessage from "@/components/Chat/Message/BodyMessage";
 
 import * as XMPP from "stanza";
 
@@ -75,7 +78,8 @@ import * as msgpack from "@msgpack/msgpack";
 const lz4 = require("lz4js");
 
 export default {
-  components: { MessageGroup, ChatMessageForm, SearchResults },
+  key: 'chat',
+  components: { MessageGroup, ChatMessageForm, SearchResults, Message, HeadingMessage, BodyMessage },
   data () {
     return {
       message: "",
@@ -188,16 +192,32 @@ export default {
 
     ...mapMutations({ setActiveChat: Store.$mutations.setActiveChat })
   },
+
+  watch: {
+    async $route(value) {
+      this.setActiveChat({type: 'chat', entity: value.params.entity});
+      // get blocks from archive in correct order
+      let blocks = await messageDb.messageArchive
+          .where("with").equals(this.entity)
+          .reverse().limit(1).sortBy("timestamp");
+      blocks.reverse();
+      // combine messages
+      this.loadedMessages = blocks.reduce((acc, {block}) =>
+          acc.concat(msgpack.decode(lz4.decompress(block))), []
+      );
+    }
+  },
+
   async mounted () {
     this.setActiveChat({ type: 'chat', entity: this.$route.params.entity });
     // get blocks from archive in correct order
     let blocks = await messageDb.messageArchive
-      .where("with").equals(this.entity)
-      .reverse().limit(10).sortBy("timestamp");
+        .where("with").equals(this.entity)
+        .reverse().limit(10).sortBy("timestamp");
     blocks.reverse();
     // combine messages
     this.loadedMessages = blocks.reduce((acc, {block}) =>
-      acc.concat(msgpack.decode(lz4.decompress(block))), []
+        acc.concat(msgpack.decode(lz4.decompress(block))), []
     );
   }
 }
