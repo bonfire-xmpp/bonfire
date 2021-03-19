@@ -46,3 +46,7 @@
   background: map-get($scrollbar-color, "foreground");
   border-radius: 10px;
 }
+
+b {
+  font-weight: 600 !important;
+}

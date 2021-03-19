@@ -23,8 +23,7 @@
         <!-- Message List -->
         <div
           ref="messageList"
-          style="overflow: hidden scroll !important;"
-          class="flex-grow-1 flex-shrink-1 pt-4 hide-overflow scroller"
+          class="flex-grow-1 flex-shrink-1 pt-4 hide-horizontal scroller"
         >
           <message-group
             v-for="group in messageGroups(messages)"
@@ -65,9 +64,9 @@ import { Store } from "@/store";
 import { MessageStore } from '@/store/messages';
 import { search, searchBlock } from "@/store/search";
 
-import MessageGroup from "@/components/Messages/MessageGroup";
-import ChatMessageForm from "@/components/Messages/ChatMessageForm";
-import SearchResults from "@/components/Messages/SearchResults";
+import MessageGroup from "@/components/Chat/MessageGroup";
+import ChatMessageForm from "@/components/Chat/ChatMessageForm";
+import SearchResults from "@/components/Chat/SearchResults";
 
 import * as XMPP from "stanza";
 
