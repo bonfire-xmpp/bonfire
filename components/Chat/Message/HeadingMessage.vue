@@ -1,5 +1,5 @@
 <template>
-  <div class="header-message d-flex align-top px-4 white--text">
+  <div class="header-message d-flex align-top px-4 white--text" :class="{'darken-on-hover': darkenOnHover}">
     <avatar :size="40" :jid="from" class="flex-grow-0 mt-1"/>
     <main class="ml-4 h-100 d-flex flex-column">
       <div class="unselectable">
@@ -24,6 +24,10 @@
         type: Boolean,
       },
       showFullJid: {
+        default: false,
+        type: Boolean,
+      },
+      darkenOnHover: {
         default: false,
         type: Boolean,
       }
@@ -51,6 +55,9 @@
 <style scoped lang="scss">
   .header-message {
     min-height: 3rem;
+  }
+
+  .darken-on-hover {
     &:hover {
       background: darken(map-get($greys, "200"), 3%) !important;
     }

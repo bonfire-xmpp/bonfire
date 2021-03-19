@@ -1,5 +1,5 @@
 <template>
-  <div class="body-message d-flex px-4 white--text w-100">
+  <div class="body-message d-flex px-4 white--text w-100" :class="{'darken-on-hover': darkenOnHover}">
 
     <div class="gutter flex-shrink-0 unselectable">
       <span class="timestamp grey-600--text">{{formatTime(new Date(timestamp))}}</span>
@@ -21,6 +21,10 @@ export default {
       type: Boolean,
     },
     showFullJid: {
+      default: false,
+      type: Boolean,
+    },
+    darkenOnHover: {
       default: false,
       type: Boolean,
     }
@@ -49,11 +53,13 @@ export default {
   .body-message {
     min-height: 1.5rem;
 
+    &:not(:hover) .timestamp { display: none; }
+  }
+
+  .darken-on-hover {
     &:hover {
       background: darken(map-get($greys, "200"), 3%) !important;
     }
-
-    &:not(:hover) .timestamp { display: none; }
   }
 
   .gutter {

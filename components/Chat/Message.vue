@@ -25,6 +25,10 @@ export default {
     heading: {
       default: false,
       type: Boolean,
+    },
+    darkenOnHover: {
+      default: false,
+      type: Boolean,
     }
   },
 }
