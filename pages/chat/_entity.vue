@@ -2,7 +2,7 @@
   <div class="d-flex flex-column grey-200">
     <!-- Header -->
     <header-bar class="flex-shrink-0 d-flex px-4 align-center">
-      <user-card :item="currentItem" selected class="user-card"/>
+      <user-card :item="currentItem" selected class="user-card overflow-hidden"/>
       <v-spacer/>
       <div class="py-2">
         <v-text-field
@@ -50,7 +50,8 @@
   }
 
   .user-card {
-    @include v-badge-border-color(map-get($greys, "200"))
+    @include v-badge-border-color(map-get($greys, "200"));
+    white-space: nowrap;
   }
 
   .scroller > *:last-child {
