@@ -23,7 +23,7 @@
       <div style="margin-top: -2px;">
       <message
         v-for="mesg in group.slice(1)" 
-        :key="'msg:' + mesg.timestamp"
+        :key="'msg:' + mesg.id"
         :jid="mesg.from"
         :body="mesg.body"
         :time="formatTime(new Date(mesg.timestamp))"/>

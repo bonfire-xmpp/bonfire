@@ -24,7 +24,7 @@
         >
           <message-group
             v-for="group in messageGroups(messages)" 
-            :key="'group:' + group[0].timestamp"
+            :key="'group:' + group[0].id"
             :group="group"/>
         </div>
         
@@ -112,7 +112,7 @@ export default {
         });
       }
       let curblock = this.$store.state[MessageStore.namespace][MessageStore.$states.messages][this.entity];
-      return this.loadedMessages.concat(curblock).filter(x => !!x);
+      return this.loadedMessages.concat(curblock).filter(x => !!x).sort((a, b) => a.timestamp - b.timestamp);
     },
     currentItem () {
       if (!this.$store.state[Store.$states.roster] || !this.$store.state[Store.$states.avatars]) return {};
@@ -163,7 +163,6 @@ export default {
       this.searchTimeout = setTimeout(this.search, 100);
     },
     async search () {
-      let matches = [];
       let blocks = await Promise.all([
         messageDb.messages
           .where("with")
@@ -174,7 +173,8 @@ export default {
           .then(eblocks => eblocks.map(eblock => 
             msgpack.decode(lz4.decompress(eblock.block))
           )),
-      ]).then(x => x.flat(1));
+      ]).then(x => x.flat(1).filter(x => x.length));
+      let matches = [];
       for (let block of blocks) {
         for (let msg of searchBlock(block, this.searchText)) {
           matches.push(msg);
@@ -201,10 +201,12 @@ export default {
   },
   async mounted () {
     this.setActiveChat({ type: 'chat', entity: this.$route.params.entity });
+    await this.$store.dispatch(`${MessageStore.namespace}/${MessageStore.$actions.syncMessages}`, this.entity);
     // get blocks from archive in correct order
     let blocks = await messageDb.messageArchive
-      .where("with").equals(this.entity)
-      .reverse().limit(10).sortBy("timestamp");
+      .orderBy("timestamp").reverse().limit(100)
+      .filter(x => x.with == this.entity)
+      .toArray();
     blocks.reverse();
     // combine messages
     this.loadedMessages = blocks.reduce((acc, {block}) => 
