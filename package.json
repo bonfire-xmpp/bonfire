@@ -21,6 +21,8 @@
     "fuzzy-matching": "^0.4.3",
     "lz4js": "^0.2.0",
     "nuxt": "^2.14.12",
+    "overlayscrollbars": "^1.13.1",
+    "overlayscrollbars-vue": "^0.2.2",
     "stanza": "^12.15.0"
   },
   "devDependencies": {
