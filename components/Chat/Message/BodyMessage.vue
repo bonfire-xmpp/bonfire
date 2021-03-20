@@ -42,29 +42,5 @@ export default {
 </script>
 
 <style scoped lang="scss">
-.body-message {
-  min-height: 1.5rem;
-
-  &:not(:hover) .timestamp { display: none; }
-}
-
-.darken-on-hover {
-  &:hover {
-    background: darken(map-get($greys, "200"), 3%) !important;
-  }
-}
-
-.gutter {
-  width: 40px;
-}
-
-.content {
-  font-weight: 300;
-  overflow-wrap: anywhere;
-  white-space: pre-line;
-}
-
-.timestamp {
-  font-size: .75em;
-}
+@import "message";
 </style>

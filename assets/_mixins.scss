@@ -15,3 +15,9 @@
     border-color: $color !important;
   }
 }
+
+@mixin darken-on-hover($background) {
+  &:hover {
+    background: darken($background, 3%) !important;
+  }
+}

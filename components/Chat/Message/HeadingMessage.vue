@@ -49,23 +49,5 @@
 </script>
 
 <style scoped lang="scss">
-  .header-message {
-    min-height: 3rem;
-  }
-
-  .darken-on-hover {
-    &:hover {
-      background: darken(map-get($greys, "200"), 3%) !important;
-    }
-  }
-
-  .content {
-    font-weight: 300;
-    white-space: pre-line;
-    overflow-wrap: anywhere;
-  }
-
-  .timestamp {
-    font-size: .75em;
-  }
+@import "message";
 </style>
