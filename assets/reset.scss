@@ -31,20 +31,16 @@
 .hide-horizontal { overflow-x: hidden !important; }
 
 /** Scrollbar **/
-
-// Firefox has only this for scrollbar customization
-* {
-  scrollbar-width: thin !important;
-  scrollbar-color: map-get($scrollbar-color, "foreground") map-get($scrollbar-color, "background");
+.os-scrollbar-track, .os-scrollbar-track:hover, .os-scrollbar-track.active {
+  background-color: transparentize(map-get($black, "base"), .7) !important;
 }
 
-::-webkit-scrollbar {
-  width: 5px;
-  background: none;
+.wide-scrollbar .os-scrollbar-vertical {
+  width: .7em !important;
 }
-::-webkit-scrollbar-thumb {
-  background: map-get($scrollbar-color, "foreground");
-  border-radius: 10px;
+
+.narrow-scrollbar .os-scrollbar-vertical {
+  width: 8px !important;
 }
 
 b {

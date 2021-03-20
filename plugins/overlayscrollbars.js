@@ -7,8 +7,14 @@ Vue.use(OverlayScrollbarsPlugin);
 
 Vue.component('overlay-scrollbars', OverlayScrollbarsComponent);
 
-OverlayScrollbars(document.body, {
+OverlayScrollbars({
     nativeScrollbarsOverlaid: {
         initialize: false
-    }
+    },
+    overflowBehavior: {
+        x: 'hidden',
+    },
+    scrollbars: {
+        clickScrolling: true,
+    },
 });

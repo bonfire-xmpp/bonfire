@@ -19,17 +19,19 @@
 
     <!-- Main Section -->
     <main class="d-flex flex-row flex-grow-1 hide-overflow">
-      <div class="d-flex flex-column flex-grow-1">
+      <div class="d-flex flex-column flex-grow-1 os-host-flexbox">
         <!-- Message List -->
-        <div
+        <overlay-scrollbars
           ref="messageList"
-          class="flex-grow-1 flex-shrink-1 pt-4 hide-horizontal scroller"
-        >
-          <message-group
-            v-for="(group, i) in messageGroups(messages)"
-            :key="i"
-            :group="group"/>
-        </div>
+          class="flex-grow-1 flex-shrink-1 wide-scrollbar"
+          :options="{scrollbars:{clickScrolling: true}}">
+          <div class="pt-4 scroller">
+            <message-group
+              v-for="(group, i) in messageGroups(messages)"
+              :key="i"
+              :group="group"/>
+          </div>
+        </overlay-scrollbars>
 
         <!-- Message Field -->
         <chat-message-form @message="sendMessage" :label="`Message ${bare}`"/>
@@ -106,12 +108,6 @@ export default {
     bare() { return this.$stanza.toBare(this.$route.params.entity); },
 
     messages () {
-      let list = this.$refs.messageList;
-      if (list && (list.scrollHeight - list.scrollTop - list.clientHeight) === 0) {
-        this.$nextTick(() => {
-          list.scrollTop = list.scrollHeight;
-        });
-      }
       let curblock = this.$store.state[MessageStore.namespace][MessageStore.$states.messages][this.entity];
       return this.loadedMessages.concat(curblock).filter(x => !!x);
     },
