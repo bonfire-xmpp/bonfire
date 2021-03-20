@@ -18,6 +18,10 @@
   &:not(:hover) .timestamp { display: none; }
 }
 
+.header-message, .body-message {
+  overflow: hidden;
+}
+
 .darken-on-hover {
   @include darken-on-hover(map-get($greys, "200"));
 }
