@@ -1,15 +1,15 @@
 const FuzzyMatching = require("fuzzy-matching");
 
-const kWhitespaceRegex = new RegExp(/\s+/);
+const kWordBreakRegex = new RegExp(/\P{L}+/u);
 const kNotLetterRegex = new RegExp(/\P{L}/gu);
 const toWords = string => string
-    .split(kWhitespaceRegex)
+    .split(kWordBreakRegex)
     .map(x => x.replaceAll(kNotLetterRegex, "").toLowerCase())
     .filter(x => !!x.length);
-const toPrefixes =
+const toPrefixes = 
     string => Array.from(new Set(
         string
-            .split(kWhitespaceRegex)
+            .split(kWordBreakRegex)
             .map(x => x.replaceAll(kNotLetterRegex, "").toLowerCase().slice(0, 4))
     )).filter(x => !!x.length);
 
@@ -24,7 +24,7 @@ function fuzzyIntersect(sets) {
     }
     return Array
         .from(counts.entries())
-        .filter(([, v]) => v > (sets.length - 1) * 0.6)
+        .filter(([, v]) => v > (sets.length - 1) * 0.4)
         .map(([k]) => k);
 }
 
@@ -65,7 +65,7 @@ function scoreMessage(mesg, words) {
     for (let queryword of words) {
         let { value, distance } = fm.get(queryword);
         if (!value) continue;
-        score += distance * (value.length / queryword.length);
+        score += distance * Math.min(1, value.length / queryword.length);
     }
     return score / words.length;
 }
@@ -73,6 +73,4 @@ function scoreMessage(mesg, words) {
 export const searchBlock = (block, query) =>
     block
         .map(mesg => [mesg, scoreMessage(mesg.body, toWords(query))])
-        .filter(([, score]) => score > 0.6)
-        .sort(([, as], [, bs]) => bs - as)
-        .map(([mesg]) => mesg);
+        .filter(([, score]) => score > 0.8);

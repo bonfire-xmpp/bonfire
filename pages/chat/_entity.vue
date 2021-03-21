@@ -8,6 +8,7 @@
         <v-text-field
           @focus="openSearch" @click="openSearch"
           @keydown.esc="closeSearch" @keydown="searchUpdate"
+          :class="{unselectable: !this.searchActive}"
           v-model="searchText"
           single-line dense solo clearable hide-details flat
           background-color="grey-100"
@@ -173,7 +174,7 @@ export default {
           matches.push(msg);
         }
       }
-      this.matches = matches;
+      this.matches = matches.sort(([, as], [, bs]) => bs - as).map(([msg]) => msg);
     },
 
     openSearch () {
