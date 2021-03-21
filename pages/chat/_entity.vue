@@ -201,10 +201,15 @@ export default {
   },
   async mounted () {
     this.setActiveChat({ type: 'chat', entity: this.$route.params.entity });
-    await this.$store.dispatch(`${MessageStore.namespace}/${MessageStore.$actions.syncMessages}`, this.entity);
+    // ensure some blocks are loaded
+    if (await messageDb.messageArchive.where("with").equals(this.entity).count() < 4) {
+      await this.$store.dispatch(`${MessageStore.namespace}/${MessageStore.$actions.syncMessages}`, this.entity);
+    }
+    await this.$store.dispatch(`${MessageStore.namespace}/${MessageStore.$actions.loadCurrentMessages}`, this.entity);
+    this.$store.dispatch(`${MessageStore.namespace}/${MessageStore.$actions.syncMessages}`, this.entity);
     // get blocks from archive in correct order
     let blocks = await messageDb.messageArchive
-      .orderBy("timestamp").reverse().limit(100)
+      .orderBy("timestamp").reverse().limit(4)
       .filter(x => x.with == this.entity)
       .toArray();
     blocks.reverse();
