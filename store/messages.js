@@ -45,8 +45,8 @@ const $getters = {
     hasMessage: 'HAS_MESSAGE',
 };
 const $actions = {
-    restoreMessagesFromStorage: 'RESTORE_MESSAGES_FROM_STORAGE',
     syncMessages: 'SYNC_MESSAGES',
+    loadCurrentMessages: 'LOAD_CURRENT_MESSAGES',
     addMessage: "ADD_MESSAGE",
 };
 const $mutations = {
@@ -69,103 +69,85 @@ export const getters = {
         return !!state[$states.messagesById][id];
     },
 };
+
+const delayIterator = async (cb, delay) => {
+    while (await cb()) await new Promise(resolve => setTimeout(resolve, delay));
+}
+
+const kBlockSize = 10;
+
+async function insertBlock(messages, jid) {
+    let timestamp = messages.reduce((acc, x) => Math.min(acc, x.timestamp), messages[0].timestamp);
+    let compblock = lz4.compress(Buffer.from(msgpack.encode(messages)));
+    let id = await messageDb.messageArchive.add({ block: compblock, timestamp, with: jid });
+    await populateSearchIndex(messageDb, id, messages);
+}
+
 export const actions = {
+    /** LOAD_CURRENT_MESSAGES **/
+    async [$actions.loadCurrentMessages] ({ commit }, jid) {
+        commit($mutations.setMessages, { jid, messages: await messageDb.messages.where("with").equals(jid).toArray() });
+    },
+
     /** SYNC_MESSAGES **/
-    async [$actions.syncMessages] ( { commit, rootState }, jid ) {
-        const loginDate = rootState[Store.$states.loginDate];
-        const lastMessageTimestamp = (await messageDb.messages
-            .where('with').equals(jid)
-            .and(m => m.timestamp < loginDate)
-            .reverse().sortBy('timestamp'))?.[0]?.timestamp;
-
-        const search = after => this.$stanza.client.searchHistory({
-            with: jid,
-            start: lastMessageTimestamp,
-            end: loginDate,
-            paging: {
-                max: 50,
-                after,
-            }
-        });
-
+    async [$actions.syncMessages] ( { dispatch }, jid ) {
+        // QUERY SERVER FOR MESSAGES
+        let curmessages =
+            await messageDb.messageArchive.where("with").equals(jid).sortBy("timestamp") ||
+            await messageDb.messages.where("with").equals(jid).sortBy("timestamp");
+        let lastTimestamp;
+        if (curmessages?.length) {
+            lastTimestamp = new Date(curmessages[0].timestamp - 1);
+        }
+        
+        let messagesSeen = 0;
         let messages = [];
-        let response = {};
-        const pageTimes = []
-        while(!response.complete) {
-            // const before = new Date();
-            response = await search(response.paging?.last);
-            // const after = new Date();
-            // console.log("It took " + (after - before) + "ms to get a page");
-            // pageTimes.push(after - before);
-
-            // console.log(response);
-            messages = messages.concat(response.results.filter(i => !!i.item.message.body).map(i => i.item))
-        }
-
-        // console.log("Total page time: " + pageTimes.reduce((acc, x) => acc + x, 0) + "ms");
-        // console.log("Average page time: " + pageTimes.reduce((acc, x) => acc + x, 0) / pageTimes.length + "ms");
-
-        const formattedMessages = messages.map(m => ({
-            timestamp: m.delay.timestamp,
-            with: XMPP.JID.toBare(this.$stanza.determineRelatedParty(m.message)),
-            ...m.message
-        }))
-
-        // Since they all ended up in an archive, it means they were delivered
-        const messageStates = formattedMessages.map(m => ({
-            id: m.id,
-            state: {
-                server: true,
-                muc: true,
+        let lastID = "";
+        await delayIterator(async () => {
+            // search from the first ID in the last page, but only messages before the earliest stored timestamp
+            let history = await this.$stanza.client.searchHistory({
+                with: jid,
+                paging: { before: lastID },
+                end: lastTimestamp,
+            });
+            console.log(history);
+            
+            for (let { item: { message, delay } } of history.results) {
+                if (message.body) {
+                    message.from = XMPP.JID.toBare(message.from);
+                    message.to = XMPP.JID.toBare(message.to);
+                    message.with = XMPP.JID.toBare(message.with);
+                    message.timestamp = delay.timestamp.getTime();
+                    messages.push(message);
+                    ++messagesSeen;
+                }
             }
-        }))
-
-        messageDb.messages.bulkPut(formattedMessages);
-        messageDb.messageStates.bulkPut(messageStates);
-    },
-
-    /** RESTORE_MESSAGES_FROM_STORAGE **/
-    async [$actions.restoreMessagesFromStorage] ( { commit } ) {
-        try {
-            const withs = await messageDb.messages.orderBy('with').uniqueKeys();
-
-            const messagesByJid = {};
-            const messageStateById = {};
-            const messagesById = {};
-
-            for (const jid of withs) {
-                // Last 100 messages with each JID present
-                const lastHundred = (await messageDb.messages
-                    .where('with').equals(jid)
-                    .sortBy('timestamp'))
-                    .slice(0, 100);
-
-                console.log(jid, lastHundred);
-                messagesByJid[jid] = lastHundred;
-
-                const ids = []
-                lastHundred.map(m => {
-                    messagesById[m.id] = m;
-                    ids.push(m.id);
+            
+            if (messages.length >= kBlockSize) {
+                await messageDb.transaction("rw", messageDb.messageArchive, messageDb.prefixIndex, async () => {
+                    await insertBlock(messages, jid);
                 });
-
-                (await messageDb.messageStates
-                    .where('id').anyOf(ids)
-                    .toArray()).map(s => messageStateById[s.id] = s);
+                messages = [];
             }
-
-            commit($mutations.setMessages, messagesByJid);
-            commit($mutations.setMessagesById, messagesById);
-            commit($mutations.setMessageStateById, messageStateById);
-        } catch (e) {
-            console.error("Couldn't restore messages from storage!", e);
+            lastID = history.paging.first;
+            
+            return messagesSeen < 40 && !history.complete;
+        }, 100);
+        
+        // add remaining messages to a block
+        if (messages.length) {
+            console.log(messages);
+            await messageDb.transaction("rw", messageDb.messageArchive, messageDb.prefixIndex, async () => {
+                await insertBlock(messages, jid);
+            });
         }
+        await dispatch($actions.loadCurrentMessages, jid);
     },
-
+        
     /** ADD_MESSAGE **/
     async [$actions.addMessage] ({ commit }, { jid, message, state: messageState }) {
         const bareJid = XMPP.JID.toBare(jid);
-        message.timestamp = Date.now();
+        message.timestamp ||= Date.now();
         message.with = bareJid;
         
         commit($mutations.addMessage, { bareJid, message, messageState });
@@ -174,32 +156,27 @@ export const actions = {
         }
 
         try {
-            await messageDb.messages.add(message);
+            await messageDb.messages.put(message);
         } catch (_) {
             return;
         }
 
         // message block archive
-        const query = messageDb.messages.where("with").equals(bareJid);
-        if ((await query.count()) >= 100) {
-            let array = await query.sortBy("timestamp");
-            let timestamp = array[array.length - 1].timestamp;
-            let compblock = lz4.compress(Buffer.from(msgpack.encode(array)));
-            let id = await messageDb.messageArchive.add({
-                block: compblock, 
-                timestamp,
-                with: bareJid
-            });
-            populateSearchIndex(messageDb, id, array);
-            await query.delete();
-        }
+        await messageDb.transaction("rw", messageDb.messages, messageDb.messageArchive, messageDb.prefixIndex, async () => {
+            const query = messageDb.messages.where("with").equals(bareJid);
+            if ((await query.count()) >= kBlockSize) {
+                // block timestamp is first message timestamp
+                await insertBlock(await query.sortBy("timestamp"), bareJid);
+                await query.delete();
+            }
+        });
     }
 };
 
 export const mutations = {
     /** SET_MESSAGES **/
-    [$mutations.setMessages] ( state, data ) {
-        state[$states.messages] = data;
+    [$mutations.setMessages] ( state, { jid, messages }) {
+        Vue.set(state[$states.messages], jid, messages);
     },
     
     /** SET_MESSAGES_BY_ID **/
@@ -217,13 +194,7 @@ export const mutations = {
         if(!state[$states.messages][bareJid])
             Vue.set(state[$states.messages], bareJid, []);
 
-        const size = state[$states.messages][bareJid].push(message);
-
-        // Rolling buffer of 100 items/JID
-        if(size > 100) {
-            const message = state[$states.messages][bareJid].splice(0, 1);
-            state[$states.messagesById].delete(message[0].id);
-        }
+        state[$states.messages][bareJid].push(message);
 
         Vue.set(state[$states.messagesById], message.id, message);
 

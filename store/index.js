@@ -166,8 +166,6 @@ export const actions = {
 
         // If we logged in, try restoring messages too
         if(state[$states.loginState].loggedIn) {
-            await dispatch(`${MessageStore.namespace}/${MessageStore.$actions.restoreMessagesFromStorage}`);
-
             const [presenceData] = loadFromSession($states.presences);
             if(presenceData) {
                 for (const presenceDatum in presenceData)

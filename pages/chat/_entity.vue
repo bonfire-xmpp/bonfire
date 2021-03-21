@@ -109,7 +109,7 @@ export default {
 
     messages () {
       let curblock = this.$store.state[MessageStore.namespace][MessageStore.$states.messages][this.entity];
-      return this.loadedMessages.concat(curblock).filter(x => !!x);
+      return this.loadedMessages.concat(curblock).filter(x => !!x).sort((a, b) => a.timestamp - b.timestamp);
     },
     currentItem () {
       if (!this.$store.state[Store.$states.roster] || !this.$store.state[Store.$states.avatars]) return {};
@@ -150,7 +150,6 @@ export default {
       this.searchTimeout = setTimeout(this.search, 100);
     },
     async search () {
-      let matches = [];
       let blocks = await Promise.all([
         messageDb.messages
           .where("with")
@@ -161,7 +160,8 @@ export default {
           .then(eblocks => eblocks.map(eblock =>
             msgpack.decode(lz4.decompress(eblock.block))
           )),
-      ]).then(x => x.flat(1));
+      ]).then(x => x.flat(1).filter(x => x.length));
+      let matches = [];
       for (let block of blocks) {
         for (let msg of searchBlock(block, this.searchText)) {
           matches.push(msg);
@@ -187,35 +187,38 @@ export default {
       return XMPP.JID.getLocal(jid);
     },
 
+    async fetchMessages () {
+      let entity = this.$route.params.entity;
+      // ensure some blocks are loaded
+      if (await messageDb.messageArchive.where("with").equals(entity).count() < 4) {
+        await this.$store.dispatch(`${MessageStore.namespace}/${MessageStore.$actions.syncMessages}`, entity);
+      }
+      await this.$store.dispatch(`${MessageStore.namespace}/${MessageStore.$actions.loadCurrentMessages}`, entity);
+      this.$store.dispatch(`${MessageStore.namespace}/${MessageStore.$actions.syncMessages}`, entity);
+      // get blocks from archive in correct order
+      let blocks = (await messageDb.messageArchive
+        .orderBy("timestamp").reverse()
+        .filter(x => x.with == entity)
+        .toArray()).slice(0, 10);
+      blocks.reverse();
+      // combine messages
+      this.loadedMessages = blocks.reduce((acc, {block}) =>
+          acc.concat(msgpack.decode(lz4.decompress(block))), []
+      );
+    },
+
     ...mapMutations({ setActiveChat: Store.$mutations.setActiveChat })
   },
 
   watch: {
     async $route(value) {
       this.setActiveChat({type: 'chat', entity: value.params.entity});
-      // get blocks from archive in correct order
-      let blocks = await messageDb.messageArchive
-          .where("with").equals(this.entity)
-          .reverse().limit(1).sortBy("timestamp");
-      blocks.reverse();
-      // combine messages
-      this.loadedMessages = blocks.reduce((acc, {block}) =>
-          acc.concat(msgpack.decode(lz4.decompress(block))), []
-      );
+      await this.fetchMessages();
     }
   },
-
+  
   async mounted () {
-    this.setActiveChat({ type: 'chat', entity: this.$route.params.entity });
-    // get blocks from archive in correct order
-    let blocks = await messageDb.messageArchive
-        .where("with").equals(this.entity)
-        .reverse().limit(10).sortBy("timestamp");
-    blocks.reverse();
-    // combine messages
-    this.loadedMessages = blocks.reduce((acc, {block}) =>
-        acc.concat(msgpack.decode(lz4.decompress(block))), []
-    );
+    await this.fetchMessages();
   }
 }
 </script>

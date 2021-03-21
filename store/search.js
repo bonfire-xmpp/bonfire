@@ -28,21 +28,24 @@ function fuzzyIntersect(sets) {
         .map(([k]) => k);
 }
 
-export function populateSearchIndex(db, blockID, messages) {
+export async function populateSearchIndex(db, blockID, messages) {
     const prefixes = new Set();
     for (let message of messages) {
         for (let prefix of toPrefixes(message.body)) {
             prefixes.add(prefix);
         }
     }
-    for (let prefix of prefixes) {
-        const query = db.prefixIndex.where("prefix").equals(prefix);
-        query.count().then(count => {
-            !count && db.prefixIndex.add({prefix, blocks: []});
-        }).then(() => {
-            query.modify(x => x.blocks.push(blockID));
-        });
-    }
+
+    await db.transaction("rw", db.prefixIndex, async () => {
+        for (let prefix of prefixes) {
+            const query = db.prefixIndex.where("prefix").equals(prefix);
+            await query.count().then(count => {
+                !count && db.prefixIndex.add({prefix, blocks: []});
+            }).then(() => {
+                query.modify(x => x.blocks.push(blockID));
+            });
+        }
+    });
 }
 
 export async function search(query) {
