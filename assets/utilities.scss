@@ -31,12 +31,6 @@ $height-width-helper-sizes: splitIntoSteps(100, 20);
   }
 }
 
-.hide-overflow {
-  overflow: hidden;
-  white-space: nowrap;
-  text-overflow: ellipsis;
-}
-
 .border-circle-right {
   border-bottom-right-radius: 50%;
   border-top-right-radius: 50%;
@@ -45,26 +39,6 @@ $height-width-helper-sizes: splitIntoSteps(100, 20);
 .justify-content-between {
   justify-content: space-between !important;
   -ms-flex-pack: justify !important;
-}
-
-.reset-link {
-  text-decoration: none !important;
-  cursor: pointer !important;
-  color: map-get($white, "lighten") !important;
-}
-
-.material-shadow {
-  box-shadow: 0px 0px 10px transparentize(black, 0.75);
-}
-
-// Unselectable text
-.unselectable {
-  -webkit-touch-callout: none;
-  -webkit-user-select: none;
-  -khtml-user-select: none;
-  -moz-user-select: none;
-  -ms-user-select: none;
-  user-select: none;
 }
 
 .clickable > * {
@@ -86,19 +60,38 @@ $height-width-helper-sizes: splitIntoSteps(100, 20);
   }
 }
 
-/** Scrollbar **/
-
-// Firefox has only this for scrollbar customization
-* {
-  scrollbar-width: thin !important;
-  scrollbar-color: map-get($scrollbar-color, "foreground") map-get($scrollbar-color, "background");
+$position-values: (absolute, relative, fixed, static);
+@each $value in $position-values {
+  .position-#{$value} {
+    position: $value;
+  }
 }
 
-::-webkit-scrollbar {
-  width: 5px;
-  background: none;
+.lighten-on-hover {
+  @extend .position-relative;
+
+  & > * {
+    @extend .position-relative;
+    z-index: 5;
+  }
+
+  &:hover::before {
+    content: "";
+
+    @extend .position-absolute, .w-100, .h-100;
+
+    z-index: 1;
+
+    background: white;
+    filter: opacity(0.06);
+  }
 }
-::-webkit-scrollbar-thumb {
-  background: map-get($scrollbar-color, "foreground");
-  border-radius: 10px;
+
+.light-shadow {
+  box-shadow: 0 1px 0 rgba(4,4,5,0.2),0 1.5px 0 rgba(6,6,7,0.05),0 2px 0 rgba(4,4,5,0.05);;
+}
+
+// TODO: Interim fix for https://github.com/vuetifyjs/vuetify/pull/13296
+.v-badge--bordered .v-badge__badge::after {
+  border-radius: 100% !important;
 }

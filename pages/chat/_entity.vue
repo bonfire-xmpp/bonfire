@@ -1,81 +1,64 @@
 <template>
-  <div class="d-flex flex-nowrap flex-column flex-grow-1">
+  <div class="d-flex flex-column grey-200">
     <!-- Header -->
-    <v-container fluid style="height: 64px; z-index: 4;" class="unselectable grey-100 d-flex flex-row align-center">
-      <user-card :item="currentItem"/>
+    <header-bar class="flex-shrink-0 d-flex px-4 align-center">
+      <user-card :item="currentItem" selected class="user-card overflow-hidden"/>
       <v-spacer/>
-      <v-text-field
-        @focus="openSearch" @click="openSearch"
-        @keydown.esc="closeSearch" @keydown="searchUpdate" 
-        v-model="searchText"
-        single-line dense solo clearable hide-details 
-        label="Search" class="searchbar"
-      />
-    </v-container>
+      <div class="py-2">
+        <v-text-field
+          @focus="openSearch" @click="openSearch"
+          @keydown.esc="closeSearch" @keydown="searchUpdate"
+          v-model="searchText"
+          single-line dense solo clearable hide-details flat
+          background-color="grey-100"
+          label="Search" class="searchbar"
+          ref="searchBar"
+        />
+      </div>
+    </header-bar>
 
     <!-- Main Section -->
-    <div class="d-flex flex-nowrap flex-row flex-grow-1 hide-overflow">
-      <div class="d-flex flex-column flex-grow-1 justify-space-between">
+    <main class="d-flex flex-row flex-grow-1 hide-overflow">
+      <div class="d-flex flex-column flex-grow-1 os-host-flexbox">
         <!-- Message List -->
-        <div
-          ref="messageList" 
-          style="min-height: 0; overflow: hidden scroll !important;"
-          class="flex-grow-1 flex-shrink-1 pt-4"
-        >
-          <message-group
-            v-for="group in messageGroups(messages)" 
-            :key="'group:' + group[0].timestamp"
-            :group="group"/>
-        </div>
-        
+        <overlay-scrollbars
+          ref="messageList"
+          class="flex-grow-1 flex-shrink-1 wide-scrollbar"
+          :options="{scrollbars:{clickScrolling: true}}">
+          <div class="pt-4 scroller">
+            <message-group
+              v-for="(group, i) in messageGroups(messages)"
+              :key="i"
+              :group="group"/>
+          </div>
+        </overlay-scrollbars>
+
         <!-- Message Field -->
-        <form @submit.prevent="sendMessage">
-          <v-text-field outlined dense single-line hide-details append-icon="mdi-send" v-model="message"/>
-        </form>
+        <chat-message-form @message="sendMessage" :label="`Message ${bare}`"/>
       </div>
 
-      <!-- Search Results -->
-      <div 
-        @click="closeSearch"
-        style="position: fixed; left: 0px; top: 0px; width: 100vw; height: 100vh; z-index: 10;" 
-        v-if="searchActive"
-      />
-      <div tile flat
-        class="d-flex flex-row align-start justify-center grey-100 searchmenu" 
-        :class="[this.searchActive ? 'searchmenu-shown' : 'searchmenu-hidden']" 
-        style="z-index: 10; transition: 0.2s; overflow: hidden scroll;"
-      >
-        <div style="width: 100%;" class="d-flex flex-column">
-          <div v-for="match in matches" :key="match.id" class="mb-4">
-            <p class="ma-0 px-2">{{formatTime(new Date(match.timestamp))}}</p>
-            <p class="ma-0 px-2 flex-shrink-1" style="white-space: normal;">
-              <b>{{localPart(match.from)}}</b> - {{match.body}}
-            </p>
-          </div>
-        </div>
-      </div>
-    </div>
+      <search-results
+          :hidden="searchActive"
+          :results="matches"
+          v-click-outside="searchResultsClickOutside"/>
+
+    </main>
   </div>
 </template>
 
-<style lang="scss">
-$width: 400px;
-.searchmenu {
-  width: $width !important;
-  min-width: $width !important;
-  max-width: $width !important;
-  &-shown {
-    margin-right: 0px;
+<style lang="scss" scoped>
+  .searchbar {
+    @include ensure-width(300px)
   }
-  &-hidden {
-    margin-right: -$width;
+
+  .user-card {
+    @include v-badge-border-color(map-get($greys, "200"));
+    white-space: nowrap;
   }
-}
-.searchbar {
-  min-width: 300px !important;
-  width: 300px !important; 
-  max-width: 300px !important;
-}
+
+  .scroller > *:last-child {
+    padding-bottom: 1rem !important;
+  }
 </style>
 
 <script>
@@ -83,14 +66,23 @@ import { mapMutations } from 'vuex';
 import { Store } from "@/store";
 import { MessageStore } from '@/store/messages';
 import { search, searchBlock } from "@/store/search";
-import MessageGroup from "@/components/Messages/MessageGroup";
+
+import MessageGroup from "@/components/Chat/MessageGroup";
+import ChatMessageForm from "@/components/Chat/ChatMessageForm";
+import SearchResults from "@/components/Chat/SearchResults";
+import Message from "@/components/Chat/Message";
+import HeadingMessage from "@/components/Chat/Message/HeadingMessage";
+import BodyMessage from "@/components/Chat/Message/BodyMessage";
+
 import * as XMPP from "stanza";
+
 import messageDb from '@/assets/messageDb.js';
 import * as msgpack from "@msgpack/msgpack";
 const lz4 = require("lz4js");
 
 export default {
-  components: { MessageGroup },
+  key: 'chat',
+  components: { MessageGroup, ChatMessageForm, SearchResults, Message, HeadingMessage, BodyMessage },
   data () {
     return {
       message: "",
@@ -103,49 +95,44 @@ export default {
       matches: [],
     };
   },
+
   computed: {
+    searchResultsClickOutside() {
+      return {
+        handler: this.closeSearch,
+        closeConditional: this.searchActive,
+        include: () => [this.$refs.searchBar.$el]
+      };
+    },
+
+    bare() { return this.$stanza.toBare(this.$route.params.entity); },
+
     messages () {
-      let list = this.$refs.messageList;
-      if (list && (list.scrollHeight - list.scrollTop - list.clientHeight) == 0) {
-        setImmediate(() => {
-          list.scrollTop = list.scrollHeight;
-        });
-      }
       let curblock = this.$store.state[MessageStore.namespace][MessageStore.$states.messages][this.entity];
       return this.loadedMessages.concat(curblock).filter(x => !!x);
     },
     currentItem () {
       if (!this.$store.state[Store.$states.roster] || !this.$store.state[Store.$states.avatars]) return {};
       if (!this.$store.state[Store.$states.roster]?.items) return {};
-      return this.$store.state[Store.$states.roster].items.find(x => x.jid == this.entity);
-    }
+      return this.$store.state[Store.$states.roster].items.find(x => x.jid === this.entity);
+    },
   },
+
   methods: {
-    /** MESSAGES **/
-    sendMessage () {
-      if (!this.message.length) return;
+    sendMessage(message) {
       this.$stanza.client.sendMessage({
-        type: "chat", 
-        to: this.$route.params.entity, 
-        body: this.message,
+        type: "chat",
+        to: this.$route.params.entity,
+        body: message,
       });
-      this.message = "";
     },
-    formatTime (date) {
-      let hours = date.getHours();
-      let ampm = "AM";
-      if (hours > 12) {
-        ampm = "PM";
-        hours -= 12;
-      }
-      return `${hours}:${date.getMinutes().toString().padStart(2, "0")} ${ampm}`;
-    },
+
     messageGroups (messages) {
       if (!messages.length) return [];
       let groups = [[messages[0]]];
       for (let i = 1; i < messages.length; ++i) {
         let lastgroup = groups[groups.length - 1];
-        if (lastgroup[0].from != messages[i].from || lastgroup.length >= 10) {
+        if (lastgroup[0].from !== messages[i].from || lastgroup.length >= 10) {
           groups.push([messages[i]]);
         } else {
           lastgroup.push(messages[i]);
@@ -171,7 +158,7 @@ export default {
           .toArray()
           .then(x => [x.sort((a, b) => a.timestamp - b.timestamp)]),
         search(this.searchText)
-          .then(eblocks => eblocks.map(eblock => 
+          .then(eblocks => eblocks.map(eblock =>
             msgpack.decode(lz4.decompress(eblock.block))
           )),
       ]).then(x => x.flat(1));
@@ -182,7 +169,10 @@ export default {
       }
       this.matches = matches;
     },
+
     openSearch () {
+      if(this.searchActive) return;
+
       this.matches = [];
       this.searchActive = true;
     },
@@ -199,16 +189,32 @@ export default {
 
     ...mapMutations({ setActiveChat: Store.$mutations.setActiveChat })
   },
+
+  watch: {
+    async $route(value) {
+      this.setActiveChat({type: 'chat', entity: value.params.entity});
+      // get blocks from archive in correct order
+      let blocks = await messageDb.messageArchive
+          .where("with").equals(this.entity)
+          .reverse().limit(1).sortBy("timestamp");
+      blocks.reverse();
+      // combine messages
+      this.loadedMessages = blocks.reduce((acc, {block}) =>
+          acc.concat(msgpack.decode(lz4.decompress(block))), []
+      );
+    }
+  },
+
   async mounted () {
     this.setActiveChat({ type: 'chat', entity: this.$route.params.entity });
     // get blocks from archive in correct order
     let blocks = await messageDb.messageArchive
-      .where("with").equals(this.entity)
-      .reverse().limit(10).sortBy("timestamp");
+        .where("with").equals(this.entity)
+        .reverse().limit(10).sortBy("timestamp");
     blocks.reverse();
     // combine messages
-    this.loadedMessages = blocks.reduce((acc, {block}) => 
-      acc.concat(msgpack.decode(lz4.decompress(block))), []
+    this.loadedMessages = blocks.reduce((acc, {block}) =>
+        acc.concat(msgpack.decode(lz4.decompress(block))), []
     );
   }
 }

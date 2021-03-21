@@ -70,9 +70,4 @@ $scrollbar-color: (
   "background": transparent,
 );
 
-$body-font-family: "Manrope", sans-serif;
-
 @import "~vuetify/src/styles/styles.sass";
-$badge-dot-width: 11px;
-$badge-dot-height: $badge-dot-width;
-$badge-dot-border-radius: $badge-dot-width;

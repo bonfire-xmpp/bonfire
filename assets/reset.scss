@@ -1,0 +1,48 @@
+// Remove default outlines that draw sometimes on selects
+* {
+  outline: none;
+}
+
+.reset-link {
+  text-decoration: none !important;
+  cursor: pointer !important;
+  color: map-get($white, "lighten") !important;
+}
+
+.no-transition {
+  transition: none !important;
+}
+
+// Unselectable text
+.unselectable {
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  -khtml-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
+}
+
+.hide-overflow {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+.hide-horizontal { overflow-x: hidden !important; }
+
+/** Scrollbar **/
+.os-scrollbar-track, .os-scrollbar-track:hover, .os-scrollbar-track.active {
+  background-color: transparentize(map-get($black, "base"), .7) !important;
+}
+
+.wide-scrollbar .os-scrollbar-vertical {
+  width: .7em !important;
+}
+
+.narrow-scrollbar .os-scrollbar-vertical {
+  width: 8px !important;
+}
+
+b {
+  font-weight: 600 !important;
+}

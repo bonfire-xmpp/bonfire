@@ -1,0 +1,23 @@
+@mixin ensure-height($height) {
+  min-height: $height;
+  max-height: $height;
+  height: $height;
+}
+
+@mixin ensure-width($width) {
+  min-width: $width;
+  max-width: $width;
+  width: $width;
+}
+
+@mixin v-badge-border-color($color) {
+  &::v-deep .v-badge__badge::after {
+    border-color: $color !important;
+  }
+}
+
+@mixin darken-on-hover($background) {
+  &:hover {
+    background: darken($background, 3%) !important;
+  }
+}
