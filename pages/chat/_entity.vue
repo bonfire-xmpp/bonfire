@@ -226,8 +226,12 @@ export default {
       });
     }
   },
-  
+
   async mounted () {
+    // Although the page is mounted only once, it _is_ mounted, and we need
+    //  the active chat to be set. This happens on direct navigation/reload
+    this.setActiveChat({type: 'chat', entity: this.bare});
+
     await this.fetchMessages();
   }
 }
