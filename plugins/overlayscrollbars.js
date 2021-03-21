@@ -3,11 +3,7 @@ import Vue from 'vue';
 import OverlayScrollbars from 'overlayscrollbars';
 import { OverlayScrollbarsPlugin, OverlayScrollbarsComponent } from "overlayscrollbars-vue";
 
-Vue.use(OverlayScrollbarsPlugin);
-
-Vue.component('overlay-scrollbars', OverlayScrollbarsComponent);
-
-OverlayScrollbars({
+Vue.use(OverlayScrollbarsPlugin, {
     nativeScrollbarsOverlaid: {
         initialize: false
     },
@@ -18,3 +14,5 @@ OverlayScrollbars({
         clickScrolling: true,
     },
 });
+
+Vue.component('overlay-scrollbars', OverlayScrollbarsComponent);
