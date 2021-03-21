@@ -20,9 +20,14 @@
             <!-- Online status icon, username@domain -->
             <span>
               <span :class="selected ? '' : 'grey-700--text'">
-                {{name}}<span :class="selected ? '' : 'grey-400--text'">@{{domain}}</span>
+                {{name}}
               </span>
-              
+
+              <span style="margin-left: -2px; margin-right: -2px;">
+                <v-icon class="no-transition" :color="selected ? 'white' : 'grey-400'" size="1em">mdi-at</v-icon>
+              </span><span :class="selected ? '' : 'grey-400--text'">
+                {{domain}}
+              </span>
             </span>
 
             <br>
@@ -95,25 +100,27 @@
 <style scoped lang="scss">
   // Constant height
   .main {
-    height: 42px;
-    min-height: 42px;
-    max-height: 42px;
+    @include ensure-height(42px);
   }
 
   // Hide options when the .main container _isn't_ hovered
-  .main:not(:hover) > .options-slot > .options-container {
+  .main:not(:hover) .options-container {
     display: none;
   }
 
   // Hover and selected background colors
   // NOTE: order of :hover and [aria-selected] matters, as they have the same specificity
   .main {
+    @include v-badge-border-color(map-get($greys, "100"));
+
     &:hover {
       background: map-get($greys, "200");
+      @include v-badge-border-color(map-get($greys, "200"));
     }
 
     &[aria-selected] {
       background: map-get($greys, "300");
+      @include v-badge-border-color(map-get($greys, "300"));
     }
   }
 

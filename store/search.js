@@ -6,7 +6,7 @@ const toWords = string => string
     .split(kWhitespaceRegex)
     .map(x => x.replaceAll(kNotLetterRegex, "").toLowerCase())
     .filter(x => !!x.length);
-const toPrefixes = 
+const toPrefixes =
     string => Array.from(new Set(
         string
             .split(kWhitespaceRegex)
@@ -53,7 +53,7 @@ export async function search(query) {
         .where("prefix")
         .startsWithAnyOf(toPrefixes(query))
         .toArray();
-    return await db.messageArchive
+    return db.messageArchive
         .where("id")
         .anyOf(fuzzyIntersect(entries.map(x => x?.blocks || [])))
         .toArray();

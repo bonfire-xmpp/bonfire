@@ -23,7 +23,6 @@ export default {
     link: [
       { rel: 'icon', type: 'image/x-icon', href: '/favicon.ico' },
       { rel: 'preconnect', href: 'https://fonts.gstatic.com' },
-      { rel: 'stylesheet', type: 'text/css', href: 'https://fonts.googleapis.com/css2?family=Manrope' },
     ]
   },
 
@@ -33,18 +32,21 @@ export default {
 
   // Global CSS: https://go.nuxtjs.dev/config-css
   css: [
-      '@/assets/globals.scss'
+      '@/assets/reset.scss',
+      '@/assets/utilities.scss',
   ],
 
   styleResources: {
     scss: [
-      './assets/_vars.scss',
+        '@/assets/_sizes.scss',
+        '@/assets/_mixins.scss',
     ]
   },
 
   // Plugins to run before rendering page: https://go.nuxtjs.dev/config-plugins
   plugins: [
-      '@/plugins/stanza.js'
+      '@/plugins/stanza.js',
+      '@/plugins/overlayscrollbars.js',
   ],
 
   // Auto import components: https://go.nuxtjs.dev/config-components
@@ -63,7 +65,11 @@ export default {
 
   // Vuetify module configuration: https://go.nuxtjs.dev/config-vuetify
   vuetify: {
-    customVariables: ['~/assets/variables.scss'],
+    customVariables: [
+        '~/assets/_baseColors.scss',
+        '~/assets/_sizes.scss',
+        '~/assets/fonts.scss',
+    ],
     // Custom variables don't work without this enabled (which is true only for production builds)
     treeShake: true,
     icons: {

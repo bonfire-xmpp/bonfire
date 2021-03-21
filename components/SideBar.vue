@@ -1,9 +1,13 @@
 <template>
-  <div class="sidebar grey-100 py-2">
-    <roster-list
-        :pinned="[]"
-        :items="items"
-        :selected-jid="selectedJid"/>
+  <div class="sidebar grey-100">
+    <header-bar pad-bottom/>
+    <overlay-scrollbars class="h-100 narrow-scrollbar"
+      :options="{scrollbars: {autoHide: 'leave', autoHideDelay: 0}}">
+      <roster-list
+          :pinned="[]"
+          :items="items"
+          :selected-jid="selectedJid"/>
+    </overlay-scrollbars>
   </div>
 </template>
 
@@ -64,10 +68,6 @@
     width: 320px;
     min-width: 320px;
     z-index: 10;
-    &:hover {
-      overflow: hidden auto;
-    }
-    overflow: hidden hidden;
   }
   .brand {
     font-weight: 400;
