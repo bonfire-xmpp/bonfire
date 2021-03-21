@@ -87,8 +87,6 @@ export default {
     return {
       message: "",
       loadedMessages: [],
-      entity: this.$route.params.entity,
-
       searchActive: false,
       searchText: "",
       searchTimeout: null,
@@ -108,13 +106,21 @@ export default {
     bare() { return this.$stanza.toBare(this.$route.params.entity); },
 
     messages () {
-      let curblock = this.$store.state[MessageStore.namespace][MessageStore.$states.messages][this.entity];
+      this.$nextTick(() => {
+        let list = this.$refs.messageList;
+        let inst = list.osInstance();
+        let state = inst.getState();
+        if (state.overflowAmount.y - inst.scroll().position.y == 0) {
+          list.osInstance().scroll({ y: '100%' }, 0.0);
+        }
+      });
+      let curblock = this.$store.state[MessageStore.namespace][MessageStore.$states.messages][this.bare];
       return this.loadedMessages.concat(curblock).filter(x => !!x).sort((a, b) => a.timestamp - b.timestamp);
     },
     currentItem () {
       if (!this.$store.state[Store.$states.roster] || !this.$store.state[Store.$states.avatars]) return {};
       if (!this.$store.state[Store.$states.roster]?.items) return {};
-      return this.$store.state[Store.$states.roster].items.find(x => x.jid === this.entity);
+      return this.$store.state[Store.$states.roster].items.find(x => x.jid === this.bare);
     },
   },
 
@@ -122,7 +128,7 @@ export default {
     sendMessage(message) {
       this.$stanza.client.sendMessage({
         type: "chat",
-        to: this.$route.params.entity,
+        to: this.bare,
         body: message,
       });
     },
@@ -153,7 +159,7 @@ export default {
       let blocks = await Promise.all([
         messageDb.messages
           .where("with")
-          .equals(this.entity)
+          .equals(this.bare)
           .toArray()
           .then(x => [x.sort((a, b) => a.timestamp - b.timestamp)]),
         search(this.searchText)
@@ -188,7 +194,7 @@ export default {
     },
 
     async fetchMessages () {
-      let entity = this.$route.params.entity;
+      let entity = this.bare;
       // ensure some blocks are loaded
       if (await messageDb.messageArchive.where("with").equals(entity).count() < 4) {
         await this.$store.dispatch(`${MessageStore.namespace}/${MessageStore.$actions.syncMessages}`, entity);
@@ -213,7 +219,10 @@ export default {
   watch: {
     async $route(value) {
       this.setActiveChat({type: 'chat', entity: value.params.entity});
-      await this.fetchMessages();
+      this.$nextTick(async () => {
+        await this.fetchMessages()
+        this.$refs.messageList.osInstance().scroll({ y: '100%' }, 0.0);
+      });
     }
   },
   
