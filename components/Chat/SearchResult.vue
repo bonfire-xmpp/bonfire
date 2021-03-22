@@ -19,6 +19,7 @@
 
 <style scoped lang="scss">
   .result {
+    position: relative;
     background-color: map-get($greys, "200");
   }
 </style>

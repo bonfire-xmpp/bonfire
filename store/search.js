@@ -15,12 +15,13 @@ const toPrefixes =
 
 
 function fuzzyIntersect(sets) {
+    if (sets.length == 1) return sets[0];
     let counts = new Map();
     for (let x of sets.flat(1)) {
         counts.set(x, (counts.get(x) || 1) + 1);
     }
     return Array.from(counts.entries())
-        .filter(([, v]) => v > (sets.length - 1) * 0.4)
+        .filter(([, v]) => v > 1)
         .map(([k]) => k);
 }
 
@@ -78,5 +79,5 @@ export const searchBlock = (block, query) => {
     let words = toWords(query);
     return block
         .map(mesg => [mesg, scoreMessage(mesg.body, words)])
-        .filter(([, score]) => score > 0.6);
+        .filter(([, score]) => score > 0.8);
 }

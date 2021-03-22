@@ -1,6 +1,6 @@
 // Remove default outlines that draw sometimes on selects
 * {
-  outline: none;
+  outline: none !important;
 }
 
 .reset-link {

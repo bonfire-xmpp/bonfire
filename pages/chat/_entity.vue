@@ -39,10 +39,9 @@
       </div>
 
       <search-results
-          :hidden="searchActive"
+          v-if="searchActive"
           :results="matches"
           v-click-outside="searchResultsClickOutside"/>
-
     </main>
   </div>
 </template>
@@ -91,18 +90,16 @@ export default {
       searchActive: false,
       searchText: "",
       matches: [],
+
+      searchResultsClickOutside: {
+        handler: this.closeSearch,
+        closeConditional: this.searchActive,
+        include: () => [this.$refs.searchBar.$el]
+      },
     };
   },
 
   computed: {
-    searchResultsClickOutside() {
-      return {
-        handler: this.closeSearch,
-        closeConditional: this.searchActive,
-        include: () => [this.$refs.searchBar.$el]
-      };
-    },
-
     bare() { return this.$stanza.toBare(this.$route.params.entity); },
 
     messages () {
@@ -151,6 +148,12 @@ export default {
     },
 
     /** SEARCH **/
+    async parallelDecode(blocks) {
+      return await Promise.all(blocks.map(block => new Promise(resolve =>
+        resolve({ ...block, block: msgpack.decode(lz4.decompress(block.block)) })
+      )));
+    },
+
     async search () {
       let blocks = await Promise.all([
         messageDb.messages
@@ -159,8 +162,8 @@ export default {
           .toArray()
           .then(x => [x.sort((a, b) => a.timestamp - b.timestamp)]),
         search(this.searchText)
-          .then(eblocks => eblocks
-            .map(eblock => ({ ...eblock, block: msgpack.decode(lz4.decompress(eblock.block)) }))
+          .then(async eblocks => 
+            (await this.parallelDecode(eblocks))
             .filter(block => block.with == this.bare)
             .map(x => x.block)
         ),
