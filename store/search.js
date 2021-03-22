@@ -16,14 +16,10 @@ const toPrefixes =
 
 function fuzzyIntersect(sets) {
     let counts = new Map();
-    for (let set of sets) {
-        for (let x of set) {
-            if (!counts.has(x)) counts.set(x, 0)
-            counts.set(x, counts.get(x) + 1);
-        }
+    for (let x of sets.flat(1)) {
+        counts.set(x, (counts.get(x) || 1) + 1);
     }
-    return Array
-        .from(counts.entries())
+    return Array.from(counts.entries())
         .filter(([, v]) => v > (sets.length - 1) * 0.4)
         .map(([k]) => k);
 }
@@ -53,24 +49,34 @@ export async function search(query) {
         .where("prefix")
         .startsWithAnyOf(toPrefixes(query))
         .toArray();
-    return db.messageArchive
+    return await db.messageArchive
         .where("id")
         .anyOf(fuzzyIntersect(entries.map(x => x?.blocks || [])))
         .toArray();
 }
 
-function scoreMessage(mesg, words) {
+function scoreMessage(mesg, querywords) {
     let score = 0.0;
-    let fm = new FuzzyMatching(toWords(mesg));
-    for (let queryword of words) {
+    let mesgwords = toWords(mesg);
+    let fm = new FuzzyMatching(mesgwords);
+    for (let queryword of querywords) {
         let { value, distance } = fm.get(queryword);
-        if (!value) continue;
-        score += distance * Math.min(1, value.length / queryword.length);
+        if (!value) {
+            for (let mesgword of mesgwords) {
+                if (mesgword.startsWith(queryword)) {
+                    score += 0.5;
+                }
+            }
+            continue;
+        }
+        score += distance * Math.max(1, value.length / queryword.length);
     }
-    return score / words.length;
+    return score / querywords.length;
 }
 
-export const searchBlock = (block, query) =>
-    block
-        .map(mesg => [mesg, scoreMessage(mesg.body, toWords(query))])
-        .filter(([, score]) => score > 0.8);
+export const searchBlock = (block, query) => {
+    let words = toWords(query);
+    return block
+        .map(mesg => [mesg, scoreMessage(mesg.body, words)])
+        .filter(([, score]) => score > 0.6);
+}

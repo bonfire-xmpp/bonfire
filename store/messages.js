@@ -132,11 +132,10 @@ export const actions = {
             lastID = history.paging.first;
             
             return messagesSeen < 40 && !history.complete;
-        }, 100);
+        }, 50);
         
         // add remaining messages to a block
         if (messages.length) {
-            console.log(messages);
             await messageDb.transaction("rw", messageDb.messageArchive, messageDb.prefixIndex, async () => {
                 await insertBlock(messages, jid);
             });

@@ -7,7 +7,7 @@
       <div class="py-2">
         <v-text-field
           @focus="openSearch" @click="openSearch"
-          @keydown.esc="closeSearch" @keydown="searchUpdate"
+          @keydown.esc="closeSearch" @keydown.enter="search"
           :class="{unselectable: !this.searchActive}"
           v-model="searchText"
           single-line dense solo clearable hide-details flat
@@ -90,7 +90,6 @@ export default {
       loadedMessages: [],
       searchActive: false,
       searchText: "",
-      searchTimeout: null,
       matches: [],
     };
   },
@@ -116,7 +115,10 @@ export default {
         }
       });
       let curblock = this.$store.state[MessageStore.namespace][MessageStore.$states.messages][this.bare];
-      return this.loadedMessages.concat(curblock).filter(x => !!x).sort((a, b) => a.timestamp - b.timestamp);
+      return this.loadedMessages
+        .concat(curblock)
+        .filter(x => !!x)
+        .sort((a, b) => a.timestamp - b.timestamp);
     },
     currentItem () {
       if (!this.$store.state[Store.$states.roster] || !this.$store.state[Store.$states.avatars]) return {};
@@ -149,13 +151,6 @@ export default {
     },
 
     /** SEARCH **/
-    async searchUpdate () {
-      if (this.searchTimeout) {
-        clearTimeout(this.searchTimeout);
-        if (!this.searchText.length) return;
-      }
-      this.searchTimeout = setTimeout(this.search, 100);
-    },
     async search () {
       let blocks = await Promise.all([
         messageDb.messages
@@ -164,17 +159,23 @@ export default {
           .toArray()
           .then(x => [x.sort((a, b) => a.timestamp - b.timestamp)]),
         search(this.searchText)
-          .then(eblocks => eblocks.map(eblock =>
-            msgpack.decode(lz4.decompress(eblock.block))
-          )),
-      ]).then(x => x.flat(1).filter(x => x.length));
+          .then(eblocks => eblocks
+            .map(eblock => ({ ...eblock, block: msgpack.decode(lz4.decompress(eblock.block)) }))
+            .filter(block => block.with == this.bare)
+            .map(x => x.block)
+        ),
+      ]).then(x => x.flat(1).filter(x => x.length))
+      
       let matches = [];
       for (let block of blocks) {
         for (let msg of searchBlock(block, this.searchText)) {
           matches.push(msg);
         }
       }
-      this.matches = matches.sort(([, as], [, bs]) => bs - as).map(([msg]) => msg);
+      this.matches = matches
+        .sort(([, as], [, bs]) => bs - as)
+        .map(([msg]) => msg)
+        .slice(0, 40);      
     },
 
     openSearch () {
