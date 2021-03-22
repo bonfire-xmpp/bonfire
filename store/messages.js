@@ -47,6 +47,7 @@ const $getters = {
 const $actions = {
     syncMessages: 'SYNC_MESSAGES',
     loadCurrentMessages: 'LOAD_CURRENT_MESSAGES',
+    runMessageSyncUpdateLoop: 'SYNC_UPDATE_LOOP',
     addMessage: "ADD_MESSAGE",
 };
 const $mutations = {
@@ -89,6 +90,41 @@ export const actions = {
         commit($mutations.setMessages, { jid, messages: await messageDb.messages.where("with").equals(jid).toArray() });
     },
 
+    /** SYNC_UPDATE_LOOP **/
+    async [$actions.runMessageSyncUpdateLoop] ( { dispatch, rootState } ) {
+        let jids = rootState[Store.$states.roster]?.items.map(i => this.$stanza.toBare(i.jid));
+
+        let depth = 0,
+            completelySyncedCount = 0,
+            finished = false;
+
+        while(!finished) {
+            // used to track when sync finishes at _this_ depth
+            // in case out-of-order syncs happen
+            let completed = {};
+
+            // Add the active chat to be the first to be synced this layer
+            const activeChat = rootState[Store.$states.activeChat]?.entity;
+            if(activeChat) jids.unshift(activeChat);
+
+            for (const jid of jids) {
+                // This line commented out effectively makes the current active chat
+                // if(completed[jid]) continue;
+
+                const completelySynced = await dispatch($actions.syncMessages, jid);
+                if(completelySynced) completelySyncedCount++;
+
+                completed[jid] = true;
+            }
+
+            // Remove high priority out-of-order sync
+            jids.unshift();
+
+            depth++;
+            if(jids.length <= completelySyncedCount) finished = true;
+        }
+    },
+
     /** SYNC_MESSAGES **/
     async [$actions.syncMessages] ( { dispatch }, jid ) {
         // QUERY SERVER FOR MESSAGES
@@ -99,10 +135,11 @@ export const actions = {
         if (curmessages?.length) {
             lastTimestamp = new Date(curmessages[0].timestamp - 1);
         }
-        
+
         let messagesSeen = 0;
         let messages = [];
         let lastID = "";
+        let complete = false;
         await delayIterator(async () => {
             // search from the first ID in the last page, but only messages before the earliest stored timestamp
             let history = await this.$stanza.client.searchHistory({
@@ -111,7 +148,7 @@ export const actions = {
                 end: lastTimestamp,
             });
             console.log(history);
-            
+
             for (let { item: { message, delay } } of history.results) {
                 if (message.body) {
                     message.from = XMPP.JID.toBare(message.from);
@@ -122,7 +159,7 @@ export const actions = {
                     ++messagesSeen;
                 }
             }
-            
+
             if (messages.length >= kBlockSize) {
                 await messageDb.transaction("rw", messageDb.messageArchive, messageDb.prefixIndex, async () => {
                     await insertBlock(messages, jid);
@@ -130,10 +167,11 @@ export const actions = {
                 messages = [];
             }
             lastID = history.paging.first;
-            
+            complete = history.complete;
+
             return messagesSeen < 40 && !history.complete;
         }, 100);
-        
+
         // add remaining messages to a block
         if (messages.length) {
             console.log(messages);
@@ -142,14 +180,16 @@ export const actions = {
             });
         }
         await dispatch($actions.loadCurrentMessages, jid);
+
+        return complete;
     },
-        
+
     /** ADD_MESSAGE **/
     async [$actions.addMessage] ({ commit }, { jid, message, state: messageState }) {
         const bareJid = XMPP.JID.toBare(jid);
         message.timestamp ||= Date.now();
         message.with = bareJid;
-        
+
         commit($mutations.addMessage, { bareJid, message, messageState });
         if (messageState) {
             messageDb.messageStates.put({id: message.id, ...messageState});
@@ -178,12 +218,12 @@ export const mutations = {
     [$mutations.setMessages] ( state, { jid, messages }) {
         Vue.set(state[$states.messages], jid, messages);
     },
-    
+
     /** SET_MESSAGES_BY_ID **/
     [$mutations.setMessagesById] ( state, data ) {
         state[$states.messagesById] = data;
     },
-    
+
     /** SET_MESSAGE_STATE_BY_ID **/
     [$mutations.setMessageStateById] ( state, data ) {
         state[$states.messageStateById] = data;

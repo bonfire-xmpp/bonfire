@@ -81,6 +81,7 @@ const setupListeners = ctx => {
             ctx.store.commit(Store.$mutations.setRoster, roster);
         });
         ctx.store.commit(Store.$mutations.stanzaInitialized);
+        ctx.store.dispatch(`${MessageStore.namespace}/${MessageStore.$actions.runMessageSyncUpdateLoop}`);
 
         Notification.requestPermission();
     }
@@ -221,7 +222,7 @@ const setupListeners = ctx => {
             }
         }
         ctx.store.commit(Store.$mutations.setRoster, {
-            ...roster, 
+            ...roster,
             items: items,
         });
     });

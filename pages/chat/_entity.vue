@@ -197,11 +197,11 @@ export default {
     async fetchMessages () {
       let entity = this.bare;
       // ensure some blocks are loaded
-      if (await messageDb.messageArchive.where("with").equals(entity).count() < 4) {
-        await this.$store.dispatch(`${MessageStore.namespace}/${MessageStore.$actions.syncMessages}`, entity);
-      }
-      await this.$store.dispatch(`${MessageStore.namespace}/${MessageStore.$actions.loadCurrentMessages}`, entity);
-      this.$store.dispatch(`${MessageStore.namespace}/${MessageStore.$actions.syncMessages}`, entity);
+      // if (await messageDb.messageArchive.where("with").equals(entity).count() < 4) {
+      //   await this.$store.dispatch(`${MessageStore.namespace}/${MessageStore.$actions.syncMessages}`, entity);
+      // }
+      // await this.$store.dispatch(`${MessageStore.namespace}/${MessageStore.$actions.loadCurrentMessages}`, entity);
+      // this.$store.dispatch(`${MessageStore.namespace}/${MessageStore.$actions.syncMessages}`, entity);
       // get blocks from archive in correct order
       let blocks = (await messageDb.messageArchive
         .orderBy("timestamp").reverse()
@@ -220,10 +220,10 @@ export default {
   watch: {
     async $route(value) {
       this.setActiveChat({type: 'chat', entity: value.params.entity});
-      this.$nextTick(async () => {
-        await this.fetchMessages()
-        this.$refs.messageList.osInstance().scroll({ y: '100%' }, 0.0);
-      });
+      await this.fetchMessages()
+
+      // No need for $nextTick, this watch gets called only after mount and render
+      this.$refs.messageList.osInstance().scroll({ y: '100%' }, 0.0);
     }
   },
 
