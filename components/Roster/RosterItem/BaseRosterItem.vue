@@ -5,18 +5,25 @@
     <span class="gutter indicator-light border-circle-right flex-shrink-0" :class="selected ? 'grey-800' : ''"/>
 
     <!-- Roster item card  -->
-    <div class="flex-grow-1 hide-overflow d-flex rounded main" :aria-selected="selected" >
+    <div class="flex-grow-1 d-flex rounded main" :aria-selected="selected" >
         <!-- Wrap everything except vertical ... into a NuxtLink -->
-        <nuxt-link :to="`/chat/${item.jid}`" class="reset-link flex-grow-1 d-flex hide-overflow">
+        <nuxt-link :to="`/chat/${item.jid}`" class="reset-link flex-grow-1 d-flex">
 
           <!-- Vertical align Avatar -->
           <div class="align-content-center-inline ml-2" style="width: 36px">
-            <v-badge bottom dot offset-x="11" offset-y="11" bordered :color="onlineStatus">
+            <roster-badge v-if="isTyping">
+              <avatar :size="36" :jid="item.jid">
+              </avatar>
+              <template #badge>
+                <typing-spinner class="small"/>
+              </template>
+            </roster-badge>
+            <v-badge v-else bottom dot offset-x="11" offset-y="11" bordered :color="onlineStatus">
               <avatar :size="36" :jid="item.jid"/>
             </v-badge>
           </div>
 
-          <div class="main-container ml-2 pr-2 flex-grow-1 my-auto hide-overflow">
+          <div class="main-container ml-2 pr-2 flex-grow-1 my-auto">
             <!-- Online status icon, username@domain -->
             <span>
               <span :class="selected ? '' : 'grey-700--text'">
@@ -58,6 +65,8 @@
   import { JID } from 'stanza';
 
   import { Store } from "@/store";
+  import { MessageStore } from '@/store/messages';
+
   import { mapGetters } from 'vuex';
   import Avatar from "@/components/Avatar";
 
@@ -92,6 +101,10 @@
         if(!this.available) return 'offline';
         if(!this.presence?.show && this.available) return 'online';
         return this.presence?.show;
+      },
+
+      isTyping () {
+        return this.$store.state[MessageStore.namespace][MessageStore.$states.chatComposing][JID.toBare(this.item.jid)];
       },
     },
   }

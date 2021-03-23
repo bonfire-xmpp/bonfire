@@ -35,7 +35,16 @@
         </overlay-scrollbars>
 
         <!-- Message Field -->
-        <chat-message-form @message="sendMessage" :label="`Message ${bare}`"/>
+        <div>
+          <chat-message-form 
+            @changed="messageChanged" 
+            @message="sendMessage" 
+            :label="`Message ${bare}`">
+            <p v-if="isTyping" class="d-flex flex-row align-center">
+              <typing-spinner class="normal"/><span>{{this.bare}} is typing...</span>
+            </p>
+          </chat-message-form>
+        </div>
       </div>
 
       <search-results
@@ -78,6 +87,7 @@ import * as XMPP from "stanza";
 
 import messageDb from '@/assets/messageDb.js';
 import * as msgpack from "@msgpack/msgpack";
+
 const lz4 = require("lz4js");
 
 export default {
@@ -90,6 +100,8 @@ export default {
       searchActive: false,
       searchText: "",
       matches: [],
+
+      composingTimeout: null,
 
       searchResultsClickOutside: {
         handler: this.closeSearch,
@@ -122,15 +134,36 @@ export default {
       if (!this.$store.state[Store.$states.roster]?.items) return {};
       return this.$store.state[Store.$states.roster].items.find(x => x.jid === this.bare);
     },
+
+    isTyping () {
+      return this.$store.state[MessageStore.namespace][MessageStore.$states.chatComposing][this.bare];
+    },
   },
 
   methods: {
-    sendMessage(message) {
+    /** MESSAGES **/
+    sendMessage (message) {
       this.$stanza.client.sendMessage({
         type: "chat",
         to: this.bare,
         body: message,
       });
+    },
+
+    messageChanged () {
+      if (this.composingTimeout) clearTimeout(this.composingTimeout);
+      this.$stanza.client.sendMessage({
+        type: "chat",
+        to: this.bare,
+        chatState: "composing",
+      });
+      this.composingTimeout = setTimeout(() => {
+        this.$stanza.client.sendMessage({
+          type: "chat",
+          to: this.bare,
+          chatState: "active",
+        });
+      }, 2000);
     },
 
     messageGroups (messages) {
@@ -167,7 +200,7 @@ export default {
             .filter(block => block.with == this.bare)
             .map(x => x.block)
         ),
-      ]).then(x => x.flat(1).filter(x => x.length))
+      ]).then(x => x.flat(1).filter(x => x.length));
       
       let matches = [];
       for (let block of blocks) {
@@ -222,17 +255,19 @@ export default {
   },
 
   watch: {
-    async $route(value) {
-      this.setActiveChat({type: 'chat', entity: value.params.entity});
+    async $route (value) {
+      this.loadedMessages = [];
       this.$nextTick(async () => {
         await this.fetchMessages()
         this.$refs.messageList.osInstance().scroll({ y: '100%' }, 0.0);
+        this.setActiveChat({type: 'chat', entity: this.bare});
       });
     }
   },
   
   async mounted () {
     await this.fetchMessages();
+    this.setActiveChat({type: 'chat', entity: this.bare});
   }
 }
 </script>
