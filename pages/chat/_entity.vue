@@ -34,7 +34,16 @@
         </overlay-scrollbars>
 
         <!-- Message Field -->
-        <chat-message-form @message="sendMessage" :label="`Message ${bare}`"/>
+        <div>
+          <chat-message-form
+            @changed="messageChanged"
+            @message="sendMessage"
+            :label="`Message ${bare}`">
+            <p v-if="isTyping" class="d-flex flex-row align-center">
+              <typing-spinner class="normal"/><span>{{this.bare}} is typing...</span>
+            </p>
+          </chat-message-form>
+        </div>
       </div>
 
       <search-results
@@ -62,7 +71,7 @@
 </style>
 
 <script>
-import { mapMutations } from 'vuex';
+import { mapMutations, mapState } from 'vuex';
 import { Store } from "@/store";
 import { MessageStore } from '@/store/messages';
 import { search, searchBlock } from "@/store/search";
@@ -78,7 +87,16 @@ import * as XMPP from "stanza";
 
 import messageDb from '@/assets/messageDb.js';
 import * as msgpack from "@msgpack/msgpack";
+
 const lz4 = require("lz4js");
+
+function debounce(func, timeout = 2000) {
+  let timer;
+  return (...args) => {
+    clearTimeout(timer);
+    timer = setTimeout(() => func.apply(this, args), timeout);
+  };
+}
 
 export default {
   key: 'chat',
@@ -87,16 +105,26 @@ export default {
     return {
       message: "",
       loadedMessages: [],
-      entity: this.$route.params.entity,
 
       searchActive: false,
       searchText: "",
       searchTimeout: null,
       matches: [],
+
+      composingTimeout: null,
     };
   },
 
   computed: {
+    ...mapState(MessageStore.namespace, {
+      chatComposing: MessageStore.$states.chatComposing,
+    }),
+
+    ...mapState({
+      roster: Store.$states.roster,
+      avatars: Store.$states.avatars,
+    }),
+
     searchResultsClickOutside() {
       return {
         handler: this.closeSearch,
@@ -112,19 +140,44 @@ export default {
       return this.loadedMessages.concat(curblock).filter(x => !!x).sort((a, b) => a.timestamp - b.timestamp);
     },
     currentItem () {
-      if (!this.$store.state[Store.$states.roster] || !this.$store.state[Store.$states.avatars]) return {};
-      if (!this.$store.state[Store.$states.roster]?.items) return {};
-      return this.$store.state[Store.$states.roster].items.find(x => x.jid === this.entity);
+      if (!this.roster?.items || !this.avatars) return {};
+      return this.roster.items.find(x => x.jid === this.bare);
+    },
+
+    isTyping () {
+      return this.chatComposing[this.bare];
     },
   },
 
   methods: {
-    sendMessage(message) {
+    /** MESSAGES **/
+    sendMessage (message) {
       this.$stanza.client.sendMessage({
         type: "chat",
         to: this.$route.params.entity,
         body: message,
       });
+    },
+
+    messageChanged() {
+      // Start composing on start edge
+      if(!this.composingTimeout) {
+        this.$stanza.client.sendMessage({
+          type: "chat",
+          to: this.bare,
+          chatState: "composing",
+        });
+      }
+
+      clearTimeout(this.composingTimeout);
+      this.composingTimeout = setTimeout(() => {
+        this.composingTimeout = undefined;
+        this.$stanza.client.sendMessage({
+          type: "chat",
+          to: this.bare,
+          chatState: "paused",
+        });
+      }, 2000);
     },
 
     messageGroups (messages) {
@@ -216,9 +269,10 @@ export default {
       await this.fetchMessages();
     }
   },
-  
+
   async mounted () {
     await this.fetchMessages();
+    this.setActiveChat({type: 'chat', entity: this.bare});
   }
 }
 </script>

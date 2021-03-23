@@ -38,6 +38,8 @@
         if(e.which === 13 && !e.shiftKey) {
           e.preventDefault();
           this.emitMessage();
+        } else {
+          this.$emit('changed');
         }
       },
 

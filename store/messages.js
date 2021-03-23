@@ -39,16 +39,20 @@ const $states = {
 
     // Map< ID -> MessageState >
     messageStateById: 'MESSAGE_STATE_BY_ID',
+
+    chatComposing: 'CHAT_COMPOSING',
 };
 
 const $getters = {
     hasMessage: 'HAS_MESSAGE',
 };
+
 const $actions = {
     syncMessages: 'SYNC_MESSAGES',
     loadCurrentMessages: 'LOAD_CURRENT_MESSAGES',
-    addMessage: "ADD_MESSAGE",
+    addMessage: 'ADD_MESSAGE',
 };
+
 const $mutations = {
     setMessages: 'SET_MESSAGES',
     setMessagesById: 'SET_MESSAGES_BY_ID',
@@ -56,12 +60,15 @@ const $mutations = {
 
     addMessage: 'ADD_MESSAGE',
     updateMessageState: 'SET_MESSAGE_STATE',
-}
+
+    setComposing: 'SET_COMPOSING',
+};
 
 export const state = () => ({
     [$states.messages]: {},
     [$states.messagesById]: {},
     [$states.messageStateById]: {},
+    [$states.chatComposing]: {},
 });
 
 export const getters = {
@@ -72,7 +79,7 @@ export const getters = {
 
 const delayIterator = async (cb, delay) => {
     while (await cb()) await new Promise(resolve => setTimeout(resolve, delay));
-}
+};
 
 const kBlockSize = 10;
 
@@ -170,7 +177,7 @@ export const actions = {
                 await query.delete();
             }
         });
-    }
+    },
 };
 
 export const mutations = {
@@ -207,7 +214,11 @@ export const mutations = {
         Vue.set(state[$states.messageStateById], id, messageState);
 
         messageDb.messageStates.put({id, ...messageState});
-    }
+    },
+
+    [$mutations.setComposing] (state, { user, composing }) {
+        Vue.set(state[$states.chatComposing], user, composing);
+    },
 };
 
 export const MessageStore = {
