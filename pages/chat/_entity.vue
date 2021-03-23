@@ -36,7 +36,7 @@
         <!-- Message Field -->
         <div>
           <chat-message-form
-            @changed="messageChanged"
+            @composing="composing" @paused="paused"
             @message="sendMessage"
             :label="`Message ${bare}`">
             <p v-if="isTyping" class="d-flex flex-row align-center">
@@ -90,14 +90,6 @@ import * as msgpack from "@msgpack/msgpack";
 
 const lz4 = require("lz4js");
 
-function debounce(func, timeout = 2000) {
-  let timer;
-  return (...args) => {
-    clearTimeout(timer);
-    timer = setTimeout(() => func.apply(this, args), timeout);
-  };
-}
-
 export default {
   key: 'chat',
   components: { MessageGroup, ChatMessageForm, SearchResults, Message, HeadingMessage, BodyMessage },
@@ -110,8 +102,6 @@ export default {
       searchText: "",
       searchTimeout: null,
       matches: [],
-
-      composingTimeout: null,
     };
   },
 
@@ -159,25 +149,20 @@ export default {
       });
     },
 
-    messageChanged() {
-      // Start composing on start edge
-      if(!this.composingTimeout) {
-        this.$stanza.client.sendMessage({
-          type: "chat",
-          to: this.bare,
-          chatState: "composing",
-        });
-      }
+    composing() {
+      this.$stanza.client.sendMessage({
+        type: "chat",
+        to: this.bare,
+        chatState: "composing",
+      });
+    },
 
-      clearTimeout(this.composingTimeout);
-      this.composingTimeout = setTimeout(() => {
-        this.composingTimeout = undefined;
-        this.$stanza.client.sendMessage({
-          type: "chat",
-          to: this.bare,
-          chatState: "paused",
-        });
-      }, 2000);
+    paused() {
+      this.$stanza.client.sendMessage({
+        type: "chat",
+        to: this.bare,
+        chatState: "paused",
+      });
     },
 
     messageGroups (messages) {
