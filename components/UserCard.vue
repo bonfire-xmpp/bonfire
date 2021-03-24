@@ -3,9 +3,7 @@
   <div class="d-flex main white--text unselectable" :aria-selected="selected" >
     <!-- Vertical align Avatar -->
     <div class="align-content-center-inline mr-1" style="width: 36px">
-      <v-badge bottom dot offset-x="11" offset-y="11" bordered :color="onlineStatus">
-        <avatar :size="36" :jid="item.jid"/>
-      </v-badge>
+      <badged-avatar :size="36" :jid="item.jid" :color="onlineStatus"/>
     </div>
 
     <div class="ml-2 pr-2 my-auto" :class="selected || 'grey-700--text'">

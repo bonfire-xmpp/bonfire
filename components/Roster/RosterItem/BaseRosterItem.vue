@@ -11,16 +11,9 @@
 
           <!-- Vertical align Avatar -->
           <div class="align-content-center-inline ml-2" style="width: 36px">
-            <roster-badge v-if="isTyping">
-              <avatar :size="36" :jid="item.jid">
-              </avatar>
-              <template #badge>
-                <typing-spinner class="small"/>
-              </template>
-            </roster-badge>
-            <v-badge v-else bottom dot offset-x="11" offset-y="11" bordered :color="onlineStatus">
-              <avatar :size="36" :jid="item.jid"/>
-            </v-badge>
+            <badged-avatar :size="36" :jid="item.jid" :color="onlineStatus">
+              <typing-spinner class="small" :color="onlineStatus" v-if="isTyping"/>
+            </badged-avatar>
           </div>
 
           <div class="main-container ml-2 pr-2 flex-grow-1 my-auto">
@@ -67,7 +60,7 @@
   import { Store } from "@/store";
   import { MessageStore } from '@/store/messages';
 
-  import { mapGetters } from 'vuex';
+  import { mapGetters, mapState } from 'vuex';
   import Avatar from "@/components/Avatar";
 
   export default {
@@ -103,8 +96,12 @@
         return this.presence?.show;
       },
 
+      ...mapState(MessageStore.namespace, {
+        chatComposing: MessageStore.$states.chatComposing
+      }),
+
       isTyping () {
-        return this.$store.state[MessageStore.namespace][MessageStore.$states.chatComposing][JID.toBare(this.item.jid)];
+        return this.chatComposing[JID.toBare(this.item.jid)];
       },
     },
   }
