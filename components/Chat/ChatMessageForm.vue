@@ -9,7 +9,7 @@
                 v-model="message"
                 :placeholder="label"
                 @keydown="keypress"/>
-    <div class="gutter white--text">
+    <div class="gutter white--text d-flex flex-row align-center">
       <slot/>
     </div>
   </form>
@@ -95,7 +95,11 @@
   }
 
   .gutter {
-    @include ensure-height(1.5rem);
-    font-size: .9rem;
+    @include ensure-height(1.6rem);
+    font-size: .9em;
+
+    & > * {
+      display: inline;
+    }
   }
 </style>

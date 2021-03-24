@@ -39,9 +39,9 @@
             @composing="composing" @paused="paused"
             @message="sendMessage"
             :label="`Message ${bare}`">
-            <p v-if="isTyping" class="d-flex flex-row align-center">
-              <typing-spinner class="normal"/><span>{{this.bare}} is typing...</span>
-            </p>
+            <template v-if="isTyping">
+              <typing-spinner class="normal ml-n2"/><b class="grey-800--text">{{localPart(bare)}} is typing...</b>
+            </template>
           </chat-message-form>
         </div>
       </div>
