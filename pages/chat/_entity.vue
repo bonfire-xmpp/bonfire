@@ -289,7 +289,7 @@ export default {
         });
         return this.preloadedBlocks[id];
       });
-      this.loadedBlocks = this.loadedBlocks.slice(num - 1).concat(blocks);
+      this.loadedBlocks = this.loadedBlocks.slice(num).concat(blocks);
 
       await this.updateBeforeAfter();
     },
