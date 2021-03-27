@@ -19,18 +19,26 @@
     </header-bar>
 
     <!-- Main Section -->
-    <main class="d-flex flex-row flex-grow-1 hide-overflow">
+    <main class="d-flex flex-row flex-grow-1 hide-overflow" ref="main">
       <div class="d-flex flex-column flex-grow-1 os-host-flexbox">
         <!-- Message List -->
         <overlay-scrollbars
           ref="messageList"
           class="flex-grow-1 flex-shrink-1 wide-scrollbar"
           :options="{scrollbars:{clickScrolling: true}}">
-          <div class="pt-4 scroller">
+          <div class="scroller pt-4">
+            <div 
+              ref="scrollpastBefore" 
+              style="height: 100vh;"
+              v-if="showBefore"/>
             <message-group
               v-for="(group, i) in messageGroups(messages)"
-              :key="i"
+              :key="group[0].timestamp"
               :group="group"/>
+            <div 
+              ref="scrollpastAfter" 
+              style="height: 100vh;"
+              v-if="moreAfter"/>
           </div>
         </overlay-scrollbars>
 
@@ -103,6 +111,14 @@ export default {
 
       composingTimeout: null,
 
+      moreBefore: false,
+      moreAfter: false,
+      showBefore: true,
+      firstBlockStamp: 0,
+      lastBlockStamp: 0,
+      height: 0,
+      loadedMessages: [],
+
       searchResultsClickOutside: {
         handler: this.closeSearch,
         closeConditional: this.searchActive,
@@ -119,13 +135,14 @@ export default {
         let list = this.$refs.messageList;
         let inst = list.osInstance();
         let state = inst.getState();
-        if (state.overflowAmount.y - inst.scroll().position.y == 0) {
+        if (!this.moreAfter && state.overflowAmount.y - inst.scroll().position.y == 0) {
           list.osInstance().scroll({ y: '100%' }, 0.0);
         }
       });
-      let curblock = this.$store.state[MessageStore.namespace][MessageStore.$states.messages][this.bare];
+
+      let curblock = this.$store.state[MessageStore.namespace][MessageStore.$states.messages][this.bare] || [];
       return this.loadedMessages
-        .concat(curblock)
+        .concat(!this.moreAfter ? curblock : [])
         .filter(x => !!x)
         .sort((a, b) => a.timestamp - b.timestamp);
     },
@@ -231,7 +248,15 @@ export default {
       return XMPP.JID.getLocal(jid);
     },
 
-    async fetchMessages () {
+    async hasBlocksAfter (timestamp) {
+      return await messageDb.messageArchive.where("timestamp").above(timestamp).count();
+    },
+
+    async hasBlocksBefore (timestamp) {
+      return !!await messageDb.messageArchive.where("timestamp").below(timestamp).count();
+    },
+
+    async fetchMessages (center) {
       let entity = this.bare;
       // ensure some blocks are loaded
       if (await messageDb.messageArchive.where("with").equals(entity).count() < 4) {
@@ -240,15 +265,31 @@ export default {
       await this.$store.dispatch(`${MessageStore.namespace}/${MessageStore.$actions.loadCurrentMessages}`, entity);
       this.$store.dispatch(`${MessageStore.namespace}/${MessageStore.$actions.syncMessages}`, entity);
       // get blocks from archive in correct order
-      let blocks = (await messageDb.messageArchive
-        .orderBy("timestamp").reverse()
-        .filter(x => x.with == entity)
-        .toArray()).slice(0, 10);
-      blocks.reverse();
+      let [before, after] = await Promise.all([
+        messageDb.messageArchive
+          .orderBy("timestamp").reverse()
+          .filter(x => x.with == entity && x.timestamp <= center)
+          .toArray()
+          .then(x => x.slice(0, 4)),
+        messageDb.messageArchive
+          .orderBy("timestamp")
+          .filter(x => x.with == entity && x.timestamp > center)
+          .toArray()
+          .then(x => x.slice(0, 4)),
+      ]);
+      before.reverse();
+      let blocks = before.concat(after);
+      
       // combine messages
       this.loadedMessages = blocks.reduce((acc, {block}) =>
           acc.concat(msgpack.decode(lz4.decompress(block))), []
-      );
+      ).sort((a, b) => a.timestamp - b.timestamp);
+     
+      this.firstBlockStamp = this.loadedMessages[0].timestamp;
+      this.lastBlockStamp = this.loadedMessages[this.loadedMessages.length - 1].timestamp;
+
+      this.moreBefore = before.length && await this.hasBlocksBefore(this.firstBlockStamp - 1);
+      this.moreAfter = after.length && await this.hasBlocksAfter(this.lastBlockStamp + 1);
     },
 
     ...mapMutations({ setActiveChat: Store.$mutations.setActiveChat })
@@ -258,16 +299,54 @@ export default {
     async $route (value) {
       this.loadedMessages = [];
       this.$nextTick(async () => {
-        await this.fetchMessages()
-        this.$refs.messageList.osInstance().scroll({ y: '100%' }, 0.0);
+        await this.fetchMessages(Date.now());
+        this.$nextTick(() => this.$refs.messageList.osInstance().scroll({ y: '100%' }, 0.0));
         this.setActiveChat({type: 'chat', entity: this.bare});
       });
     }
   },
   
   async mounted () {
-    await this.fetchMessages();
+    await this.fetchMessages(Date.now());
     this.setActiveChat({type: 'chat', entity: this.bare});
+    this.$nextTick(async () => {
+      let messageList = this.$refs.messageList;
+
+      messageList.osInstance().scroll({ y: '100%' }, 0.0);
+
+      messageList.osInstance().options("callbacks.onScrollStop", async () => {
+        let inst = messageList.osInstance();
+
+        let keyBefore = "msg:" + this.firstBlockStamp;
+        let keyAfter = "msg:" + this.lastBlockStamp;
+        let startYBefore = document.getElementById(keyBefore).parentElement.getBoundingClientRect().top;
+        let startYAfter = document.getElementById(keyAfter).parentElement.getBoundingClientRect().top;
+        let startScroll = inst.scroll().position.y;
+        
+        if (
+          this.moreBefore && this.$refs.scrollpastBefore.getBoundingClientRect().bottom > this.$refs.main.getBoundingClientRect().top
+        ) {
+          await this.fetchMessages(this.firstBlockStamp - 1);
+          this.$nextTick(() => {
+            let endY = document.getElementById(keyBefore).parentElement.getBoundingClientRect().top;
+            inst.scroll({ y: `${endY - startYBefore + startScroll}px` }, 0.0);
+            this.showBefore = this.moreBefore;
+          });
+        } 
+        else if (
+          this.moreAfter && this.$refs.scrollpastAfter.getBoundingClientRect().top < this.$refs.main.getBoundingClientRect().bottom
+        ) {
+          await this.fetchMessages(this.lastBlockStamp);
+          this.$nextTick(() => {
+            let endY = document.getElementById(keyAfter).parentElement.getBoundingClientRect().top;
+            console.log(endY - startYAfter + startScroll)
+            inst.scroll({ y: `${endY - startYAfter + startScroll}px` }, 0.0);
+            this.showBefore = this.moreBefore;
+          });
+        }
+      });
+      
+    });
   }
 }
 </script>
