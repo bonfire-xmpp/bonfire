@@ -3,7 +3,7 @@
     <overlay-scrollbars class="pr-1 w-100 flex-grow-1" style="min-height: 0px;"
                         :options="scrollbarSettings">
       <div class="d-block w-100 h-100">
-        <search-result v-for="match in page" :key="match.id" :result="match" class="mb-2"/>
+        <search-result @jump-to="jump" v-for="match in page" :key="match.id" :result="match" class="mb-2"/>
       </div>
     </overlay-scrollbars>
     <div class="pt-2">
@@ -71,6 +71,10 @@ export default {
     },
     back () {
       --this.currentPage;
+    },
+
+    jump (timestamp) {
+      this.$emit("jump-to", timestamp);
     },
   },
 }

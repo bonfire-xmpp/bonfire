@@ -20,6 +20,12 @@
 
 .header-message, .body-message {
   overflow: hidden;
+  transition: 0.2s;
+
+}
+
+.highlight {
+  background: map-get($greys, "300");
 }
 
 .darken-on-hover {

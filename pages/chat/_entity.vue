@@ -26,19 +26,11 @@
           ref="messageList"
           class="flex-grow-1 flex-shrink-1 wide-scrollbar"
           :options="{scrollbars:{clickScrolling: true}}">
-          <div class="scroller pt-4">
-            <div 
-              ref="scrollpastBefore" 
-              style="height: 100vh;"
-              v-if="showBefore"/>
+          <div class="scroller pt-4 justify-end d-flex flex-column">
             <message-group
               v-for="(group, i) in messageGroups(messages)"
               :key="group[0].timestamp"
               :group="group"/>
-            <div 
-              ref="scrollpastAfter" 
-              style="height: 100vh;"
-              v-if="moreAfter"/>
           </div>
         </overlay-scrollbars>
 
@@ -57,6 +49,7 @@
 
       <search-results
           v-if="searchActive"
+          @jump-to="jump"
           :results="matches"
           v-click-outside="searchResultsClickOutside"/>
     </main>
@@ -114,10 +107,13 @@ export default {
       moreBefore: false,
       moreAfter: false,
       showBefore: true,
+      showAfter: false,
       firstBlockStamp: 0,
       lastBlockStamp: 0,
       height: 0,
       loadedMessages: [],
+      loadedBlocks: [],
+      preloadedBlocks: {},
 
       searchResultsClickOutside: {
         handler: this.closeSearch,
@@ -135,8 +131,8 @@ export default {
         let list = this.$refs.messageList;
         let inst = list.osInstance();
         let state = inst.getState();
-        if (!this.moreAfter && state.overflowAmount.y - inst.scroll().position.y == 0) {
-          list.osInstance().scroll({ y: '100%' }, 0.0);
+        if (!this.showAfter && state.overflowAmount.y - inst.scroll().position.y == 0) {
+          // list.osInstance().scroll({ y: '100%' }, 0.0);
         }
       });
 
@@ -144,7 +140,7 @@ export default {
       return this.loadedMessages
         .concat(!this.moreAfter ? curblock : [])
         .filter(x => !!x)
-        .sort((a, b) => a.timestamp - b.timestamp);
+        // .sort((a, b) => a.timestamp - b.timestamp);
     },
     currentItem () {
       if (!this.$store.state[Store.$states.roster] || !this.$store.state[Store.$states.avatars]) return {};
@@ -188,7 +184,7 @@ export default {
       let groups = [[messages[0]]];
       for (let i = 1; i < messages.length; ++i) {
         let lastgroup = groups[groups.length - 1];
-        if (lastgroup[0].from !== messages[i].from || lastgroup.length >= 10) {
+        if (lastgroup[0].from !== messages[i].from || lastgroup.length >= 10 || lastgroup[0].blockid !== messages[i].blockid) {
           groups.push([messages[i]]);
         } else {
           lastgroup.push(messages[i]);
@@ -256,6 +252,28 @@ export default {
       return !!await messageDb.messageArchive.where("timestamp").below(timestamp).count();
     },
 
+    async fetchBefore (timestamp) {
+      let entity = this.bare;
+      let blocks = await messageDb.messageArchive
+        .orderBy("timestamp")
+        .reverse()
+        .filter(x => x.with == entity && x.timestamp <= timestamp)
+        .limit(4)
+        .toArray();
+      blocks.reverse();
+      blocks = blocks.map(({ id, block }) => {
+        this.preloadedBlocks[id] ||= msgpack.decode(lz4.decompress(block)).map(x => {
+          x.blockid = id;
+          return x;
+        });
+        return this.preloadedBlocks[id];
+      }).flat(1);
+      blocks.reverse()
+      for (let mesg of blocks) {
+        this.loadedMessages.unshift(mesg);
+      }
+    },
+
     async fetchMessages (center) {
       let entity = this.bare;
       // ensure some blocks are loaded
@@ -264,32 +282,31 @@ export default {
       }
       await this.$store.dispatch(`${MessageStore.namespace}/${MessageStore.$actions.loadCurrentMessages}`, entity);
       this.$store.dispatch(`${MessageStore.namespace}/${MessageStore.$actions.syncMessages}`, entity);
-      // get blocks from archive in correct order
-      let [before, after] = await Promise.all([
-        messageDb.messageArchive
-          .orderBy("timestamp").reverse()
-          .filter(x => x.with == entity && x.timestamp <= center)
-          .toArray()
-          .then(x => x.slice(0, 4)),
-        messageDb.messageArchive
-          .orderBy("timestamp")
-          .filter(x => x.with == entity && x.timestamp > center)
-          .toArray()
-          .then(x => x.slice(0, 4)),
-      ]);
-      before.reverse();
-      let blocks = before.concat(after);
-      
-      // combine messages
-      this.loadedMessages = blocks.reduce((acc, {block}) =>
-          acc.concat(msgpack.decode(lz4.decompress(block))), []
-      ).sort((a, b) => a.timestamp - b.timestamp);
+
+      await this.fetchBefore(center);
      
       this.firstBlockStamp = this.loadedMessages[0].timestamp;
       this.lastBlockStamp = this.loadedMessages[this.loadedMessages.length - 1].timestamp;
 
-      this.moreBefore = before.length && await this.hasBlocksBefore(this.firstBlockStamp - 1);
-      this.moreAfter = after.length && await this.hasBlocksAfter(this.lastBlockStamp + 1);
+      this.moreBefore = await this.hasBlocksBefore(this.firstBlockStamp - 1);
+      this.moreAfter = await this.hasBlocksAfter(this.lastBlockStamp + 1);
+    },
+
+    async jump (timestamp) {
+      this.loadedMessages = [];
+      await this.fetchMessages(timestamp);
+      this.updateScrollPast();
+      document.getElementById("msg:" + timestamp)?.nextElementSibling.classList.add("highlight");
+      setTimeout(() => {
+        document.getElementById("msg:" + timestamp)?.nextElementSibling.classList.remove("highlight");
+      }, 1000);
+      let scrollpos = document.getElementById("msg:" + timestamp).parentElement.offsetTop;
+      this.$refs.messageList.osInstance().scroll({ y: `${scrollpos}px` }, 1.0);
+    },
+
+    updateScrollPast () {
+      this.showBefore = this.moreBefore;
+      this.showAfter = this.moreAfter;
     },
 
     ...mapMutations({ setActiveChat: Store.$mutations.setActiveChat })
@@ -300,14 +317,16 @@ export default {
       this.loadedMessages = [];
       this.$nextTick(async () => {
         await this.fetchMessages(Date.now());
+        this.updateScrollPast();
         this.$nextTick(() => this.$refs.messageList.osInstance().scroll({ y: '100%' }, 0.0));
         this.setActiveChat({type: 'chat', entity: this.bare});
       });
     }
   },
-  
+
   async mounted () {
     await this.fetchMessages(Date.now());
+    this.updateScrollPast();
     this.setActiveChat({type: 'chat', entity: this.bare});
     this.$nextTick(async () => {
       let messageList = this.$refs.messageList;
@@ -316,34 +335,25 @@ export default {
 
       messageList.osInstance().options("callbacks.onScrollStop", async () => {
         let inst = messageList.osInstance();
-
-        let keyBefore = "msg:" + this.firstBlockStamp;
-        let keyAfter = "msg:" + this.lastBlockStamp;
-        let startYBefore = document.getElementById(keyBefore).parentElement.getBoundingClientRect().top;
-        let startYAfter = document.getElementById(keyAfter).parentElement.getBoundingClientRect().top;
-        let startScroll = inst.scroll().position.y;
         
+        let keyBefore = "msg:" + this.firstBlockStamp;
+        let posBefore = document.getElementById(keyBefore).getBoundingClientRect().top;
+        let curScroll = inst.scroll().position.y;
+
         if (
-          this.moreBefore && this.$refs.scrollpastBefore.getBoundingClientRect().bottom > this.$refs.main.getBoundingClientRect().top
+          this.showBefore && inst.scroll().position.y < 400
         ) {
-          await this.fetchMessages(this.firstBlockStamp - 1);
+          inst.sleep();
+          await this.fetchMessages(this.firstBlockStamp);
+
           this.$nextTick(() => {
-            let endY = document.getElementById(keyBefore).parentElement.getBoundingClientRect().top;
-            inst.scroll({ y: `${endY - startYBefore + startScroll}px` }, 0.0);
-            this.showBefore = this.moreBefore;
+            this.updateScrollPast();
+            
+            let pos = document.getElementById(keyBefore).getBoundingClientRect().top;
+            inst.scroll({ y: `${curScroll + pos - posBefore}px` });
+            inst.update();
           });
         } 
-        else if (
-          this.moreAfter && this.$refs.scrollpastAfter.getBoundingClientRect().top < this.$refs.main.getBoundingClientRect().bottom
-        ) {
-          await this.fetchMessages(this.lastBlockStamp);
-          this.$nextTick(() => {
-            let endY = document.getElementById(keyAfter).parentElement.getBoundingClientRect().top;
-            console.log(endY - startYAfter + startScroll)
-            inst.scroll({ y: `${endY - startYAfter + startScroll}px` }, 0.0);
-            this.showBefore = this.moreBefore;
-          });
-        }
       });
       
     });

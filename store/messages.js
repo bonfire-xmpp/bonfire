@@ -84,8 +84,9 @@ const delayIterator = async (cb, delay) => {
 const kBlockSize = 10;
 
 async function insertBlock(messages, jid) {
-    let timestamp = messages.reduce((acc, x) => Math.min(acc, x.timestamp), messages[0].timestamp);
+    let timestamp = messages[0].timestamp;
     let compblock = lz4.compress(Buffer.from(msgpack.encode(messages)));
+    console.log({ block: compblock, timestamp, with: jid });
     let id = await messageDb.messageArchive.add({ block: compblock, timestamp, with: jid });
     await populateSearchIndex(messageDb, id, messages);
 }
@@ -117,7 +118,7 @@ export const actions = {
                 paging: { before: lastID },
                 end: lastTimestamp,
             });
-            console.log(history);
+            // console.log(history);
             
             for (let { item: { message, delay } } of history.results) {
                 if (message.body) {
@@ -132,7 +133,7 @@ export const actions = {
             
             if (messages.length >= kBlockSize) {
                 await messageDb.transaction("rw", messageDb.messageArchive, messageDb.prefixIndex, async () => {
-                    await insertBlock(messages, jid);
+                    await insertBlock(messages.sort((a, b) => a.timestamp - b.timestamp), jid);
                 });
                 messages = [];
             }
