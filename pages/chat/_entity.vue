@@ -91,6 +91,8 @@ import * as msgpack from "@msgpack/msgpack";
 
 const lz4 = require("lz4js");
 
+const kLoadCount = 6;
+
 export default {
   key: 'chat',
   components: { MessageGroup, ChatMessageForm, SearchResults, Message, HeadingMessage, BodyMessage },
@@ -111,7 +113,6 @@ export default {
       firstBlockStamp: 0,
       lastBlockStamp: 0,
       height: 0,
-      loadedMessages: [],
       loadedBlocks: [],
       preloadedBlocks: {},
 
@@ -137,7 +138,8 @@ export default {
       });
 
       let curblock = this.$store.state[MessageStore.namespace][MessageStore.$states.messages][this.bare] || [];
-      return this.loadedMessages
+      return this.loadedBlocks
+        .flat(1)
         .concat(!this.moreAfter ? curblock : [])
         .filter(x => !!x)
         // .sort((a, b) => a.timestamp - b.timestamp);
@@ -252,13 +254,13 @@ export default {
       return !!await messageDb.messageArchive.where("timestamp").below(timestamp).count();
     },
 
-    async fetchBefore (timestamp) {
+    async fetchBefore (timestamp, num = kLoadCount) {
       let entity = this.bare;
       let blocks = await messageDb.messageArchive
         .orderBy("timestamp")
         .reverse()
         .filter(x => x.with == entity && x.timestamp <= timestamp)
-        .limit(4)
+        .limit(num)
         .toArray();
       blocks.reverse();
       blocks = blocks.map(({ id, block }) => {
@@ -267,11 +269,37 @@ export default {
           return x;
         });
         return this.preloadedBlocks[id];
-      }).flat(1);
-      blocks.reverse()
-      for (let mesg of blocks) {
-        this.loadedMessages.unshift(mesg);
-      }
+      });
+      this.loadedBlocks = blocks.concat(this.loadedBlocks.slice(0, this.loadedBlocks.length - num));
+  
+      await this.updateBeforeAfter();
+    },
+
+    async fetchAfter (timestamp, num = kLoadCount) {
+      let entity = this.bare;
+      let blocks = await messageDb.messageArchive
+        .orderBy("timestamp")
+        .filter(x => x.with == entity && x.timestamp > timestamp)
+        .limit(num)
+        .toArray();
+      blocks = blocks.map(({ id, block }) => {
+        this.preloadedBlocks[id] ||= msgpack.decode(lz4.decompress(block)).map(x => {
+          x.blockid = id;
+          return x;
+        });
+        return this.preloadedBlocks[id];
+      });
+      this.loadedBlocks = this.loadedBlocks.slice(num - 1).concat(blocks);
+
+      await this.updateBeforeAfter();
+    },
+
+    async updateBeforeAfter () {
+      let lastBlock = this.loadedBlocks[this.loadedBlocks.length - 1];
+      this.firstBlockStamp = this.loadedBlocks[0][0].timestamp;
+      this.lastBlockStamp = lastBlock[lastBlock.length - 1].timestamp;
+      this.moreBefore = await this.hasBlocksBefore(this.firstBlockStamp - 1);
+      this.moreAfter = await this.hasBlocksAfter(this.lastBlockStamp + 1);
     },
 
     async fetchMessages (center) {
@@ -284,12 +312,6 @@ export default {
       this.$store.dispatch(`${MessageStore.namespace}/${MessageStore.$actions.syncMessages}`, entity);
 
       await this.fetchBefore(center);
-     
-      this.firstBlockStamp = this.loadedMessages[0].timestamp;
-      this.lastBlockStamp = this.loadedMessages[this.loadedMessages.length - 1].timestamp;
-
-      this.moreBefore = await this.hasBlocksBefore(this.firstBlockStamp - 1);
-      this.moreAfter = await this.hasBlocksAfter(this.lastBlockStamp + 1);
     },
 
     async jump (timestamp) {
@@ -301,7 +323,7 @@ export default {
         document.getElementById("msg:" + timestamp)?.nextElementSibling.classList.remove("highlight");
       }, 1000);
       let scrollpos = document.getElementById("msg:" + timestamp).parentElement.offsetTop;
-      this.$refs.messageList.osInstance().scroll({ y: `${scrollpos}px` }, 1.0);
+      this.$refs.messageList.osInstance().scroll({ y: `${scrollpos}px` }, 0.0);
     },
 
     updateScrollPast () {
@@ -314,7 +336,7 @@ export default {
 
   watch: {
     async $route (value) {
-      this.loadedMessages = [];
+      this.loadedBlocks = [];
       this.$nextTick(async () => {
         await this.fetchMessages(Date.now());
         this.updateScrollPast();
@@ -337,23 +359,36 @@ export default {
         let inst = messageList.osInstance();
         
         let keyBefore = "msg:" + this.firstBlockStamp;
-        let posBefore = document.getElementById(keyBefore).getBoundingClientRect().top;
+        let posBefore = document.getElementById(keyBefore)?.getBoundingClientRect().top;
+        let keyAfter = "msg:" + this.lastBlockStamp;
+        let posAfter = document.getElementById(keyAfter)?.getBoundingClientRect().top;
         let curScroll = inst.scroll().position.y;
 
-        if (
-          this.showBefore && inst.scroll().position.y < 400
-        ) {
+        if (this.showBefore && inst.scroll().position.y < 400) {
           inst.sleep();
-          await this.fetchMessages(this.firstBlockStamp);
+          await this.fetchBefore(this.firstBlockStamp - 1, 1);
 
           this.$nextTick(() => {
-            this.updateScrollPast();
             
             let pos = document.getElementById(keyBefore).getBoundingClientRect().top;
             inst.scroll({ y: `${curScroll + pos - posBefore}px` });
             inst.update();
+            this.updateScrollPast();
           });
-        } 
+        }
+
+        if (
+          this.showAfter && inst.scroll().position.y + 400 > inst.getState().overflowAmount.y
+        ) {
+          inst.sleep();
+          await this.fetchAfter(this.lastBlockStamp, 1);
+          this.$nextTick(() => {
+            let pos = document.getElementById(keyAfter)?.getBoundingClientRect().top;
+            inst.scroll({ y: `${curScroll + pos - posAfter}px` });
+            inst.update();
+            this.updateScrollPast();
+          });
+        }
       });
       
     });
