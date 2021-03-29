@@ -1,11 +1,11 @@
-<template>
+<template functional>
   <div class="badge-container">
     <slot/>
     <div class="badge-wrapper w-100 h-100">
       <div class="badge" :class="{dot: !$slots.badge}">
         <slot name="badge">
-          <div class="dot" :class="color"
-            :style="{borderColor, borderStyle: bordered && 'solid'}" />
+          <div class="dot" :class="props.color"
+            :style="{borderColor: props.borderColor, borderStyle: props.bordered && 'solid'}" />
         </slot>
       </div>
     </div>
