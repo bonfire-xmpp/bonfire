@@ -27,10 +27,12 @@
           class="flex-grow-1 flex-shrink-1 wide-scrollbar"
           :options="{scrollbars:{clickScrolling: true}}">
           <div class="scroller pt-4 justify-end d-flex flex-column">
+            <span id="chat-top"></span>
             <message-group
               v-for="(group, i) in messageGroups(messages)"
               :key="group[0].timestamp"
               :group="group"/>
+            <span id="chat-bottom"></span>
           </div>
         </overlay-scrollbars>
 
@@ -91,7 +93,7 @@ import * as msgpack from "@msgpack/msgpack";
 
 const lz4 = require("lz4js");
 
-const kLoadCount = 6;
+const kLoadCount = 4;
 
 export default {
   key: 'chat',
@@ -108,8 +110,6 @@ export default {
 
       moreBefore: false,
       moreAfter: false,
-      showBefore: true,
-      showAfter: false,
       firstBlockStamp: 0,
       lastBlockStamp: 0,
       height: 0,
@@ -132,26 +132,26 @@ export default {
         let list = this.$refs.messageList;
         let inst = list.osInstance();
         let state = inst.getState();
-        if (!this.showAfter && state.overflowAmount.y - inst.scroll().position.y == 0) {
-          // list.osInstance().scroll({ y: '100%' }, 0.0);
+        if (!this.moreAfter && state.overflowAmount.y - inst.scroll().position.y == 0) {
+          list.osInstance().scroll({ y: '100%' }, 0.0);
         }
       });
 
-      let curblock = this.$store.state[MessageStore.namespace][MessageStore.$states.messages][this.bare] || [];
-      return this.loadedBlocks
-        .flat(1)
-        .concat(!this.moreAfter ? curblock : [])
-        .filter(x => !!x)
-        // .sort((a, b) => a.timestamp - b.timestamp);
+      return this.loadedMessages;
     },
     currentItem () {
       if (!this.$store.state[Store.$states.roster] || !this.$store.state[Store.$states.avatars]) return {};
       if (!this.$store.state[Store.$states.roster]?.items) return {};
-      return this.$store.state[Store.$states.roster].items.find(x => x.jid === this.bare);
+      if (!this.$store.state[Store.$states.activeChat]?.entity) return {};
+      return this.$store.state[Store.$states.roster].items.find(x => x.jid === this.$store.state[Store.$states.activeChat].entity);
     },
 
     isTyping () {
       return this.$store.state[MessageStore.namespace][MessageStore.$states.chatComposing][this.bare];
+    },
+
+    currentBlock () {
+      return this.$store.state[MessageStore.namespace][MessageStore.$states.messages][this.bare];
     },
   },
 
@@ -242,36 +242,49 @@ export default {
     },
 
     /** STANZA **/
-    localPart (jid) {
-      return XMPP.JID.getLocal(jid);
-    },
-
     async hasBlocksAfter (timestamp) {
-      return await messageDb.messageArchive.where("timestamp").above(timestamp).count();
+      return !!await messageDb.messageArchive
+        .where("timestamp").above(timestamp)
+        .filter(x => x.with == this.bare)
+        .count();
     },
 
     async hasBlocksBefore (timestamp) {
-      return !!await messageDb.messageArchive.where("timestamp").below(timestamp).count();
+      return !!await messageDb.messageArchive
+        .where("timestamp")
+        .below(timestamp)
+        .filter(x => x.with == this.bare)
+        .count();
     },
 
-    async fetchBefore (timestamp, num = kLoadCount) {
-      let entity = this.bare;
-      let blocks = await messageDb.messageArchive
-        .orderBy("timestamp")
-        .reverse()
-        .filter(x => x.with == entity && x.timestamp <= timestamp)
-        .limit(num)
-        .toArray();
-      blocks.reverse();
-      blocks = blocks.map(({ id, block }) => {
+    updateMessages () {
+      this.loadedMessages = this.loadedBlocks
+        .flat(1)
+        .concat(!this.moreAfter ? this.currentBlock : [])
+        .sort((a, b) => a.timestamp - b.timestamp);
+    },
+
+    getDecodedBlocks (blocks) {
+      return blocks.map(({ id, block }) => {
         this.preloadedBlocks[id] ||= msgpack.decode(lz4.decompress(block)).map(x => {
           x.blockid = id;
           return x;
         });
         return this.preloadedBlocks[id];
       });
-      this.loadedBlocks = blocks.concat(this.loadedBlocks.slice(0, this.loadedBlocks.length - num));
-  
+    },
+
+    async fetchBefore (timestamp, num = kLoadCount) {
+      let entity = this.bare;
+      let blocks = await messageDb.messageArchive
+        .orderBy("timestamp")
+        .filter(x => x.with == entity && x.timestamp < timestamp)
+        .reverse()
+        .limit(num)
+        .toArray();
+      blocks.reverse();
+      blocks = this.getDecodedBlocks(blocks);
+      this.loadedBlocks = blocks.concat(this.loadedBlocks);
       await this.updateBeforeAfter();
     },
 
@@ -282,24 +295,17 @@ export default {
         .filter(x => x.with == entity && x.timestamp > timestamp)
         .limit(num)
         .toArray();
-      blocks = blocks.map(({ id, block }) => {
-        this.preloadedBlocks[id] ||= msgpack.decode(lz4.decompress(block)).map(x => {
-          x.blockid = id;
-          return x;
-        });
-        return this.preloadedBlocks[id];
-      });
-      this.loadedBlocks = this.loadedBlocks.slice(num).concat(blocks);
-
+      blocks = this.getDecodedBlocks(blocks);
+      this.loadedBlocks = this.loadedBlocks.concat(blocks);
       await this.updateBeforeAfter();
     },
 
     async updateBeforeAfter () {
       let lastBlock = this.loadedBlocks[this.loadedBlocks.length - 1];
       this.firstBlockStamp = this.loadedBlocks[0][0].timestamp;
-      this.lastBlockStamp = lastBlock[lastBlock.length - 1].timestamp;
-      this.moreBefore = await this.hasBlocksBefore(this.firstBlockStamp - 1);
-      this.moreAfter = await this.hasBlocksAfter(this.lastBlockStamp + 1);
+      this.lastBlockStamp = lastBlock[0].timestamp;
+      this.moreBefore = await this.hasBlocksBefore(this.firstBlockStamp);
+      this.moreAfter = await this.hasBlocksAfter(this.lastBlockStamp);
     },
 
     async fetchMessages (center) {
@@ -311,44 +317,49 @@ export default {
       await this.$store.dispatch(`${MessageStore.namespace}/${MessageStore.$actions.loadCurrentMessages}`, entity);
       this.$store.dispatch(`${MessageStore.namespace}/${MessageStore.$actions.syncMessages}`, entity);
 
-      await this.fetchBefore(center);
+      await this.fetchBefore(center + 1);
+      await this.fetchAfter(center);
     },
 
     async jump (timestamp) {
-      this.loadedMessages = [];
-      await this.fetchMessages(timestamp);
-      this.updateScrollPast();
-      document.getElementById("msg:" + timestamp)?.nextElementSibling.classList.add("highlight");
-      setTimeout(() => {
-        document.getElementById("msg:" + timestamp)?.nextElementSibling.classList.remove("highlight");
-      }, 1000);
-      let scrollpos = document.getElementById("msg:" + timestamp).parentElement.offsetTop;
-      this.$refs.messageList.osInstance().scroll({ y: `${scrollpos}px` }, 0.0);
-    },
-
-    updateScrollPast () {
-      this.showBefore = this.moreBefore;
-      this.showAfter = this.moreAfter;
+      this.loadedBlocks = [];
+      if (!this.messages.find(({timestamp: ts}) => timestamp === ts)) {
+        await this.fetchMessages(timestamp);
+        this.updateMessages();
+      }
+      this.$nextTick(() => {
+        let key = "msg:" + timestamp;
+        let scrollpos = document.getElementById(key).parentElement.offsetTop;
+        let bbox = this.$refs.main.getBoundingClientRect();
+        this.$refs.messageList.osInstance().scroll({ y: `${scrollpos - (bbox.bottom - bbox.top) / 2}px` }, 200);
+        document.getElementById(key).nextElementSibling.classList.remove("highlight");
+        this.$nextTick(() => document.getElementById(key).nextElementSibling.classList.add("highlight"));
+      });
     },
 
     ...mapMutations({ setActiveChat: Store.$mutations.setActiveChat })
   },
 
   watch: {
-    async $route (value) {
+    async $route () {
+      let inst = this.$refs.messageList.osInstance();
       this.loadedBlocks = [];
-      this.$nextTick(async () => {
-        await this.fetchMessages(Date.now());
-        this.updateScrollPast();
-        this.$nextTick(() => this.$refs.messageList.osInstance().scroll({ y: '100%' }, 0.0));
-        this.setActiveChat({type: 'chat', entity: this.bare});
-      });
-    }
+      await this.fetchMessages(Date.now());
+      this.updateMessages();
+      this.$nextTick(() => inst.scroll({ y: '100%' }, 0.0));
+      this.setActiveChat({type: 'chat', entity: this.bare});
+    },
+
+    currentBlock () {
+      if (this.$store.state[Store.$states.activeChat].entity !== this.bare) return;
+      this.updateMessages();
+    },
   },
 
   async mounted () {
+    this.loadedBlocks = [];
     await this.fetchMessages(Date.now());
-    this.updateScrollPast();
+    this.updateMessages();
     this.setActiveChat({type: 'chat', entity: this.bare});
     this.$nextTick(async () => {
       let messageList = this.$refs.messageList;
@@ -358,35 +369,33 @@ export default {
       messageList.osInstance().options("callbacks.onScrollStop", async () => {
         let inst = messageList.osInstance();
         
-        let keyBefore = "msg:" + this.firstBlockStamp;
-        let posBefore = document.getElementById(keyBefore)?.getBoundingClientRect().top;
-        let keyAfter = "msg:" + this.lastBlockStamp;
-        let posAfter = document.getElementById(keyAfter)?.getBoundingClientRect().top;
         let curScroll = inst.scroll().position.y;
 
-        if (this.showBefore && inst.scroll().position.y < 400) {
-          inst.sleep();
-          await this.fetchBefore(this.firstBlockStamp - 1, 1);
+        if (this.moreBefore && inst.scroll().position.y <= 0) {
+          let key = "chat-bottom";
+          let posBefore = document.getElementById(key).getBoundingClientRect().top;
+          await this.fetchBefore(this.firstBlockStamp, 2);
 
+          this.updateMessages();
           this.$nextTick(() => {
-            
-            let pos = document.getElementById(keyBefore).getBoundingClientRect().top;
+            let pos = document.getElementById(key).getBoundingClientRect().top;
             inst.scroll({ y: `${curScroll + pos - posBefore}px` });
-            inst.update();
-            this.updateScrollPast();
           });
         }
 
         if (
-          this.showAfter && inst.scroll().position.y + 400 > inst.getState().overflowAmount.y
+          this.moreAfter && inst.scroll().position.y >= inst.getState().overflowAmount.y
         ) {
+          let key = "chat-top";
+          let posBefore = document.getElementById(key).getBoundingClientRect().top;
+          await this.fetchAfter(this.lastBlockStamp, 2);
           inst.sleep();
-          await this.fetchAfter(this.lastBlockStamp, 1);
+          this.updateMessages();
+          
           this.$nextTick(() => {
-            let pos = document.getElementById(keyAfter)?.getBoundingClientRect().top;
-            inst.scroll({ y: `${curScroll + pos - posAfter}px` });
-            inst.update();
-            this.updateScrollPast();
+            inst.update(); 
+            let pos = document.getElementById(key).getBoundingClientRect().top;
+            inst.scroll({ y: `${curScroll + pos - posBefore}px` });
           });
         }
       });

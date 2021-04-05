@@ -20,12 +20,20 @@
 
 .header-message, .body-message {
   overflow: hidden;
-  transition: 0.2s;
-
 }
 
 .highlight {
-  background: map-get($greys, "300");
+  animation-name: highlight;
+  animation-duration: 1.0s;
+}
+
+@keyframes highlight {
+  25%, 75% {
+    background: map-get($greys, "300");
+  }
+  0%, 100% {
+    background: default;
+  }
 }
 
 .darken-on-hover {

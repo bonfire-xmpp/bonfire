@@ -86,7 +86,6 @@ const kBlockSize = 10;
 async function insertBlock(messages, jid) {
     let timestamp = messages[0].timestamp;
     let compblock = lz4.compress(Buffer.from(msgpack.encode(messages)));
-    console.log({ block: compblock, timestamp, with: jid });
     let id = await messageDb.messageArchive.add({ block: compblock, timestamp, with: jid });
     await populateSearchIndex(messageDb, id, messages);
 }
@@ -175,8 +174,10 @@ export const actions = {
                 // block timestamp is first message timestamp
                 await insertBlock(await query.sortBy("timestamp"), bareJid);
                 await query.delete();
+                commit($mutations.setMessages, { jid: bareJid, messages: [] });
             }
         });
+
     },
 };
 
