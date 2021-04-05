@@ -328,7 +328,27 @@ export const mutations = {
     ...generateMutations(storage.secure,
         $states.jid, $states.password, $states.server, $states.transports),
 
-    ...generateMutations($states.account, $states.roster, $states.loginDate, $states.activeChat),
+    ...generateMutations($states.account, $states.roster, $states.loginDate),
+
+    [$mutations.setActiveChat] ( state, data ) {
+        // Last chat is now inactive
+        if(state[$states.activeChat]?.entity) {
+            this.$stanza.client.sendMessage({
+                type: "chat",
+                to: state[$states.activeChat].entity,
+                chatState: "inactive",
+            });
+        }
+
+        state[$states.activeChat] = data;
+
+        // New chat is now active
+        this.$stanza.client.sendMessage({
+            type: "chat",
+            to: state[$states.activeChat].entity,
+            chatState: "active",
+        });
+    },
 
     [$mutations.stanzaInitialized] ( state ) {
         state[$states.stanzaInitialized] = true;
@@ -401,7 +421,7 @@ export const mutations = {
             ...oldPresences,
             [resource]: { show: data.show, status: data.status, available: data.available, },
         });
-        
+
         let max = { available: false };
         for(const resource of Object.getOwnPropertyNames(state[$states.presences][bare])) {
             // Workaround to iterate through Vuex store reactive object keys
