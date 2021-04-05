@@ -139,6 +139,20 @@ const setupListeners = ctx => {
         dispatch(MessageStore.$actions.addMessage, { jid, message });
     });
 
+    client.on('chat:state', state => {
+        if (state.chatState == "composing") {
+            commit(MessageStore.$mutations.setComposing, { 
+                user: XMPP.JID.toBare(state.from), 
+                composing: true,
+            });
+        } else {
+            commit(MessageStore.$mutations.setComposing, { 
+                user: XMPP.JID.toBare(state.from), 
+                composing: false,
+            });
+        }
+    });
+
     /**
      * STREAM RESUMPTION (MESSAGE DELIVERY STATE) HANDLING
      */

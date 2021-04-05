@@ -4,7 +4,7 @@
     <!-- Vertical align Avatar -->
     <div class="align-content-center-inline mr-1" style="width: 36px">
       <v-badge bottom dot offset-x="11" offset-y="11" bordered :color="onlineStatus">
-        <avatar :size="36" :jid="item.jid"/>
+        <avatar v-if="item.jid" :size="36" :jid="item.jid"/>
       </v-badge>
     </div>
 
