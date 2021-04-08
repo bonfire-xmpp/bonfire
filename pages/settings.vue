@@ -10,19 +10,24 @@
       </v-btn>
 
       <!--List of submenus-->
-      <settings-menu-list :menu-list="menuList" v-model="selectedSubmenu"/>
+      <overlay-scrollbars class="narrow-scrollbar h-100"
+        :options="{scrollbars: {autoHide: 'leave', autoHideDelay: 0}}">
+        <settings-menu-list :menu-list="menuList" v-model="selectedSubmenu"/>
+      </overlay-scrollbars>
     </div>
 
 
-    <!--Right hand side-->
-    <div class="panel pl-8" :style="{'padding-right': $vuetify.breakpoint.mdAndDown ? '42px' : '15vw' }">
+    <!--Right hand side scrollbar-->
+    <overlay-scrollbars class="h-100 panel">
 
       <!--Show the selected panel on the rhs-->
-      <keep-alive>
-        <component :is="selectedSubmenu"/>
-      </keep-alive>
+      <div class="ml-8 pb-16" style="margin-right: 15vw;">
+        <keep-alive>
+          <component :is="selectedSubmenu"/>
+        </keep-alive>
+      </div>
 
-    </div>
+    </overlay-scrollbars>
 
   </div>
 </template>
@@ -73,4 +78,7 @@ $exit-button-total-space: calc(#{$exit-button-size} + #{$exit-button-left-margin
 .menu { background: map-get($black, "lighten"); }
 .panel { background: map-get($greys, "300"); }
 
+.panel {
+  height: 100vh;
+}
 </style>
