@@ -1,13 +1,14 @@
 <template>
-  <div class="sidebar grey-100">
+  <div class="sidebar grey-100 d-flex flex-column">
     <header-bar pad-bottom/>
-    <overlay-scrollbars class="h-100 narrow-scrollbar"
+    <overlay-scrollbars class="narrow-scrollbar flex-grow-1"
       :options="{scrollbars: {autoHide: 'leave', autoHideDelay: 0}}">
       <roster-list
           :pinned="[]"
           :items="items"
           :selected-jid="selectedJid"/>
     </overlay-scrollbars>
+    <self-bar :jid="$stanza.client.jid"/>
   </div>
 </template>
 
