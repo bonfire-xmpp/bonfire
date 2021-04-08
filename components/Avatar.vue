@@ -11,7 +11,7 @@
     name: "Avatar",
 
     props: {
-      size: Number,
+      size: Number | String,
       jid: String,
     },
 
