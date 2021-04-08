@@ -41,7 +41,7 @@ $height-width-helper-sizes: splitIntoSteps(100, 20);
   -ms-flex-pack: justify !important;
 }
 
-.clickable > * {
+.clickable, .clickable > * {
   cursor: pointer;
 }
 
@@ -79,6 +79,7 @@ $position-values: (absolute, relative, fixed, static);
     content: "";
 
     @extend .position-absolute, .w-100, .h-100;
+    left: 0; right: 0;
 
     z-index: 1;
 
