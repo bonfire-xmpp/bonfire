@@ -1,4 +1,4 @@
-import { MessageStore } from "@/store/messages";
+import { SettingsStore } from "@/store/settings";
 
 import { Utils } from 'stanza';
 
@@ -173,6 +173,9 @@ export const actions = {
                 commit($mutations.setPresence, presenceData);
             }
         }
+
+        // Restore user settings
+        dispatch(`${SettingsStore.namespace}/${SettingsStore.$actions.restoreUserSettings}`);
     },
 
     async [$actions.login]({ commit }, { jid, password, server, transports, resource }) {
@@ -401,7 +404,7 @@ export const mutations = {
             ...oldPresences,
             [resource]: { show: data.show, status: data.status, available: data.available, },
         });
-        
+
         let max = { available: false };
         for(const resource of Object.getOwnPropertyNames(state[$states.presences][bare])) {
             // Workaround to iterate through Vuex store reactive object keys

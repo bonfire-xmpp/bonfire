@@ -5,7 +5,7 @@
       <div class="d-inline" @click="toggle">{{ name }}</div>
       <v-spacer class="align-self-stretch" @click="toggle"/>
       <v-switch :ripple="false" inset class="switch"
-        v-model="state"/>
+        v-model="storeValue"/>
     </div>
 
     <div class="toggle-group-subtitle">{{ subtitle }}</div>
@@ -13,6 +13,8 @@
 </template>
 
 <script>
+  import { SettingsStore } from "@/store/settings";
+
   export default {
     name: "Toggle",
     props: {
@@ -23,19 +25,45 @@
       subtitle: {
         type: String,
         required: false,
+      },
+
+      storeState: {
+        type: String,
+      },
+      storeSetter: {
+        type: String,
+        required: false,
+      },
+
+      setting: {
+        type: String,
+      },
+
+      storeNamespace: {
+        type: String,
+        required: false,
+        default: undefined
       }
     },
 
-    data() {
-      return {
-        state: false,
+    computed: {
+      namespace() {
+        return this.storeNamespace || SettingsStore.namespace;
+      },
+
+      stateName() {
+        return SettingsStore.$states[this.setting] || this.storeState;
+      },
+
+      storeValue: {
+        get()    { return this.$store.state[this.namespace][this.stateName]; },
+        set(val) { this.$store.commit(`${this.namespace}/${this.storeSetter || 'SET_' + this.stateName}`, val); },
       }
     },
 
     methods: {
       toggle() {
-        // TODO: change vuex store state
-        this.state = !this.state;
+        this.storeValue = !this.storeValue;
       }
     },
   }
