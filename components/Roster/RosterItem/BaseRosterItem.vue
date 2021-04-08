@@ -139,6 +139,7 @@
 
   // Vuetify sets line-height to 1.5/24px, so we reset it here
   .main-container {
+    width: 0; // Makes the container shrink when available width < content width
     line-height: 1;
   }
 </style>
