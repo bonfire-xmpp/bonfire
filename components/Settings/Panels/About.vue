@@ -1,6 +1,6 @@
 <template>
   <div class="white--text">
-    <panel-title>About</panel-title>
+    <panel-title v-if="!mobile">About</panel-title>
   </div>
 </template>
 
@@ -10,6 +10,7 @@
   export default {
     name: "about",
     components: {PanelTitle},
+    props: ['mobile'],
   }
 </script>
 

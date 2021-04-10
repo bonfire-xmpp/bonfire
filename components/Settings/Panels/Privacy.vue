@@ -1,6 +1,6 @@
 <template>
-  <div class="white--text">
-    <panel-title>Privacy</panel-title>
+  <div class="white--text" :class="{'mt-2': mobile}">
+    <panel-title v-if="!mobile">Privacy</panel-title>
 
     <toggle setting="activeChatReceipts" name="Send Typing Receipts" subtitle="Enabling this will send a receipt to people you are chatting with that shows you are typing."/>
     <v-divider class="my-4"/>
@@ -18,6 +18,7 @@
   export default {
     name: "privacy",
     components: {Toggle, PanelTitle},
+    props: ['mobile'],
   }
 </script>
 

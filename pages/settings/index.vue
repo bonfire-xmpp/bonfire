@@ -1,5 +1,5 @@
 <template>
-  <div class="main w-100 h-100">
+  <div class="main lhs-bg w-100 h-100" v-if="!$vuetify.breakpoint.smAndDown">
 
     <!--Left hand side-->
     <div class="menu">
@@ -12,42 +12,57 @@
       <!--List of submenus-->
       <overlay-scrollbars class="narrow-scrollbar h-100"
         :options="{scrollbars: {autoHide: 'leave', autoHideDelay: 0}}">
-        <settings-menu-list :menu-list="menuList" v-model="selectedSubmenu"/>
+        <settings-menu-list class="narrow-menu" :menu-list="menuList" v-model="selectedSubmenu"/>
       </overlay-scrollbars>
     </div>
 
 
     <!--Right hand side scrollbar-->
-    <overlay-scrollbars class="h-100 panel">
+    <overlay-scrollbars class="h-100 panel rhs-bg">
 
       <!--Show the selected panel on the rhs-->
       <div class="ml-8 pb-16" style="margin-right: 15vw;">
-        <keep-alive>
-          <component :is="selectedSubmenu"/>
-        </keep-alive>
+        <keep-alive><component :is="selectedSubmenu"/></keep-alive>
       </div>
 
     </overlay-scrollbars>
 
   </div>
+
+  <div v-else class="lhs-bg w-100 h-100">
+    <overlay-scrollbars class="narrow-scrollbar h-100"
+                        :options="{scrollbars: {autoHide: 'leave', autoHideDelay: 0}}">
+
+      <settings-menu-list class="lhs-bg" mobile :menu-list="menuList" v-model="selectedSubmenu"/>
+
+    </overlay-scrollbars>
+  </div>
 </template>
 
 <script>
-import MenuList from '@/assets/settings/menuList.js';
+import MenuList from 'assets/settings/menuList.js';
+
+import SettingsMenuList from '@/components/Settings/MenuList';
 
 import About from "@/components/Settings/Panels/About";
 import Privacy from "@/components/Settings/Panels/Privacy";
+import {Store} from "@/store";
 
 export default {
   name: "settings",
-  layout: "fullscreen",
-  components: {About, Privacy},
+  layout(ctx) {
+    return ctx.$vuetify.breakpoint.smAndDown ? "mobileMenu" : "fullscreen";
+  },
+  components: {SettingsMenuList, About, Privacy},
   data() {
     return {
       menuList: MenuList,
       selectedSubmenu: MenuList[0].content[0].to,
     }
   },
+  mounted() {
+    this.$store.commit(Store.$mutations.setPageTitle, "User Settings");
+  }
 }
 </script>
 
@@ -75,10 +90,14 @@ $exit-button-total-space: calc(#{$exit-button-size} + #{$exit-button-left-margin
   padding-top: 36px;
 }
 
-.menu { background: map-get($black, "lighten"); }
-.panel { background: map-get($greys, "300"); }
+.lhs-bg { background: map-get($black, "lighten") !important; }
+.rhs-bg { background: map-get($greys, "300") !important; }
 
 .panel {
   height: 100vh;
+}
+
+.narrow-menu {
+  @include ensure-width(200px);
 }
 </style>

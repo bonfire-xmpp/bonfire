@@ -1,5 +1,5 @@
 <template functional>
-  <div class="panel-title unselectable mb-3">
+  <div class="panel-title unselectable mb-3" :class="[data.class, data.staticClass]">
     {{props.title}}
     <slot/>
   </div>

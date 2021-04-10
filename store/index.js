@@ -8,6 +8,8 @@ import {loadFromSecure, loadFromSession} from '@/assets/storage'
 import Vue from 'vue';
 
 const $states = {
+    pageTitle: 'PAGE_TITLE',
+
     jid: 'JID',
 
     // In case the domain in the JID doesn't match
@@ -71,6 +73,8 @@ const $actions = {
 };
 
 const $mutations = {
+    setPageTitle: 'SET_PAGE_TITLE',
+
     setJid: 'SET_JID',
     setServer: 'SET_SERVER',
     setPassword: 'SET_PASSWORD',
@@ -95,6 +99,8 @@ const $mutations = {
 }
 
 export const state = () => ({
+    [$states.pageTitle]: '',
+
     [$states.jid]: '',
     [$states.server]: '',
     [$states.password]: '',
@@ -331,7 +337,7 @@ export const mutations = {
     ...generateMutations(storage.secure,
         $states.jid, $states.password, $states.server, $states.transports),
 
-    ...generateMutations($states.account, $states.roster, $states.loginDate, $states.activeChat),
+    ...generateMutations($states.account, $states.roster, $states.loginDate, $states.activeChat, $states.pageTitle),
 
     [$mutations.stanzaInitialized] ( state ) {
         state[$states.stanzaInitialized] = true;
