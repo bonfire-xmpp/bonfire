@@ -1,5 +1,5 @@
 <template>
-  <div class="main lhs-bg w-100 h-100" v-if="!$vuetify.breakpoint.smAndDown">
+  <div class="main lhs-bg w-100 h-100" v-if="!$device.isMobileOrTablet">
 
     <!--Left hand side-->
     <div class="menu">
@@ -51,7 +51,7 @@ import {Store} from "@/store";
 export default {
   name: "settings",
   layout(ctx) {
-    return ctx.$vuetify.breakpoint.smAndDown ? "mobileMenu" : "fullscreen";
+    return ctx.$device.isMobileOrTablet ? "mobileMenu" : "fullscreen";
   },
   components: {SettingsMenuList, About, Privacy},
   data() {
