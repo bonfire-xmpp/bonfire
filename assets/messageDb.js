@@ -8,6 +8,6 @@ db.version(1).stores({
     prefixIndex: `prefix`,
 });
 // for debugging
-window.db = db;
+// window.db = db;
 
 export default db;

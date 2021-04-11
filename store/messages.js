@@ -1,10 +1,7 @@
 import messageDb from '@/assets/messageDb.js';
-import { Store } from "@/store/index";
 import Vue from "vue";
-import * as msgpack from "@msgpack/msgpack";
-import { populateSearchIndex } from "./search";
+import {insertBlock, splitBlocks} from "./search";
 import * as XMPP from 'stanza';
-const lz4 = require("lz4js");
 
 /**
  * Message state definition. Due to a lack of typescript, this will have to settle:
@@ -83,13 +80,6 @@ const delayIterator = async (cb, delay) => {
 
 const kBlockSize = 10;
 
-async function insertBlock(messages, jid) {
-    let timestamp = messages[0].timestamp;
-    let compblock = lz4.compress(Buffer.from(msgpack.encode(messages)));
-    let id = await messageDb.messageArchive.add({ block: compblock, timestamp, with: jid });
-    await populateSearchIndex(messageDb, id, messages);
-}
-
 export const actions = {
     /** LOAD_CURRENT_MESSAGES **/
     async [$actions.loadCurrentMessages] ({ commit }, jid) {
@@ -106,7 +96,7 @@ export const actions = {
         if (curmessages?.length) {
             lastTimestamp = new Date(curmessages[0].timestamp - 1);
         }
-        
+
         let messagesSeen = 0;
         let messages = [];
         let lastID = "";
@@ -118,7 +108,7 @@ export const actions = {
                 end: lastTimestamp,
             });
             // console.log(history);
-            
+
             for (let { item: { message, delay } } of history.results) {
                 if (message.body) {
                     message.from = XMPP.JID.toBare(message.from);
@@ -129,33 +119,33 @@ export const actions = {
                     ++messagesSeen;
                 }
             }
-            
+
             if (messages.length >= kBlockSize) {
-                await messageDb.transaction("rw", messageDb.messageArchive, messageDb.prefixIndex, async () => {
+                // await messageDb.transaction("rw", messageDb.messageArchive, messageDb.prefixIndex, async () => {
                     await insertBlock(messages.sort((a, b) => a.timestamp - b.timestamp), jid);
-                });
+                // });
                 messages = [];
             }
             lastID = history.paging.first;
-            
+
             return messagesSeen < 40 && !history.complete;
         }, 50);
-        
+
         // add remaining messages to a block
         if (messages.length) {
-            await messageDb.transaction("rw", messageDb.messageArchive, messageDb.prefixIndex, async () => {
+            // await messageDb.transaction("rw", messageDb.messageArchive, messageDb.prefixIndex, async () => {
                 await insertBlock(messages, jid);
-            });
+            // });
         }
         await dispatch($actions.loadCurrentMessages, jid);
     },
-        
+
     /** ADD_MESSAGE **/
     async [$actions.addMessage] ({ commit }, { jid, message, state: messageState }) {
         const bareJid = XMPP.JID.toBare(jid);
         message.timestamp ||= Date.now();
         message.with = bareJid;
-        
+
         commit($mutations.addMessage, { bareJid, message, messageState });
         if (messageState) {
             messageDb.messageStates.put({id: message.id, ...messageState});
@@ -167,17 +157,8 @@ export const actions = {
             return;
         }
 
-        // message block archive
-        await messageDb.transaction("rw", messageDb.messages, messageDb.messageArchive, messageDb.prefixIndex, async () => {
-            const query = messageDb.messages.where("with").equals(bareJid);
-            if ((await query.count()) >= kBlockSize) {
-                // block timestamp is first message timestamp
-                await insertBlock(await query.sortBy("timestamp"), bareJid);
-                await query.delete();
-                commit($mutations.setMessages, { jid: bareJid, messages: [] });
-            }
-        });
-
+        const split = await splitBlocks(bareJid, kBlockSize);
+        if(split) commit($mutations.setMessages, { jid: bareJid, messages: [] });
     },
 };
 
@@ -186,12 +167,12 @@ export const mutations = {
     [$mutations.setMessages] ( state, { jid, messages }) {
         Vue.set(state[$states.messages], jid, messages);
     },
-    
+
     /** SET_MESSAGES_BY_ID **/
     [$mutations.setMessagesById] ( state, data ) {
         state[$states.messagesById] = data;
     },
-    
+
     /** SET_MESSAGE_STATE_BY_ID **/
     [$mutations.setMessageStateById] ( state, data ) {
         state[$states.messageStateById] = data;

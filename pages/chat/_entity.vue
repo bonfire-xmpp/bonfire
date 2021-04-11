@@ -2,7 +2,7 @@
   <div class="d-flex flex-column grey-200">
     <!-- Header -->
     <header-bar class="flex-shrink-0 d-flex px-4 align-center">
-      <user-card :item="currentItem" selected class="user-card overflow-hidden"/>
+      <user-card :jid="bare" selected class="user-card overflow-hidden"/>
       <v-spacer/>
       <div class="py-2">
         <v-text-field
@@ -38,9 +38,9 @@
 
         <!-- Message Field -->
         <div>
-          <chat-message-form 
-            @changed="messageChanged" 
-            @message="sendMessage" 
+          <chat-message-form
+            @changed="messageChanged"
+            @message="sendMessage"
             :label="`Message ${bare}`">
             <p v-if="isTyping" class="d-flex flex-row align-center">
               <typing-spinner class="normal"/><span>{{this.bare}} is typing...</span>
@@ -139,12 +139,6 @@ export default {
 
       return this.loadedMessages;
     },
-    currentItem () {
-      if (!this.$store.state[Store.$states.roster] || !this.$store.state[Store.$states.avatars]) return {};
-      if (!this.$store.state[Store.$states.roster]?.items) return {};
-      if (!this.$store.state[Store.$states.activeChat]?.entity) return {};
-      return this.$store.state[Store.$states.roster].items.find(x => x.jid === this.$store.state[Store.$states.activeChat].entity);
-    },
 
     isTyping () {
       return this.$store.state[MessageStore.namespace][MessageStore.$states.chatComposing][this.bare];
@@ -210,23 +204,23 @@ export default {
           .toArray()
           .then(x => [x.sort((a, b) => a.timestamp - b.timestamp)]),
         search(this.searchText)
-          .then(async eblocks => 
+          .then(async eblocks =>
             (await this.parallelDecode(eblocks))
             .filter(block => block.with == this.bare)
             .map(x => x.block)
         ),
       ]).then(x => x.flat(1).filter(x => x.length));
-      
+
       let matches = [];
       for (let block of blocks) {
-        for (let msg of searchBlock(block, this.searchText)) {
+        for (let msg of await searchBlock(block, this.searchText)) {
           matches.push(msg);
         }
       }
       this.matches = matches
         .sort(([, as], [, bs]) => bs - as)
         .map(([msg]) => msg)
-        .slice(0, 40);      
+        .slice(0, 40);
     },
 
     openSearch () {
@@ -368,7 +362,7 @@ export default {
 
       messageList.osInstance().options("callbacks.onScrollStop", async () => {
         let inst = messageList.osInstance();
-        
+
         let curScroll = inst.scroll().position.y;
 
         if (this.moreBefore && inst.scroll().position.y <= 0) {
@@ -391,15 +385,15 @@ export default {
           await this.fetchAfter(this.lastBlockStamp, 2);
           inst.sleep();
           this.updateMessages();
-          
+
           this.$nextTick(() => {
-            inst.update(); 
+            inst.update();
             let pos = document.getElementById(key).getBoundingClientRect().top;
             inst.scroll({ y: `${curScroll + pos - posBefore}px` });
           });
         }
       });
-      
+
     });
   }
 }
