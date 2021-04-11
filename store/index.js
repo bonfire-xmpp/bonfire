@@ -1,4 +1,4 @@
-import { MessageStore } from "@/store/messages";
+import { SettingsStore } from "@/store/settings";
 
 import { Utils } from 'stanza';
 
@@ -8,6 +8,8 @@ import {loadFromSecure, loadFromSession} from '@/assets/storage'
 import Vue from 'vue';
 
 const $states = {
+    pageTitle: 'PAGE_TITLE',
+
     jid: 'JID',
 
     // In case the domain in the JID doesn't match
@@ -71,6 +73,8 @@ const $actions = {
 };
 
 const $mutations = {
+    setPageTitle: 'SET_PAGE_TITLE',
+
     setJid: 'SET_JID',
     setServer: 'SET_SERVER',
     setPassword: 'SET_PASSWORD',
@@ -95,6 +99,8 @@ const $mutations = {
 }
 
 export const state = () => ({
+    [$states.pageTitle]: '',
+
     [$states.jid]: '',
     [$states.server]: '',
     [$states.password]: '',
@@ -173,6 +179,9 @@ export const actions = {
                 commit($mutations.setPresence, presenceData);
             }
         }
+
+        // Restore user settings
+        dispatch(`${SettingsStore.namespace}/${SettingsStore.$actions.restoreUserSettings}`);
     },
 
     async [$actions.login]({ commit }, { jid, password, server, transports, resource }) {
@@ -316,7 +325,7 @@ const generateMutations = (storage, ...names) => {
             const mutationName = `SET_${name}`;
 
             mutations[mutationName] = (state, data) => {
-                state[name] = data;
+                Vue.set(state, name, data);
             }
         }
     }

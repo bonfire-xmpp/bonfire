@@ -3,7 +3,7 @@
   <div class="d-flex main white--text unselectable" :aria-selected="selected" >
     <!-- Vertical align Avatar -->
     <div class="align-content-center-inline mr-1" style="width: 36px">
-      <badged-avatar :size="36" :jid="item.jid" :color="onlineStatus"/>
+      <badged-avatar :size="36" :jid="jid" :color="onlineStatus"/>
     </div>
 
     <div class="ml-2 pr-2 my-auto" :class="selected || 'grey-700--text'">
@@ -32,8 +32,8 @@
     name: "UserCard",
     components: { Avatar },
     props: {
-      item: {
-        type: Object,
+      jid: {
+        type: String,
         required: true,
       },
       selected: {
@@ -48,9 +48,9 @@
         getPresence: Store.$getters.presence,
       }),
 
-      name() { return this.$stanza.getLocal(this.item.jid); },
-      domain() { return this.$stanza.getDomain(this.item.jid); },
-      presence() { return this.getPresence(this.item.jid); },
+      name() { return this.$stanza.getLocal(this.jid); },
+      domain() { return this.$stanza.getDomain(this.jid); },
+      presence() { return this.getPresence(this.jid); },
 
       available() { return this.presence?.available; },
       statusMessage() { return this.presence?.status; },
