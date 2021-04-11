@@ -90,6 +90,7 @@ import * as XMPP from "stanza";
 
 import messageDb from '@/assets/messageDb.js';
 import * as msgpack from "@msgpack/msgpack";
+import {SettingsStore} from "@/store/settings";
 
 const lz4 = require("lz4js");
 
@@ -122,6 +123,12 @@ export default {
   computed: {
     ...mapState(MessageStore.namespace, {
       chatComposing: MessageStore.$states.chatComposing,
+    }),
+
+    ...mapState(SettingsStore.namespace, {
+      activeChatReceipts: SettingsStore.$states.activeChatReceipts,
+      messageReadReceipts: SettingsStore.$states.messageReadReceipts,
+      sendTypingReceipts: SettingsStore.$states.sendTypingReceipts,
     }),
 
     ...mapState({
@@ -172,19 +179,21 @@ export default {
     },
 
     composing() {
-      this.$stanza.client.sendMessage({
-        type: "chat",
-        to: this.bare,
-        chatState: "composing",
-      });
+      if(this.sendTypingReceipts)
+        this.$stanza.client.sendMessage({
+          type: "chat",
+          to: this.bare,
+          chatState: "composing",
+        });
     },
 
     paused() {
-      this.$stanza.client.sendMessage({
-        type: "chat",
-        to: this.bare,
-        chatState: "paused",
-      });
+      if(this.sendTypingReceipts)
+        this.$stanza.client.sendMessage({
+          type: "chat",
+          to: this.bare,
+          chatState: "paused",
+        });
     },
 
     messageGroups (messages) {

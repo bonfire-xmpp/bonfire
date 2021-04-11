@@ -340,23 +340,27 @@ export const mutations = {
     ...generateMutations($states.account, $states.roster, $states.loginDate),
 
     [$mutations.setActiveChat] ( state, data ) {
-        // Last chat is now inactive
-        if(state[$states.activeChat]?.entity) {
-            this.$stanza.client.sendMessage({
-                type: "chat",
-                to: state[$states.activeChat].entity,
-                chatState: "inactive",
-            });
+        if(state.settings[SettingsStore.$states.activeChatReceipts]) {
+            // Last chat is now inactive
+            if (state[$states.activeChat]?.entity) {
+                this.$stanza.client.sendMessage({
+                    type: "chat",
+                    to: state[$states.activeChat].entity,
+                    chatState: "inactive",
+                });
+            }
         }
 
         state[$states.activeChat] = data;
 
-        // New chat is now active
-        this.$stanza.client.sendMessage({
-            type: "chat",
-            to: state[$states.activeChat].entity,
-            chatState: "active",
-        });
+        if(state.settings[SettingsStore.$states.activeChatReceipts]) {
+            // New chat is now active
+            this.$stanza.client.sendMessage({
+                type: "chat",
+                to: state[$states.activeChat].entity,
+                chatState: "active",
+            });
+        }
     },
 
     [$mutations.stanzaInitialized] ( state ) {
