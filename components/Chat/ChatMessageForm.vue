@@ -9,7 +9,7 @@
                 v-model="message"
                 :placeholder="label"
                 @keydown="keypress"/>
-    <div class="gutter white--text">
+    <div class="gutter white--text d-flex flex-row align-center">
       <slot/>
     </div>
   </form>
@@ -30,6 +30,7 @@
     data() {
       return {
         message: "",
+        composingTimeout: null,
       }
     },
 
@@ -39,7 +40,7 @@
           e.preventDefault();
           this.emitMessage();
         } else {
-          this.$emit('changed');
+          this.change();
         }
       },
 
@@ -47,7 +48,23 @@
         if (!this.message.length) return;
         this.$emit('message', this.message);
         this.message = '';
-      }
+      },
+
+      change() {
+        // Start composing on start edge
+        if(!this.composingTimeout) {
+          this.$emit('composing');
+          console.log('composing')
+        }
+
+        // Debounce
+        clearTimeout(this.composingTimeout);
+        this.composingTimeout = setTimeout(() => {
+          this.composingTimeout = undefined;
+          console.log('paused')
+          this.$emit('paused');
+        }, 2000);
+      },
     },
   }
 </script>
@@ -78,7 +95,11 @@
   }
 
   .gutter {
-    @include ensure-height(1.5rem);
-    font-size: .9rem;
+    @include ensure-height(1.6rem);
+    font-size: .9em;
+
+    & > * {
+      display: inline;
+    }
   }
 </style>

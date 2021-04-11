@@ -2,7 +2,7 @@
   <div class="d-flex flex-column grey-200">
     <!-- Header -->
     <header-bar class="flex-shrink-0 d-flex px-4 align-center">
-      <user-card :item="currentItem" selected class="user-card overflow-hidden"/>
+      <user-card :jid="bare" selected class="user-card overflow-hidden"/>
       <v-spacer/>
       <div class="py-2">
         <v-text-field
@@ -38,13 +38,13 @@
 
         <!-- Message Field -->
         <div>
-          <chat-message-form 
-            @changed="messageChanged" 
-            @message="sendMessage" 
+          <chat-message-form
+            @composing="composing" @paused="paused"
+            @message="sendMessage"
             :label="`Message ${bare}`">
-            <p v-if="isTyping" class="d-flex flex-row align-center">
-              <typing-spinner class="normal"/><span>{{this.bare}} is typing...</span>
-            </p>
+            <template v-if="isTyping">
+              <typing-spinner class="normal ml-n2"/><b class="grey-800--text">{{localPart(bare)}} is typing...</b>
+            </template>
           </chat-message-form>
         </div>
       </div>
@@ -74,7 +74,7 @@
 </style>
 
 <script>
-import { mapMutations } from 'vuex';
+import { mapMutations, mapState } from 'vuex';
 import { Store } from "@/store";
 import { MessageStore } from '@/store/messages';
 import { search, searchBlock } from "@/store/search";
@@ -90,6 +90,7 @@ import * as XMPP from "stanza";
 
 import messageDb from '@/assets/messageDb.js';
 import * as msgpack from "@msgpack/msgpack";
+import {SettingsStore} from "@/store/settings";
 
 const lz4 = require("lz4js");
 
@@ -102,6 +103,7 @@ export default {
     return {
       message: "",
       loadedMessages: [],
+
       searchActive: false,
       searchText: "",
       matches: [],
@@ -115,16 +117,33 @@ export default {
       height: 0,
       loadedBlocks: [],
       preloadedBlocks: {},
-
-      searchResultsClickOutside: {
-        handler: this.closeSearch,
-        closeConditional: this.searchActive,
-        include: () => [this.$refs.searchBar.$el]
-      },
-    };
+    }
   },
 
   computed: {
+    ...mapState(MessageStore.namespace, {
+      chatComposing: MessageStore.$states.chatComposing,
+    }),
+
+    ...mapState(SettingsStore.namespace, {
+      activeChatReceipts: SettingsStore.$states.activeChatReceipts,
+      messageReadReceipts: SettingsStore.$states.messageReadReceipts,
+      sendTypingReceipts: SettingsStore.$states.sendTypingReceipts,
+    }),
+
+    ...mapState({
+      roster: Store.$states.roster,
+      avatars: Store.$states.avatars,
+    }),
+
+    searchResultsClickOutside() {
+      return {
+        handler: this.closeSearch,
+        closeConditional: this.searchActive,
+        include: () => [this.$refs.searchBar.$el]
+      };
+    },
+
     bare() { return this.$stanza.toBare(this.$route.params.entity); },
 
     messages () {
@@ -139,15 +158,9 @@ export default {
 
       return this.loadedMessages;
     },
-    currentItem () {
-      if (!this.$store.state[Store.$states.roster] || !this.$store.state[Store.$states.avatars]) return {};
-      if (!this.$store.state[Store.$states.roster]?.items) return {};
-      if (!this.$store.state[Store.$states.activeChat]?.entity) return {};
-      return this.$store.state[Store.$states.roster].items.find(x => x.jid === this.$store.state[Store.$states.activeChat].entity);
-    },
 
     isTyping () {
-      return this.$store.state[MessageStore.namespace][MessageStore.$states.chatComposing][this.bare];
+      return this.chatComposing[this.bare];
     },
 
     currentBlock () {
@@ -165,20 +178,22 @@ export default {
       });
     },
 
-    messageChanged () {
-      if (this.composingTimeout) clearTimeout(this.composingTimeout);
-      this.$stanza.client.sendMessage({
-        type: "chat",
-        to: this.bare,
-        chatState: "composing",
-      });
-      this.composingTimeout = setTimeout(() => {
+    composing() {
+      if(this.sendTypingReceipts)
         this.$stanza.client.sendMessage({
           type: "chat",
           to: this.bare,
-          chatState: "active",
+          chatState: "composing",
         });
-      }, 2000);
+    },
+
+    paused() {
+      if(this.sendTypingReceipts)
+        this.$stanza.client.sendMessage({
+          type: "chat",
+          to: this.bare,
+          chatState: "paused",
+        });
     },
 
     messageGroups (messages) {
@@ -210,13 +225,13 @@ export default {
           .toArray()
           .then(x => [x.sort((a, b) => a.timestamp - b.timestamp)]),
         search(this.searchText)
-          .then(async eblocks => 
+          .then(async eblocks =>
             (await this.parallelDecode(eblocks))
             .filter(block => block.with == this.bare)
             .map(x => x.block)
         ),
       ]).then(x => x.flat(1).filter(x => x.length));
-      
+
       let matches = [];
       for (let block of blocks) {
         for (let msg of searchBlock(block, this.searchText)) {
@@ -226,7 +241,7 @@ export default {
       this.matches = matches
         .sort(([, as], [, bs]) => bs - as)
         .map(([msg]) => msg)
-        .slice(0, 40);      
+        .slice(0, 40);
     },
 
     openSearch () {
@@ -357,10 +372,10 @@ export default {
   },
 
   async mounted () {
+    this.setActiveChat({type: 'chat', entity: this.bare});
     this.loadedBlocks = [];
     await this.fetchMessages(Date.now());
     this.updateMessages();
-    this.setActiveChat({type: 'chat', entity: this.bare});
     this.$nextTick(async () => {
       let messageList = this.$refs.messageList;
 
@@ -368,7 +383,7 @@ export default {
 
       messageList.osInstance().options("callbacks.onScrollStop", async () => {
         let inst = messageList.osInstance();
-        
+
         let curScroll = inst.scroll().position.y;
 
         if (this.moreBefore && inst.scroll().position.y <= 0) {
@@ -391,15 +406,14 @@ export default {
           await this.fetchAfter(this.lastBlockStamp, 2);
           inst.sleep();
           this.updateMessages();
-          
+
           this.$nextTick(() => {
-            inst.update(); 
+            inst.update();
             let pos = document.getElementById(key).getBoundingClientRect().top;
             inst.scroll({ y: `${curScroll + pos - posBefore}px` });
           });
         }
       });
-      
     });
   }
 }

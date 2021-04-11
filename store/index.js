@@ -337,7 +337,31 @@ export const mutations = {
     ...generateMutations(storage.secure,
         $states.jid, $states.password, $states.server, $states.transports),
 
-    ...generateMutations($states.account, $states.roster, $states.loginDate, $states.activeChat, $states.pageTitle),
+    ...generateMutations($states.account, $states.roster, $states.loginDate),
+
+    [$mutations.setActiveChat] ( state, data ) {
+        if(state.settings[SettingsStore.$states.activeChatReceipts]) {
+            // Last chat is now inactive
+            if (state[$states.activeChat]?.entity) {
+                this.$stanza.client.sendMessage({
+                    type: "chat",
+                    to: state[$states.activeChat].entity,
+                    chatState: "inactive",
+                });
+            }
+        }
+
+        state[$states.activeChat] = data;
+
+        if(state.settings[SettingsStore.$states.activeChatReceipts]) {
+            // New chat is now active
+            this.$stanza.client.sendMessage({
+                type: "chat",
+                to: state[$states.activeChat].entity,
+                chatState: "active",
+            });
+        }
+    },
 
     [$mutations.stanzaInitialized] ( state ) {
         state[$states.stanzaInitialized] = true;

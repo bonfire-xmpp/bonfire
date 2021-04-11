@@ -11,7 +11,7 @@
 }
 
 @mixin v-badge-border-color($color) {
-  &::v-deep .v-badge__badge::after {
+  &::v-deep .badge .dot {
     border-color: $color !important;
   }
 }
