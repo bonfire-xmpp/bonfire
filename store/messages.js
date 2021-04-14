@@ -46,13 +46,11 @@ const $states = {
 const $getters = {
     hasMessage: 'HAS_MESSAGE',
 };
-
 const $actions = {
     syncMessages: 'SYNC_MESSAGES',
     loadCurrentMessages: 'LOAD_CURRENT_MESSAGES',
     addMessage: 'ADD_MESSAGE',
 };
-
 const $mutations = {
     setMessages: 'SET_MESSAGES',
     setMessagesById: 'SET_MESSAGES_BY_ID',
@@ -79,12 +77,12 @@ export const getters = {
 
 const delayIterator = async (cb, delay) => {
     while (await cb()) await new Promise(resolve => setTimeout(resolve, delay));
-};
+}
 
 const kBlockSize = 10;
 
 async function insertBlock(messages, jid) {
-    let timestamp = messages[0].timestamp;
+    let timestamp = messages.reduce((acc, x) => Math.min(acc, x.timestamp), messages[0].timestamp);
     let compblock = lz4.compress(Buffer.from(msgpack.encode(messages)));
     let id = await messageDb.messageArchive.add({ block: compblock, timestamp, with: jid });
     await populateSearchIndex(messageDb, id, messages);
@@ -117,7 +115,6 @@ export const actions = {
                 paging: { before: lastID },
                 end: lastTimestamp,
             });
-            // console.log(history);
 
             for (let { item: { message, delay } } of history.results) {
                 if (message.body) {
@@ -132,7 +129,7 @@ export const actions = {
 
             if (messages.length >= kBlockSize) {
                 await messageDb.transaction("rw", messageDb.messageArchive, messageDb.prefixIndex, async () => {
-                    await insertBlock(messages.sort((a, b) => a.timestamp - b.timestamp), jid);
+                    await insertBlock(messages, jid);
                 });
                 messages = [];
             }
@@ -174,7 +171,6 @@ export const actions = {
                 // block timestamp is first message timestamp
                 await insertBlock(await query.sortBy("timestamp"), bareJid);
                 await query.delete();
-                commit($mutations.setMessages, { jid: bareJid, messages: [] });
             }
         });
     },

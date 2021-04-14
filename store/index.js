@@ -325,7 +325,7 @@ const generateMutations = (storage, ...names) => {
             const mutationName = `SET_${name}`;
 
             mutations[mutationName] = (state, data) => {
-                Vue.set(state, name, data);
+                state[name] = data;
             }
         }
     }

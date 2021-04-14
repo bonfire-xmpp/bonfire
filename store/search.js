@@ -1,27 +1,30 @@
 const FuzzyMatching = require("fuzzy-matching");
 
-const kWordBreakRegex = new RegExp(/\P{L}+/u);
+const kWhitespaceRegex = new RegExp(/\s+/);
 const kNotLetterRegex = new RegExp(/\P{L}/gu);
 const toWords = string => string
-    .split(kWordBreakRegex)
+    .split(kWhitespaceRegex)
     .map(x => x.replaceAll(kNotLetterRegex, "").toLowerCase())
     .filter(x => !!x.length);
-const toPrefixes = 
+const toPrefixes =
     string => Array.from(new Set(
         string
-            .split(kWordBreakRegex)
+            .split(kWhitespaceRegex)
             .map(x => x.replaceAll(kNotLetterRegex, "").toLowerCase().slice(0, 4))
     )).filter(x => !!x.length);
 
 
 function fuzzyIntersect(sets) {
-    if (sets.length == 1) return sets[0];
     let counts = new Map();
-    for (let x of sets.flat(1)) {
-        counts.set(x, (counts.get(x) || 1) + 1);
+    for (let set of sets) {
+        for (let x of set) {
+            if (!counts.has(x)) counts.set(x, 0)
+            counts.set(x, counts.get(x) + 1);
+        }
     }
-    return Array.from(counts.entries())
-        .filter(([, v]) => v > 1)
+    return Array
+        .from(counts.entries())
+        .filter(([, v]) => v > (sets.length - 1) * 0.6)
         .map(([k]) => k);
 }
 
@@ -50,34 +53,26 @@ export async function search(query) {
         .where("prefix")
         .startsWithAnyOf(toPrefixes(query))
         .toArray();
-    return await db.messageArchive
+    return db.messageArchive
         .where("id")
         .anyOf(fuzzyIntersect(entries.map(x => x?.blocks || [])))
         .toArray();
 }
 
-function scoreMessage(mesg, querywords) {
+function scoreMessage(mesg, words) {
     let score = 0.0;
-    let mesgwords = toWords(mesg);
-    let fm = new FuzzyMatching(mesgwords);
-    for (let queryword of querywords) {
+    let fm = new FuzzyMatching(toWords(mesg));
+    for (let queryword of words) {
         let { value, distance } = fm.get(queryword);
-        if (!value) {
-            for (let mesgword of mesgwords) {
-                if (mesgword.startsWith(queryword)) {
-                    score += 0.5;
-                }
-            }
-            continue;
-        }
-        score += distance * Math.max(1, value.length / queryword.length);
+        if (!value) continue;
+        score += distance * (value.length / queryword.length);
     }
-    return score / querywords.length;
+    return score / words.length;
 }
 
-export const searchBlock = (block, query) => {
-    let words = toWords(query);
-    return block
-        .map(mesg => [mesg, scoreMessage(mesg.body, words)])
-        .filter(([, score]) => score > 0.8);
-}
+export const searchBlock = (block, query) =>
+    block
+        .map(mesg => [mesg, scoreMessage(mesg.body, toWords(query))])
+        .filter(([, score]) => score > 0.6)
+        .sort(([, as], [, bs]) => bs - as)
+        .map(([mesg]) => mesg);

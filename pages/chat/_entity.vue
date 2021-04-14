@@ -7,8 +7,7 @@
       <div class="py-2">
         <v-text-field
           @focus="openSearch" @click="openSearch"
-          @keydown.esc="closeSearch" @keydown.enter="search"
-          :class="{unselectable: !this.searchActive}"
+          @keydown.esc="closeSearch" @keydown="searchUpdate"
           v-model="searchText"
           single-line dense solo clearable hide-details flat
           background-color="grey-100"
@@ -19,20 +18,18 @@
     </header-bar>
 
     <!-- Main Section -->
-    <main class="d-flex flex-row flex-grow-1 hide-overflow" ref="main">
+    <main class="d-flex flex-row flex-grow-1 hide-overflow">
       <div class="d-flex flex-column flex-grow-1 os-host-flexbox">
         <!-- Message List -->
         <overlay-scrollbars
           ref="messageList"
           class="flex-grow-1 flex-shrink-1 wide-scrollbar"
           :options="{scrollbars:{clickScrolling: true}}">
-          <div class="scroller pt-4 justify-end d-flex flex-column">
-            <span id="chat-top"></span>
+          <div class="pt-4 scroller">
             <message-group
               v-for="(group, i) in messageGroups(messages)"
-              :key="group[0].timestamp"
+              :key="i"
               :group="group"/>
-            <span id="chat-bottom"></span>
           </div>
         </overlay-scrollbars>
 
@@ -50,10 +47,10 @@
       </div>
 
       <search-results
-          v-if="searchActive"
-          @jump-to="jump"
+          :hidden="searchActive"
           :results="matches"
           v-click-outside="searchResultsClickOutside"/>
+
     </main>
   </div>
 </template>
@@ -94,8 +91,6 @@ import {SettingsStore} from "@/store/settings";
 
 const lz4 = require("lz4js");
 
-const kLoadCount = 4;
-
 export default {
   key: 'chat',
   components: { MessageGroup, ChatMessageForm, SearchResults, Message, HeadingMessage, BodyMessage },
@@ -106,18 +101,9 @@ export default {
 
       searchActive: false,
       searchText: "",
+      searchTimeout: null,
       matches: [],
-
-      composingTimeout: null,
-
-      moreBefore: false,
-      moreAfter: false,
-      firstBlockStamp: 0,
-      lastBlockStamp: 0,
-      height: 0,
-      loadedBlocks: [],
-      preloadedBlocks: {},
-    }
+    };
   },
 
   computed: {
@@ -147,33 +133,20 @@ export default {
     bare() { return this.$stanza.toBare(this.$route.params.entity); },
 
     messages () {
-      this.$nextTick(() => {
-        let list = this.$refs.messageList;
-        let inst = list.osInstance();
-        let state = inst.getState();
-        if (!this.moreAfter && state.overflowAmount.y - inst.scroll().position.y == 0) {
-          list.osInstance().scroll({ y: '100%' }, 0.0);
-        }
-      });
-
-      return this.loadedMessages;
+      let curblock = this.$store.state[MessageStore.namespace][MessageStore.$states.messages][this.entity];
+      return this.loadedMessages.concat(curblock).filter(x => !!x).sort((a, b) => a.timestamp - b.timestamp);
     },
 
     isTyping () {
       return this.chatComposing[this.bare];
     },
-
-    currentBlock () {
-      return this.$store.state[MessageStore.namespace][MessageStore.$states.messages][this.bare];
-    },
   },
 
   methods: {
-    /** MESSAGES **/
-    sendMessage (message) {
+    sendMessage(message) {
       this.$stanza.client.sendMessage({
         type: "chat",
-        to: this.bare,
+        to: this.$route.params.entity,
         body: message,
       });
     },
@@ -201,7 +174,7 @@ export default {
       let groups = [[messages[0]]];
       for (let i = 1; i < messages.length; ++i) {
         let lastgroup = groups[groups.length - 1];
-        if (lastgroup[0].from !== messages[i].from || lastgroup.length >= 10 || lastgroup[0].blockid !== messages[i].blockid) {
+        if (lastgroup[0].from !== messages[i].from || lastgroup.length >= 10) {
           groups.push([messages[i]]);
         } else {
           lastgroup.push(messages[i]);
@@ -211,25 +184,24 @@ export default {
     },
 
     /** SEARCH **/
-    async parallelDecode(blocks) {
-      return await Promise.all(blocks.map(block => new Promise(resolve =>
-        resolve({ ...block, block: msgpack.decode(lz4.decompress(block.block)) })
-      )));
+    async searchUpdate () {
+      if (this.searchTimeout) {
+        clearTimeout(this.searchTimeout);
+        if (!this.searchText.length) return;
+      }
+      this.searchTimeout = setTimeout(this.search, 100);
     },
-
     async search () {
       let blocks = await Promise.all([
         messageDb.messages
           .where("with")
-          .equals(this.bare)
+          .equals(this.entity)
           .toArray()
           .then(x => [x.sort((a, b) => a.timestamp - b.timestamp)]),
         search(this.searchText)
-          .then(async eblocks =>
-            (await this.parallelDecode(eblocks))
-            .filter(block => block.with == this.bare)
-            .map(x => x.block)
-        ),
+          .then(eblocks => eblocks.map(eblock =>
+            msgpack.decode(lz4.decompress(eblock.block))
+          )),
       ]).then(x => x.flat(1).filter(x => x.length));
 
       let matches = [];
@@ -238,10 +210,8 @@ export default {
           matches.push(msg);
         }
       }
-      this.matches = matches
-        .sort(([, as], [, bs]) => bs - as)
-        .map(([msg]) => msg)
-        .slice(0, 40);
+
+      this.matches = matches;
     },
 
     openSearch () {
@@ -257,164 +227,42 @@ export default {
     },
 
     /** STANZA **/
-    async hasBlocksAfter (timestamp) {
-      return !!await messageDb.messageArchive
-        .where("timestamp").above(timestamp)
-        .filter(x => x.with == this.bare)
-        .count();
+    localPart (jid) {
+      return XMPP.JID.getLocal(jid);
     },
 
-    async hasBlocksBefore (timestamp) {
-      return !!await messageDb.messageArchive
-        .where("timestamp")
-        .below(timestamp)
-        .filter(x => x.with == this.bare)
-        .count();
-    },
-
-    updateMessages () {
-      this.loadedMessages = this.loadedBlocks
-        .flat(1)
-        .concat(!this.moreAfter ? this.currentBlock : [])
-        .sort((a, b) => a.timestamp - b.timestamp);
-    },
-
-    getDecodedBlocks (blocks) {
-      return blocks.map(({ id, block }) => {
-        this.preloadedBlocks[id] ||= msgpack.decode(lz4.decompress(block)).map(x => {
-          x.blockid = id;
-          return x;
-        });
-        return this.preloadedBlocks[id];
-      });
-    },
-
-    async fetchBefore (timestamp, num = kLoadCount) {
-      let entity = this.bare;
-      let blocks = await messageDb.messageArchive
-        .orderBy("timestamp")
-        .filter(x => x.with == entity && x.timestamp < timestamp)
-        .reverse()
-        .limit(num)
-        .toArray();
-      blocks.reverse();
-      blocks = this.getDecodedBlocks(blocks);
-      this.loadedBlocks = blocks.concat(this.loadedBlocks);
-      await this.updateBeforeAfter();
-    },
-
-    async fetchAfter (timestamp, num = kLoadCount) {
-      let entity = this.bare;
-      let blocks = await messageDb.messageArchive
-        .orderBy("timestamp")
-        .filter(x => x.with == entity && x.timestamp > timestamp)
-        .limit(num)
-        .toArray();
-      blocks = this.getDecodedBlocks(blocks);
-      this.loadedBlocks = this.loadedBlocks.concat(blocks);
-      await this.updateBeforeAfter();
-    },
-
-    async updateBeforeAfter () {
-      let lastBlock = this.loadedBlocks[this.loadedBlocks.length - 1];
-      this.firstBlockStamp = this.loadedBlocks[0][0].timestamp;
-      this.lastBlockStamp = lastBlock[0].timestamp;
-      this.moreBefore = await this.hasBlocksBefore(this.firstBlockStamp);
-      this.moreAfter = await this.hasBlocksAfter(this.lastBlockStamp);
-    },
-
-    async fetchMessages (center) {
-      let entity = this.bare;
+    async fetchMessages () {
+      let entity = this.$route.params.entity;
       // ensure some blocks are loaded
       if (await messageDb.messageArchive.where("with").equals(entity).count() < 4) {
         await this.$store.dispatch(`${MessageStore.namespace}/${MessageStore.$actions.syncMessages}`, entity);
       }
       await this.$store.dispatch(`${MessageStore.namespace}/${MessageStore.$actions.loadCurrentMessages}`, entity);
       this.$store.dispatch(`${MessageStore.namespace}/${MessageStore.$actions.syncMessages}`, entity);
-
-      await this.fetchBefore(center + 1);
-      await this.fetchAfter(center);
-    },
-
-    async jump (timestamp) {
-      this.loadedBlocks = [];
-      if (!this.messages.find(({timestamp: ts}) => timestamp === ts)) {
-        await this.fetchMessages(timestamp);
-        this.updateMessages();
-      }
-      this.$nextTick(() => {
-        let key = "msg:" + timestamp;
-        let scrollpos = document.getElementById(key).parentElement.offsetTop;
-        let bbox = this.$refs.main.getBoundingClientRect();
-        this.$refs.messageList.osInstance().scroll({ y: `${scrollpos - (bbox.bottom - bbox.top) / 2}px` }, 200);
-        document.getElementById(key).nextElementSibling.classList.remove("highlight");
-        this.$nextTick(() => document.getElementById(key).nextElementSibling.classList.add("highlight"));
-      });
+      // get blocks from archive in correct order
+      let blocks = (await messageDb.messageArchive
+        .orderBy("timestamp").reverse()
+        .filter(x => x.with == entity)
+        .toArray()).slice(0, 10);
+      blocks.reverse();
+      // combine messages
+      this.loadedMessages = blocks.reduce((acc, {block}) =>
+          acc.concat(msgpack.decode(lz4.decompress(block))), []
+      );
     },
 
     ...mapMutations({ setActiveChat: Store.$mutations.setActiveChat })
   },
 
   watch: {
-    async $route () {
-      let inst = this.$refs.messageList.osInstance();
-      this.loadedBlocks = [];
-      await this.fetchMessages(Date.now());
-      this.updateMessages();
-      this.$nextTick(() => inst.scroll({ y: '100%' }, 0.0));
-      this.setActiveChat({type: 'chat', entity: this.bare});
-    },
-
-    currentBlock () {
-      if (this.$store.state[Store.$states.activeChat].entity !== this.bare) return;
-      this.updateMessages();
-    },
+    async $route(value) {
+      this.setActiveChat({type: 'chat', entity: value.params.entity});
+      await this.fetchMessages();
+    }
   },
 
   async mounted () {
-    this.setActiveChat({type: 'chat', entity: this.bare});
-    this.loadedBlocks = [];
-    await this.fetchMessages(Date.now());
-    this.updateMessages();
-    this.$nextTick(async () => {
-      let messageList = this.$refs.messageList;
-
-      messageList.osInstance().scroll({ y: '100%' }, 0.0);
-
-      messageList.osInstance().options("callbacks.onScrollStop", async () => {
-        let inst = messageList.osInstance();
-
-        let curScroll = inst.scroll().position.y;
-
-        if (this.moreBefore && inst.scroll().position.y <= 0) {
-          let key = "chat-bottom";
-          let posBefore = document.getElementById(key).getBoundingClientRect().top;
-          await this.fetchBefore(this.firstBlockStamp, 2);
-
-          this.updateMessages();
-          this.$nextTick(() => {
-            let pos = document.getElementById(key).getBoundingClientRect().top;
-            inst.scroll({ y: `${curScroll + pos - posBefore}px` });
-          });
-        }
-
-        if (
-          this.moreAfter && inst.scroll().position.y >= inst.getState().overflowAmount.y
-        ) {
-          let key = "chat-top";
-          let posBefore = document.getElementById(key).getBoundingClientRect().top;
-          await this.fetchAfter(this.lastBlockStamp, 2);
-          inst.sleep();
-          this.updateMessages();
-
-          this.$nextTick(() => {
-            inst.update();
-            let pos = document.getElementById(key).getBoundingClientRect().top;
-            inst.scroll({ y: `${curScroll + pos - posBefore}px` });
-          });
-        }
-      });
-    });
+    await this.fetchMessages();
   }
 }
 </script>
