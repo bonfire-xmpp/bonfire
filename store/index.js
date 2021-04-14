@@ -337,7 +337,7 @@ export const mutations = {
     ...generateMutations(storage.secure,
         $states.jid, $states.password, $states.server, $states.transports),
 
-    ...generateMutations($states.account, $states.roster, $states.loginDate),
+    ...generateMutations($states.account, $states.roster, $states.loginDate, $states.pageTitle),
 
     [$mutations.setActiveChat] ( state, data ) {
         if(state.settings[SettingsStore.$states.activeChatReceipts]) {
