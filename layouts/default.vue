@@ -1,13 +1,21 @@
 <template>
   <v-app dark v-if="stanzaInitialized">
-    <div id="app" class="d-flex flex-column black">
+    <div id="app" class="d-flex flex-column black" :class="{mobile: $device.isMobileOrTablet}">
+
       <system-bar v-if="displayTitlebar" dark class="grey-100 material-shadow" style="z-index: 11;"/>
-      <div :style="mainTitlebarCompensation" class="d-flex flex-row flex-nowrap">
-        <side-bar class="unselectable material-shadow"/>
-        <v-main class="flex-grow-1">
-          <nuxt style="position: absolute; width: 100%; height: 100%;"/>
+
+      <div :style="mainTitlebarCompensation" class="d-flex flex-row flex-nowrap main-container"
+           ref="content"
+           @scroll="scrolled" @touchstart="mousedown" @touchend="mouseup">
+
+        <side-bar class="unselectable sidebar" ref="sidebar"/>
+
+        <v-main class="flex-grow-1 main-content" ref="mainPanel">
+          <nuxt class="nuxt"/>
         </v-main>
+
       </div>
+
     </div>
   </v-app>
 </template>
@@ -20,7 +28,45 @@ import { mapState } from "vuex";
 export default {
   layout: 'default',
   components: {SystemBar},
+  data() {
+    return {
+      scrollDebounce: null,
+      mouseIsHeldDown: false,
+    }
+  },
   methods: {
+    mousedown() { this.mouseIsHeldDown = true; },
+    mouseup() { this.mouseIsHeldDown = false; },
+
+    // On Chrome (<=89), horizontally snapped scrolls can be canceled by scrolling vertically.
+    // On a phone with multiple fingers available, this is far too easy to be allowed.
+    // The solution: detect when scrolling stops -- force a scroll if it didn't stop on an edge
+    scrolled() {
+      // The user is still holding to scroll
+      if(this.mouseIsHeldDown) return;
+
+      // Rising edge
+      // if(!this.scrollDebounce) {}
+
+      // Falling edge
+      clearTimeout(this.scrollDebounce);
+      this.scrollDebounce = setTimeout(() => {
+        this.scrollDebounce = undefined;
+
+        // scrollLeft is 0 on left edge
+        // scrollWidth - scrollLeft is remaining space to the right,
+        //  >= viewport width means we haven't reached right edge
+        const distanceToRightEdge = Math.floor(this.$refs.content.scrollWidth - this.$refs.content.scrollLeft - window.innerWidth)
+        if(this.$refs.content.scrollLeft && distanceToRightEdge) {
+          this.$refs.content.scroll({
+            behavior: "smooth",
+            // Scroll to closer edge
+            left: this.$refs.content.scrollLeft < distanceToRightEdge
+                ? 0 : this.$refs.content.scrollWidth - window.innerWidth
+          });
+        }
+      }, 150);
+    },
   },
   computed: {
     displayTitlebar() {
@@ -39,6 +85,40 @@ export default {
 }
 </script>
 
+<style lang="scss" scoped>
+  .click-catcher {
+    position: absolute; z-index: 100;
+    width: 100vw; height: 100vh;
+  }
+
+  ::-webkit-scrollbar {
+    display: none;
+  }
+
+  #app.mobile .main-container {
+    scroll-snap-type: x mandatory;
+    overflow-x: scroll;
+    overflow-y: hidden;
+
+    //pointer-events: none;
+
+    // hide scrollbar
+    scrollbar-width: none;
+
+    & > * {
+      scroll-snap-stop: always;
+      scroll-snap-align: end;
+    }
+  }
+
+  .nuxt { position: absolute; width: 100%; height: 100%; }
+  .mobile .nuxt { width: 100vw; }
+
+  .mobile .sidebar { width: 90vw; }
+  .mobile .main-content { width: 100vw; }
+
+</style>
+
 <style lang="scss">
   #app {
     // Ensures the app container takes up just one screenful
@@ -52,6 +132,8 @@ export default {
     // Solves some edge cases where on reload/HMR the view is stuck scrolled halfway
     left: 0;
     top: 0;
+
+    scroll-behavior: smooth;
   }
 </style>
 
