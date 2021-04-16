@@ -1,6 +1,6 @@
 <template>
   <v-app dark v-if="stanzaInitialized">
-    <div id="app" class="d-flex flex-column black" :class="{mobile: $device.isMobileOrTablet}">
+    <div id="app" class="d-flex flex-column black" :class="{mobile: $device.isMobileOrTablet, tablet: $device.isTablet}">
 
       <system-bar v-if="displayTitlebar" dark class="grey-100 material-shadow" style="z-index: 11;"/>
 
@@ -8,6 +8,11 @@
            ref="content"
            @scroll="scrolled" @touchstart="mousedown" @touchend="mouseup">
 
+        <!--To achieve a scroll effect (see: .mobile .sidebar), the sidebar is removed from flow-->
+        <!--So, to keep its width reserved, we insert a dummy element over it and pass through clicks-->
+        <div v-if="$device.isMobileOrTablet"
+             class="unselectable sidebar" style="position: relative; z-index: 10;"
+             @click="passClick" @long-press="passLongpress"/>
         <side-bar class="unselectable sidebar" ref="sidebar"/>
 
         <v-main class="flex-grow-1 main-content" ref="mainPanel">
@@ -23,7 +28,6 @@
 <script>
 import SystemBar from "@/components/SystemBar";
 import { Store } from "@/store";
-import { mapState } from "vuex";
 
 export default {
   layout: 'default',
@@ -35,6 +39,16 @@ export default {
     }
   },
   methods: {
+    passClick(e) {
+      // console.log('click', e, this.$refs.sidebar.$el);
+      document.elementsFromPoint(e.clientX,e.clientY)[1].click()
+    },
+    passLongpress(e) {
+      // console.log('longpress', e);
+      document.elementsFromPoint(e.detail.clientX,e.detail.clientY)[1]
+          .dispatchEvent(new CustomEvent('long-press', e.detail));
+    },
+
     mousedown() { this.mouseIsHeldDown = true; },
     mouseup() { this.mouseIsHeldDown = false; },
 
@@ -65,7 +79,7 @@ export default {
                 ? 0 : this.$refs.content.scrollWidth - window.innerWidth
           });
         }
-      }, 150);
+      }, 300);
     },
   },
   computed: {
@@ -114,7 +128,21 @@ export default {
   .nuxt { position: absolute; width: 100%; height: 100%; }
   .mobile .nuxt { width: 100vw; }
 
-  .mobile .sidebar { width: 90vw; }
+  // On mobile layouts, make the main panel look like it's getting
+  // 'moved out of the way' by sticking the sidebar to the left viewport edge.
+  .mobile .sidebar {
+    position: fixed;
+    left: 0; height: 100%;
+    z-index: 9;
+  }
+  .mobile .main-content {
+    position: relative;
+    z-index: 10;
+  }
+
+  .mobile .sidebar { @include ensure-width(90vw); }
+  .tablet .sidebar { @include ensure-width(320px); }
+
   .mobile .main-content { width: 100vw; }
 
 </style>
