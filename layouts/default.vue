@@ -5,8 +5,7 @@
       <system-bar v-if="displayTitlebar" dark class="grey-100 material-shadow" style="z-index: 11;"/>
 
       <div :style="mainTitlebarCompensation" class="d-flex flex-row flex-nowrap main-container"
-           ref="content"
-           @scroll="scrolled" @touchstart="mousedown" @touchend="mouseup">
+           ref="content" @scroll="scrolled" @touchend="mouseup">
 
         <!--To achieve a scroll effect (see: .mobile .sidebar), the sidebar is removed from flow-->
         <!--So, to keep its width reserved, we insert a dummy element over it and pass through clicks-->
@@ -35,7 +34,7 @@ export default {
   data() {
     return {
       scrollDebounce: null,
-      mouseIsHeldDown: false,
+      isScrolling: false,
     }
   },
   methods: {
@@ -49,15 +48,32 @@ export default {
           .dispatchEvent(new CustomEvent('long-press', e.detail));
     },
 
-    mousedown() { this.mouseIsHeldDown = true; },
-    mouseup() { this.mouseIsHeldDown = false; },
-
     // On Chrome (<=89), horizontally snapped scrolls can be canceled by scrolling vertically.
     // On a phone with multiple fingers available, this is far too easy to be allowed.
     // The solution: detect when scrolling stops -- force a scroll if it didn't stop on an edge
+    mouseup() {
+      // When you lift your finger, are we still scrolling?
+      // If so, we're inertial-scrolling: everything is fine.
+      if (this.isScrolling) return;
+
+      // If you've lifted your finger and we're no longer scrolling,
+      // check our scroll position
+      const distanceToLeftEdge = this.$refs.content.scrollLeft;
+      const distanceToRightEdge = Math.floor(this.$refs.content.scrollWidth - distanceToLeftEdge - window.innerWidth)
+      if (distanceToLeftEdge && distanceToRightEdge) {
+        // The scroll position isn't on one of the edges -- and we're not scrolling:
+        // Force a scroll to the closer edge to fix this.
+        this.$refs.content.scroll({
+          behavior: "smooth",
+          // Scroll to closer edge
+          left: distanceToLeftEdge < distanceToRightEdge
+              ? 0 : this.$refs.content.scrollWidth - window.innerWidth
+        });
+      }
+    },
+
     scrolled() {
-      // The user is still holding to scroll
-      if(this.mouseIsHeldDown) return;
+      if(!this.isScrolling) this.isScrolling = true;
 
       // Rising edge
       // if(!this.scrollDebounce) {}
@@ -65,21 +81,8 @@ export default {
       // Falling edge
       clearTimeout(this.scrollDebounce);
       this.scrollDebounce = setTimeout(() => {
-        this.scrollDebounce = undefined;
-
-        // scrollLeft is 0 on left edge
-        // scrollWidth - scrollLeft is remaining space to the right,
-        //  >= viewport width means we haven't reached right edge
-        const distanceToRightEdge = Math.floor(this.$refs.content.scrollWidth - this.$refs.content.scrollLeft - window.innerWidth)
-        if(this.$refs.content.scrollLeft && distanceToRightEdge) {
-          this.$refs.content.scroll({
-            behavior: "smooth",
-            // Scroll to closer edge
-            left: this.$refs.content.scrollLeft < distanceToRightEdge
-                ? 0 : this.$refs.content.scrollWidth - window.innerWidth
-          });
-        }
-      }, 300);
+        this.scrollDebounce = this.isScrolling = undefined;
+      }, 150);
     },
   },
   computed: {
