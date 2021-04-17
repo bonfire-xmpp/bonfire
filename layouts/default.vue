@@ -4,17 +4,24 @@
 
       <system-bar v-if="displayTitlebar" dark class="grey-100 material-shadow" style="z-index: 11;"/>
 
-      <div :style="mainTitlebarCompensation" class="d-flex flex-row flex-nowrap main-container"
+      <div :style="mainTitlebarCompensation" class="d-flex flex-row flex-nowrap main-container position-relative"
            ref="content" @scroll="scrolled" @touchend="mouseup">
 
         <!--To achieve a scroll effect (see: .mobile .sidebar), the sidebar is removed from flow-->
         <!--So, to keep its width reserved, we insert a dummy element over it and pass through clicks-->
-        <div v-if="$device.isMobileOrTablet"
-             class="unselectable sidebar" style="position: relative; z-index: 10;"
-             @click="passClick" @long-press="passLongpress"/>
+        <div v-if="$device.isMobileOrTablet" class="d-flex">
+          <!--Drag-to-scroll and click-catcher-->
+          <div class="unselectable sidebar" style="position: relative; z-index: 10;"
+               @click="passClick" @long-press="passLongpress"/>
+
+          <!--Right-hand side dimmer and click-to-scroll-->
+          <div v-if="dim" class="sidebar-peek" @click="scrollToMain"/>
+        </div>
+        <!--1px on the left edge, used to observe and dim rhs-->
+        <div v-if="$device.isMobileOrTablet" v-intersect="observed" class="position-absolute"/>
         <side-bar class="unselectable sidebar" ref="sidebar"/>
 
-        <v-main class="flex-grow-1 main-content" ref="mainPanel">
+        <v-main class="flex-grow-1 main-content position-relative" ref="mainPanel">
           <nuxt class="nuxt"/>
         </v-main>
 
@@ -35,6 +42,7 @@ export default {
     return {
       scrollDebounce: null,
       isScrolling: false,
+      dim: false,
     }
   },
   methods: {
@@ -84,6 +92,18 @@ export default {
         this.scrollDebounce = this.isScrolling = undefined;
       }, 150);
     },
+
+    observed(val) {
+      // console.log(val);
+      this.dim = val[0].isIntersecting;
+    },
+
+    scrollToMain() {
+      this.$refs.content.scroll({
+        behavior: "smooth",
+        left: this.$refs.content.scrollWidth - window.innerWidth
+      });
+    }
   },
   computed: {
     displayTitlebar() {
@@ -143,11 +163,26 @@ export default {
     z-index: 10;
   }
 
-  .mobile .sidebar { @include ensure-width(90vw); }
+  $sidebar-mobile-width: 82vw;
+  $sidebar-mobile-peek-width: 100vw - $sidebar-mobile-width;
+  $sidebar-tablet-width: 320px;
+  $sidebar-tablet-peek-width: calc(100vw - #{$sidebar-tablet-width});
+
+  .mobile .sidebar { @include ensure-width($sidebar-mobile-width); }
   .tablet .sidebar { @include ensure-width(320px); }
 
   .mobile .main-content { width: 100vw; }
 
+  .dim { background: black; filter: opacity(.3); }
+
+  .mobile .sidebar-peek { @include ensure-width($sidebar-mobile-peek-width); }
+  .tablet .sidebar-peek { @include ensure-width($sidebar-tablet-peek-width); }
+  .sidebar-peek {
+    @extend .dim;
+    position: absolute;
+    right: 0; z-index: 11;
+    height: 100%;
+  }
 </style>
 
 <style lang="scss">
