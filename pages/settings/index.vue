@@ -18,11 +18,11 @@
 
 
     <!--Right hand side scrollbar-->
-    <overlay-scrollbars class="h-100 panel rhs-bg">
+    <overlay-scrollbars class="h-100 panel rhs-bg rhs">
 
       <!--Show the selected panel on the rhs-->
       <div class="ml-8 pb-16" style="margin-right: 15vw;">
-        <keep-alive><component :is="selectedSubmenu"/></keep-alive>
+        <component :is="selectedSubmenu"/>
       </div>
 
     </overlay-scrollbars>
@@ -100,4 +100,6 @@ $exit-button-total-space: calc(#{$exit-button-size} + #{$exit-button-left-margin
 .narrow-menu {
   @include ensure-width(200px);
 }
+
+.rhs::v-deep .os-content { padding: 0 !important; margin-top: 36px; }
 </style>
