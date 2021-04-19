@@ -19,10 +19,10 @@
         </div>
         <!--1px on the left edge, used to observe and dim rhs-->
         <div v-if="$device.isMobileOrTablet" v-intersect="observed" class="position-absolute"/>
-        <side-bar class="unselectable sidebar" ref="sidebar"/>
+        <side-bar class="unselectable sidebar" :class="{'rounded-tr rounded-br': $device.isMobileOrTablet}" ref="sidebar"/>
 
-        <v-main class="flex-grow-1 main-content position-relative" ref="mainPanel">
-          <nuxt class="nuxt"/>
+        <v-main class="flex-grow-1 main-content position-relative" :class="$device.isMobileOrTablet && 'ml-2'" ref="mainPanel">
+          <nuxt class="nuxt" :class="{'rounded-tl rounded-bl': $device.isMobileOrTablet}"/>
         </v-main>
 
       </div>
@@ -175,14 +175,16 @@ export default {
 
   .dim { background: black; filter: opacity(.3); }
 
-  .mobile .sidebar-peek { @include ensure-width($sidebar-mobile-peek-width); }
-  .tablet .sidebar-peek { @include ensure-width($sidebar-tablet-peek-width); }
+  .mobile .sidebar-peek { @include ensure-width(calc(#{$sidebar-mobile-peek-width} - 8px)); }
+  .tablet .sidebar-peek { @include ensure-width(calc(#{$sidebar-tablet-peek-width} - 8px)); }
   .sidebar-peek {
     @extend .dim;
     position: absolute;
     right: 0; z-index: 11;
     height: 100%;
   }
+
+  .main-container { background: map-get($black, "darken"); }
 </style>
 
 <style lang="scss">
