@@ -1,6 +1,6 @@
 <template functional>
-  <badge :color="props.color" :border-color="props.borderColor" bordered>
-    <avatar :size="props.size" :jid="props.jid"/>
+  <badge :color="props.color" :border-color="props.borderColor" bordered :class="[data.class, data.staticClass]">
+    <avatar :size="props.size" :jid="props.jid" @click="listeners.click && listeners.click($event)"/>
     <template #badge>
       <slot/>
     </template>

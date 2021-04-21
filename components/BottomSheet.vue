@@ -3,14 +3,16 @@
     <v-list tile subheader color="transparent" class="mb-6">
 
       <template v-for="(item, i) in items">
-        <v-list-item ripple :key="i" @click="item.handler || (()=>{})"
+        <v-list-item ripple :key="i" @click="click(item)($event)"
                      :nuxt="!!item.to" :to="item.to"
                      :href="item.href">
-          <v-icon v-if="item.icon" :color="item.color || 'white'" size="1.66em" class="mr-2">{{item.icon}}</v-icon>
+          <v-icon v-if="item.icon" :color="item.color || 'white'" :size="iconSize" class="mr-2">{{item.icon}}</v-icon>
           <v-list-item-title :class="(item.color || 'white') + '--text'">{{item.title}}</v-list-item-title>
         </v-list-item>
-        <v-divider class="mx-4"/>
+        <v-divider v-if="divider" class="mx-4"/>
       </template>
+
+      <slot/>
 
     </v-list>
   </vue-bottom-sheet>
@@ -20,12 +22,27 @@
 export default {
   name: "BottomSheet",
   props: {
-    items: Array,
     // [{icon?, color?, title, handler? | to? | href?}]
+    items: Array,
+    divider: {
+      type: Boolean,
+      default: true,
+    },
+    iconSize: {
+      type: Number | String,
+      default: "1.5em",
+    }
   },
   methods: {
     open()  { this.$refs.mobileDialog.open();  },
     close() { this.$refs.mobileDialog.close(); },
+    click(item) {
+      const handler = item.handler || (()=>{});
+      return e => {
+        handler(e);
+        this.close()
+      };
+    }
   },
 }
 </script>
@@ -36,6 +53,6 @@ export default {
 }
 
 *::v-deep .bottom-sheet__bar {
-  background: transparentize(map-get($white, "base"), 0.7) !important;
+  background: map-get($white, "base") !important;
 }
 </style>
