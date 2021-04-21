@@ -102,4 +102,12 @@
       display: inline;
     }
   }
+
+  *::v-deep .v-text-field__slot {
+    & textarea::placeholder {
+      overflow: hidden;
+      white-space: nowrap;
+      text-overflow: ellipsis;
+    }
+  }
 </style>

@@ -6,9 +6,9 @@
       <badged-avatar :size="36" :jid="jid" :color="onlineStatus"/>
     </div>
 
-    <div class="ml-2 pr-2 my-auto" :class="selected || 'grey-700--text'">
+    <div class="ml-2 pr-2 my-auto hide-overflow grey-500--text">
       <!-- username -->
-      <span :class="selected && 'font-weight-bold'">{{name}}</span>
+      <span :class="selected ? 'font-weight-bold white--text' : 'grey-700--text'">{{name}}</span>
 
       <!-- @ -->
       <span style="margin-left: -2px; margin-right: -2px;">
