@@ -1,7 +1,7 @@
 <template>
   <v-app dark>
     <div id="app" class="d-flex flex-column black">
-      <header-bar class="align-content-center-inline unselectable header">
+      <header-bar mobile class="align-content-center-inline unselectable header">
         <v-btn icon @click="$router.back();" class="mx-2">
           <v-icon size="1.66em" color="white">mdi-arrow-left</v-icon>
         </v-btn>

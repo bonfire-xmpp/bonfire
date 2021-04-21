@@ -50,6 +50,7 @@ export default {
       '@/plugins/stanza.js',
       '@/plugins/overlayscrollbars.js',
       '@/plugins/longpress.js',
+      '@/plugins/vuebottomsheet.js',
   ],
 
   // Auto import components: https://go.nuxtjs.dev/config-components

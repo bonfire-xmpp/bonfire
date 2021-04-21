@@ -1,6 +1,6 @@
 <template>
   <div class="self-bar d-flex align-center px-3 white--text">
-    <avatar :jid="jid" size="36px" class="flex-grow-0"/>
+    <badged-avatar :jid="jid" :size="36" :color="onlineStatus"/>
 
     <main class="d-flex flex-column hide-overflow ml-2 local-status flex-grow-1">
       <span class="local-part">{{localPart}}</span>
@@ -48,11 +48,14 @@
 </script>
 
 <style scoped lang="scss">
+   $self-bar-background: map-get($black, "base");
+
   .self-bar {
     @include ensure-height(3.5rem);
+    @include v-badge-border-color($self-bar-background);
     font-size: .9rem;
     line-height: .9rem;
-    background: map-get($black, "base");
+    background: $self-bar-background;
   }
 
   .local-status {

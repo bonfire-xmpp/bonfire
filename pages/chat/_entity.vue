@@ -1,11 +1,12 @@
 <template>
   <div class="d-flex flex-column grey-200">
     <!-- Header -->
-    <header-bar class="flex-shrink-0 d-flex px-4 align-center">
+    <header-bar class="flex-shrink-0" :mobile="$device.isMobileOrTablet" menu>
       <user-card :jid="bare" selected class="user-card overflow-hidden"/>
       <v-spacer/>
       <div class="py-2">
         <v-text-field
+          v-if="!$device.isMobileOrTablet"
           @focus="openSearch" @click="openSearch"
           @keydown.esc="closeSearch" @keydown="searchUpdate"
           v-model="searchText"
@@ -14,7 +15,16 @@
           label="Search" class="searchbar"
           ref="searchBar"
         />
-      </div>
+
+        <template v-else>
+          <v-btn icon class="mx-2" ref="searchBar" @click="$refs.mobileDialog.open()">
+            <v-icon size="1.66em" color="white">mdi-dots-vertical</v-icon>
+          </v-btn>
+
+          <bottom-sheet :items="bottomSheetItems" ref="mobileDialog"/>
+        </template>
+
+        </div>
     </header-bar>
 
     <!-- Main Section -->
@@ -103,6 +113,13 @@ export default {
       searchText: "",
       searchTimeout: null,
       matches: [],
+
+      bottomSheetItems: [
+        {icon: 'mdi-magnify', title: 'Search'},
+        {icon: 'mdi-file-document', title: 'Send Over A Large File'},
+        {icon: 'mdi-account-cancel', title: 'Block Friend'},
+        {icon: 'mdi-account-minus', title: 'Remove Friend', color: 'red'}
+      ],
     };
   },
 
