@@ -5,11 +5,11 @@
       <template v-for="(item, i) in items">
         <v-list-item ripple :key="i" @click="click(item)($event)"
                      :nuxt="!!item.to" :to="item.to"
-                     :href="item.href">
+                     :href="item.href" v-if="!item.divider">
           <v-icon v-if="item.icon" :color="item.color || 'white'" :size="iconSize" class="mr-2">{{item.icon}}</v-icon>
           <v-list-item-title :class="(item.color || 'white') + '--text'">{{item.title}}</v-list-item-title>
         </v-list-item>
-        <v-divider v-if="divider" class="mx-4"/>
+        <v-divider v-else class="mx-4 my-2"/>
       </template>
 
       <slot/>
