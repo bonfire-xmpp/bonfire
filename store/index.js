@@ -55,6 +55,10 @@ const $states = {
 
     resources: 'RESOURCES',
     presences: 'PRESENCES',
+
+    onlineStatus: 'ONLINE_STATUS',
+    statusMessage: 'STATUS_MESSAGE',
+    invisibility: 'INVISIBILITY'
 };
 
 const $getters = {
@@ -70,6 +74,10 @@ const $actions = {
     tryRestoreSession: 'TRY_RESTORE_SESSION',
     downloadAvatar: 'DOWNLOAD_AVATAR',
     getAvatar: 'GET_AVATAR',
+
+    updateOnlineStatus: 'UPDATE_ONLINE_STATUS',
+    updateStatusMessage: 'UPDATE_STATUS_MESSAGE',
+    updateInvisibility: 'UPDATE_INVISIBILITY'
 };
 
 const $mutations = {
@@ -96,6 +104,10 @@ const $mutations = {
     setStreamManagement: 'SET_STREAM_MANAGEMENT',
     setAccount: 'SET_ACCOUNT',
     setRoster: 'SET_ROSTER',
+
+    setOnlineStatus: 'SET_ONLINE_STATUS',
+    setStatusMessage: 'SET_STATUS_MESSAGE',
+    setInvisibility: 'SET_INVISIBILITY'
 }
 
 export const state = () => ({
@@ -122,6 +134,10 @@ export const state = () => ({
     [$states.avatars]: {},
     [$states.resources]: {},
     [$states.presences]: {},
+
+    [$states.onlineStatus]: undefined,
+    [$states.statusMessage]: undefined,
+    [$states.invisibility]: false,
 });
 
 export const getters = {
@@ -293,6 +309,41 @@ export const actions = {
 
         // Downloaded
         return url;
+    },
+
+    async [$actions.updateOnlineStatus]({ commit, state, dispatch }, {status: show}) {
+        const status = state[$states.statusMessage];
+        const invisibility = state[$states.invisibility];
+
+        // No show: pure online
+        if(!show || show === 'online') {
+            this.$stanza.client.sendPresence({status});
+            commit($mutations.setOnlineStatus, show);
+            return;
+        }
+
+        this.$stanza.client.sendPresence({show, status});
+        await dispatch($actions.updateInvisibility, false);
+        commit($mutations.setOnlineStatus, show);
+    },
+
+    [$actions.updateStatusMessage]({ commit, state }, {message: status}) {
+        const show = state[$states.onlineStatus];
+        this.$stanza.client.sendPresence({show, status});
+        commit($mutations.setStatusMessage, status);
+    },
+
+    async [$actions.updateInvisibility]({ commit, state }, invisible) {
+        // TODO: selectively enable communication with select contacts after going invisible
+        const invisibility = state[$states.invisibility];
+
+        if(invisible && !invisibility) await this.$stanza.client.goInvisible(true);
+        else if(!invisible && invisibility) {
+            await this.$stanza.client.goVisible();
+            this.$stanza.client.sendPresence();
+        }
+
+        commit($mutations.setInvisibility, invisible);
     }
 };
 
@@ -335,9 +386,9 @@ const generateMutations = (storage, ...names) => {
 
 export const mutations = {
     ...generateMutations(storage.secure,
-        $states.jid, $states.password, $states.server, $states.transports),
+        $states.jid, $states.password, $states.server, $states.transports, $states.onlineStatus, $states.statusMessage),
 
-    ...generateMutations($states.account, $states.roster, $states.loginDate, $states.pageTitle),
+    ...generateMutations($states.account, $states.roster, $states.loginDate, $states.pageTitle, $states.invisibility),
 
     [$mutations.setActiveChat] ( state, data ) {
         if(state.settings[SettingsStore.$states.activeChatReceipts]) {

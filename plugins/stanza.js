@@ -1,6 +1,7 @@
 import * as XMPP from 'stanza';
 import { MessageStore } from "@/store/messages";
 import { Store } from "@/store";
+import {loadFromSecure} from "assets/storage";
 
 const client = XMPP.createClient(undefined);
 
@@ -58,7 +59,19 @@ const generateFunctions = (ctx) => ({
     },
     getOnlineStateFromRank(rank) {
         return this.ranks[rank];
-    }
+    },
+    setOnlineStatus(status) {
+        return ctx.store.dispatch(Store.$actions.updateOnlineStatus, {status});
+    },
+    setStatusMessage(message) {
+        return ctx.store.dispatch(Store.$actions.updateStatusMessage, {message});
+    },
+    async goInvisible() {
+        return ctx.store.dispatch(Store.$actions.updateInvisibility, true);
+    },
+    async goVisible() {
+        return ctx.store.dispatch(Store.$actions.updateInvisibility, false);
+    },
 });
 
 const setupListeners = ctx => {
@@ -75,7 +88,11 @@ const setupListeners = ctx => {
     }
 
     async function bind() {
-        client.sendPresence();
+        const [show, status] = loadFromSecure(Store.$states.onlineStatus, Store.$states.statusMessage);
+        client.sendPresence({show, status});
+        ctx.store.commit(Store.$mutations.setOnlineStatus, show);
+        ctx.store.commit(Store.$mutations.setStatusMessage, status);
+
         await client.enableCarbons();
         await client.getRoster().then(roster => {
             ctx.store.commit(Store.$mutations.setRoster, roster);
@@ -221,7 +238,7 @@ const setupListeners = ctx => {
             }
         }
         ctx.store.commit(Store.$mutations.setRoster, {
-            ...roster, 
+            ...roster,
             items: items,
         });
     });
