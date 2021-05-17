@@ -1,37 +1,11 @@
 <template>
   <div id="self-bar" class="self-bar d-flex align-center px-3 white--text position-relative">
-    <badged-avatar class="clickable" :jid="jid" :size="36" :color="onlineStatus" @click="openStatusMenu"/>
-    <v-menu v-if="!$device.isMobileOrTablet" eager v-model="dialog" attach="#self-bar" top max-width="320px" min-width="320px" nudge-top="8px">
-
-      <v-list dense :elevation="0" class="mx-4 rounded" nav>
-        <v-list-item ripple v-for="(item, i) in statusMenu" :key="i" @click="item.handler">
-          <v-icon :color="item.color" size="0.9em" class="mr-2">{{item.icon}}</v-icon>
-          <v-list-item-title :class="item.color + '--text'" style="font-size: 1em;">{{item.title}}</v-list-item-title>
-        </v-list-item>
-
-        <v-divider class="mx-4 my-2"/>
-
-        <v-list-item ripple @click="handler || (()=>{})">
-          <v-icon color="white" size="1.33em" class="mr-2">mdi-file-edit</v-icon>
-          <v-list-item-title class="white--text" style="font-size: 1em;">Edit custom status</v-list-item-title>
-        </v-list-item>
-
-      </v-list>
-
-    </v-menu>
-    <portal v-else selector="#app">
-      <bottom-sheet :items="statusMenu" ref="bottomSheet" class="position-relative" style="z-index: 50;" :divider="false" icon-size="0.9em">
-        <v-divider class="mx-4 my-2"/>
-        <v-list-item ripple @click="handler || (()=>{})">
-          <v-icon color="white" size="1.33em" class="mr-2">mdi-file-edit</v-icon>
-          <v-list-item-title class="white--text" style="font-size: 1em;">Edit custom status</v-list-item-title>
-        </v-list-item>
-      </bottom-sheet>
-    </portal>
+    <badged-avatar class="clickable" :jid="jid" :color="onlineStatus" @click.stop="statusMenuTooltip = true"/>
+    <status-menu-tooltip attach="#self-bar" v-model="statusMenuTooltip"/>
 
     <main class="d-flex flex-column hide-overflow ml-2 local-status flex-grow-1">
       <span class="local-part">{{localPart}}</span>
-      <span v-if="statusMessage" class="status-message hide-overflow grey-700--text">{{statusMessage}}</span>
+      <span class="status-message hide-overflow grey-700--text">{{statusMessage || domainPart}}</span>
     </main>
 
     <aside class="ml-2">
@@ -43,20 +17,22 @@
 </template>
 
 <script>
-  import {mapGetters} from "vuex";
-  import {Store} from "@/store";
-  import { Portal, setSelector } from '@linusborg/vue-simple-portal'
-  setSelector('#app')
+import {mapGetters} from "vuex";
+import {Store} from "@/store";
+import {setSelector} from '@linusborg/vue-simple-portal'
+import StatusMenuTooltip from "@/components/StatusMenuTooltip";
+
+setSelector('#app')
 
   export default {
     name: "SelfBar",
-    components: {Portal},
+    components: {StatusMenuTooltip},
     props: {
       jid: String,
     },
     data() {
       return {
-        dialog: false
+        statusMenuTooltip: false,
       }
     },
     computed: {
@@ -68,6 +44,8 @@
         return this.$stanza.getLocal(this.jid);
       },
 
+      domainPart() { return this.$stanza.getDomain(this.jid); },
+
       presence() { return this.getPresence(this.jid); },
 
       available() { return this.presence?.available; },
@@ -78,24 +56,6 @@
         if(!this.presence?.show && this.available) return 'online';
         return this.presence?.show;
       },
-
-      statusMenu() {
-        return [
-          {icon: 'mdi-circle', title: 'Online', color: 'success', handler: () => this.changeStatus('online')},
-          {icon: 'mdi-circle', title: 'Away', color: 'away', handler: () => this.changeStatus('away')},
-          {icon: 'mdi-circle', title: 'Extended Away', color: 'xa', handler: () => this.changeStatus('xa')},
-          {icon: 'mdi-circle', title: 'Do Not Disturb', color: 'dnd', handler: () => this.changeStatus('dnd')},
-          {icon: 'mdi-circle', title: 'Invisible', color: 'offline', handler: () => this.changeStatus('invisible')},
-        ]
-      },
-
-      openStatusMenu() {
-        if(this.$device.isMobileOrTablet) {
-          return () => this.$refs.bottomSheet.open();
-        } else {
-          return () => this.dialog = true;
-        }
-      }
     },
     methods: {
       changeStatus(to) {
@@ -117,6 +77,8 @@
   }
 
   .local-status {
+    height: 36px;
+    justify-content: space-evenly;
     //line-height: .9em;
   }
 
