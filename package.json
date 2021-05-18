@@ -4,6 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "nuxt",
+    "dev:all": "nuxt dev . --hostname 0.0.0.0",
     "start": "nuxt start",
     "generate": "nuxt generate",
     "open:electron": "cap open @capacitor-community/electron",
