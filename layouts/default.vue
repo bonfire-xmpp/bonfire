@@ -1,6 +1,6 @@
 <template>
   <v-app dark v-if="stanzaInitialized">
-    <div id="app" class="d-flex flex-column black" :class="{mobile: $device.isMobileOrTablet, tablet: $device.isTablet}">
+    <div id="bonfire" class="d-flex flex-column black" :class="{mobile: $device.isMobileOrTablet, tablet: $device.isTablet}">
 
       <system-bar v-if="displayTitlebar" dark class="grey-100 material-shadow" style="z-index: 11;"/>
 
@@ -132,7 +132,7 @@ export default {
     display: none;
   }
 
-  #app.mobile .main-container {
+  #bonfire.mobile .main-container {
     scroll-snap-type: x mandatory;
     overflow-x: scroll;
     overflow-y: hidden;
@@ -188,7 +188,7 @@ export default {
 </style>
 
 <style lang="scss">
-  #app {
+  #bonfire {
     // Ensures the app container takes up just one screenful
     position: absolute;
     width: 100vw;

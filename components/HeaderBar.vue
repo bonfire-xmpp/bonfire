@@ -53,7 +53,7 @@
     },
 
     methods: {
-      back() {document.querySelector('#app > .main-container').scroll({left:0, behavior:'smooth'})}
+      back() {document.querySelector('#bonfire > .main-container').scroll({left:0, behavior:'smooth'})}
     },
   }
 </script>
