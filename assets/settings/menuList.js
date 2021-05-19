@@ -12,6 +12,11 @@ export default [
     {
         content: [
             {
+                title: "Supported XEPs",
+                type: "submenu",
+                to: "XEPs"
+            },
+            {
                 title: "About",
                 type: "submenu",
                 to: "about"

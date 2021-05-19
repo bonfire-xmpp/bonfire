@@ -52,6 +52,7 @@ export default {
       '@/plugins/longpress.js',
       '@/plugins/vuebottomsheet.js',
       '@/plugins/simplebar.js',
+      '@/plugins/masonry.js',
   ],
 
   // Auto import components: https://go.nuxtjs.dev/config-components

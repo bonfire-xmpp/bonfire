@@ -45,6 +45,7 @@ import SettingsMenuList from '@/components/Settings/MenuList';
 
 import About from "@/components/Settings/Panels/About";
 import Privacy from "@/components/Settings/Panels/Privacy";
+import XEPs from "@/components/Settings/Panels/XEPs";
 import {Store} from "@/store";
 
 export default {
@@ -52,7 +53,7 @@ export default {
   layout(ctx) {
     return ctx.$device.isMobileOrTablet ? "mobileMenu" : "fullscreen";
   },
-  components: {SettingsMenuList, About, Privacy},
+  components: {SettingsMenuList, About, Privacy, XEPs},
   data() {
     return {
       menuList: MenuList,
