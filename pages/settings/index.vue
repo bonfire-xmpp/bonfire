@@ -10,22 +10,21 @@
       </v-btn>
 
       <!--List of submenus-->
-      <overlay-scrollbars class="narrow-scrollbar h-100"
-        :options="{scrollbars: {autoHide: 'leave', autoHideDelay: 0}}">
+      <simplebar class="simplebar narrow-scrollbar" data-simplebar-auto-hide="false" data-simplebar-force-visible="true">
         <settings-menu-list class="narrow-menu" :menu-list="menuList" v-model="selectedSubmenu"/>
-      </overlay-scrollbars>
+      </simplebar>
     </div>
 
 
     <!--Right hand side scrollbar-->
-    <overlay-scrollbars class="h-100 panel rhs-bg rhs">
+    <simplebar class="h-100 panel rhs-bg rhs">
 
       <!--Show the selected panel on the rhs-->
-      <div class="ml-8 pb-16" style="margin-right: 15vw;">
+      <div class="ml-8 pb-16" style="margin-right: 10vw;">
         <component :is="selectedSubmenu"/>
       </div>
 
-    </overlay-scrollbars>
+    </simplebar>
 
   </div>
 
@@ -69,6 +68,10 @@ export default {
 <style scoped lang="scss">
 $exit-button-total-space: calc(#{$exit-button-size} + #{$exit-button-left-margin}) !default;
 
+.simplebar {
+  @include ensure-height(100%);
+}
+
 .main {
   display: grid;
   // 1:2 split, or shrink left side no less than min-content
@@ -76,6 +79,8 @@ $exit-button-total-space: calc(#{$exit-button-size} + #{$exit-button-left-margin
 }
 
 .menu {
+  @include ensure-height(100%);
+
   display: grid;
   // (Exit Button + Left Margin) | everything else
   grid-template-columns: $exit-button-total-space auto
@@ -94,12 +99,10 @@ $exit-button-total-space: calc(#{$exit-button-size} + #{$exit-button-left-margin
 .rhs-bg { background: map-get($greys, "300") !important; }
 
 .panel {
-  height: 100vh;
+  @include ensure-height(100%);
 }
 
 .narrow-menu {
   @include ensure-width(200px);
 }
-
-.rhs::v-deep .os-content { padding: 0 !important; margin-top: 36px; }
 </style>

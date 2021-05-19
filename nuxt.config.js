@@ -51,6 +51,7 @@ export default {
       '@/plugins/overlayscrollbars.js',
       '@/plugins/longpress.js',
       '@/plugins/vuebottomsheet.js',
+      '@/plugins/simplebar.js',
   ],
 
   // Auto import components: https://go.nuxtjs.dev/config-components
