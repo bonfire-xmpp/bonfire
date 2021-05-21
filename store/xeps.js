@@ -16,6 +16,7 @@ const $mutations = {
 
 export const state = () => ({
     [$states.server]: {
+        "XEP-0030": false,
         "RFC 6121": false,
         "XEP-0045": false,
         "XEP-0163": false,
@@ -45,10 +46,16 @@ import checks from "assets/xeps/server/checks";
 
 export const actions = {
     async [$actions.updateXepsWithDisco] ({ commit }) {
-        const data = await this.$stanza.serverDisco();
+        let data;
+        try { data = await this.$stanza.serverDisco() }
+        catch (e) {
+            // The server doesn't support Service Discovery (or we're offline?)
+            return commit($mutations.setServerXep, {xep: "XEP-0030", value: false});
+        }
 
         console.log(data);
 
+        commit($mutations.setServerXep, {xep: "XEP-0030", value: true});
         for (let [xep, check] of checks.entries()) {
             const value = check(data);
             if(typeof value === "boolean")

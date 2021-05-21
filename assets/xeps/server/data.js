@@ -3,6 +3,10 @@ export default new Map([
         name: "Roster Versioning",
         desc: "Efficient roster updating by versioning and exchanging only the changed parts of roster."
     }],
+    ["XEP-0030", {
+        name: "Service Discovery",
+        desc: "Protocol for discovering what the server supports. Nearly all other XEPs are discovered through this!"
+    }],
     ["XEP-0045", {
         name: "Multi-User Chat",
         desc: "Support for rooms, moderation, roles, bans, and invites for multi-user chat rooms."
@@ -53,7 +57,8 @@ export default new Map([
     }],
     ["XEP-0352", {
         name: "Client State Indication",
-        desc: "Lets a client tell the server when it's (in)active, so that the server can optimize traffic."
+        desc: "Lets a client tell the server when it's (in)active, so that the server can optimize traffic.",
+        warning: "Currently isn't detected, even when present."
     }],
     ["XEP-0280", {
         name: "Message Carbons",
