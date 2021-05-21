@@ -12,6 +12,12 @@
     <v-divider class="mb-n2 mt-n1"/>
 
     <v-card-text class="align-self-end" v-html="desc"></v-card-text>
+
+    <v-card v-if="warning" flat color="warning" class="ma-2">
+      <v-card-title class="py-2 d-inline-block title-text"><v-icon size="1.2em" left>mdi-alert-circle-outline</v-icon>Warning!</v-card-title>
+      <v-divider class="mb-n2 mt-n1"/>
+      <v-card-text class="align-self-end" v-html="warning"></v-card-text>
+    </v-card>
   </v-card>
 </template>
 
@@ -23,6 +29,7 @@ export default {
     no: String,
     name: String,
     desc: String,
+    warning: String,
   },
 }
 </script>
