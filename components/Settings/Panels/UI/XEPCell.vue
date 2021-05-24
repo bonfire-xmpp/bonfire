@@ -1,22 +1,23 @@
-<template>
+<template functional>
   <v-card flat outlined color="grey-400" class="unselectable"
-          :style="'--xep-animation-delay: ' + Math.random()*300 + 'ms'"
-          :class="{'blink-online': supported}">
+          :disabled="props.disabled"
+          :style="'--xep-animation-delay: ' + $options.delay(props.delay) + 'ms'"
+          :class="[data.class, data.staticClass, props.supported ? (props.animated ? 'blink-online' : 'supported') : 'unsupported']">
     <v-card-title class="white--text py-2 d-inline-block w-100">
       <v-chip class="float-right mb-1 ml-3" outlined pill>
-        <span class="on-text">{{ supported ? 'ON' : 'OFF' }}</span>
+        <span class="on-text">{{ props.supported ? 'ON' : 'OFF' }}</span>
       </v-chip>
-      <div class="title-text h-100"><b class="text-monospace">{{no}}</b> &mdash; {{name}}</div>
+      <div class="title-text h-100"><b class="text-monospace">{{props.no}}</b> &mdash; {{props.name}}</div>
     </v-card-title>
 
     <v-divider class="mb-n2 mt-n1"/>
 
-    <v-card-text class="align-self-end" v-html="desc"></v-card-text>
+    <v-card-text class="align-self-end" v-html="props.desc"></v-card-text>
 
-    <v-card v-if="warning" flat color="warning" class="ma-2">
+    <v-card v-if="props.warning" flat color="warning" class="ma-2">
       <v-card-title class="py-2 d-inline-block title-text"><v-icon size="1.2em" left>mdi-alert-circle-outline</v-icon>Warning!</v-card-title>
       <v-divider class="mb-n2 mt-n1"/>
-      <v-card-text class="align-self-end" v-html="warning"></v-card-text>
+      <v-card-text class="align-self-end" v-html="props.warning"></v-card-text>
     </v-card>
   </v-card>
 </template>
@@ -26,15 +27,23 @@ export default {
   name: "XEPCell",
   props: {
     supported: Boolean,
+    animated: Boolean,
+    disabled: Boolean,
+    delay: Number,
     no: String,
     name: String,
     desc: String,
     warning: String,
   },
+  delay(delay) {
+    return delay === undefined ? Math.random()*300 : delay;
+  },
 }
 </script>
 
 <style scoped lang="scss">
+$xep-cell--background-color--on: lighten(transparentize(map-get($green, "lighten"), 0.6), 10);
+$xep-cell--background-color--off: map-get($greys, "400");
 
 .title-text {
   word-break: break-word;
@@ -43,28 +52,27 @@ export default {
   font-size: 1.1em;
 }
 
-.text-monospace { font-family: monospace; }
-
-.on-text {
-  font-weight: 900 !important;
-}
-
-$xep-cell--background-color--on: lighten(transparentize(map-get($green, "lighten"), 0.6), 10);
-$xep-cell--background-color--off: map-get($greys, "400");
-
-.v-card.v-card--flat {
-  border-color: map-get($greys, "500") !important;
-}
-
+//Smaller card header font
 .v-card__title {
   font-size: 1em;
 }
 
+.text-monospace { font-family: monospace; }
+
+// Pilled ON / OFF text
+.on-text {
+  font-weight: 900 !important;
+}
+
+// Slightly whiter pill background
 .v-card__title > span.v-chip.v-chip--pill {
   background-color: transparentize(white, .8) !important;
 }
 
-
+// Vuetify's card background is set as !important,
+//  and !important values cannot be changed from animations
+// So, the solution is to hide the real background behind a ::before
+//  which will assume its role (and will be animatable)
 @mixin two-layer-background($deep-background-color, $background-color) {
   & {
     position: relative;
@@ -86,14 +94,31 @@ $xep-cell--background-color--off: map-get($greys, "400");
   & > * { position: relative; z-index: 6; }
 }
 
+.v-card.v-card--flat {
+  // Smooth transition between on/off states
+  &:before { transition: background-color .2s; }
+
+  // Green border and background if supported
+  &.supported {
+    border-color: map-get($green, "lighten") !important;
+    @include two-layer-background(transparent, $xep-cell--background-color--on);
+  }
+
+  // Regular off border and background color if unsupported
+  &.unsupported {
+    border-color: map-get($greys, "500") !important;
+    @include two-layer-background(transparent, $xep-cell--background-color--off);
+  }
+}
+
+// Animation-enabled 'on' green background
 .blink-online {
   &.v-card.v-card--flat {
-    border-color: map-get($green, "lighten") !important;
-    .on-text {
-      //color: lighten(map-get($green, "lighten"), 15);
-    }
 
-    @include two-layer-background(transparent, $xep-cell--background-color--on);
+    // Green border and background
+    @extend .supported;
+
+    // Disable animation on mobile
     #bonfire:not(.mobile) &:before {
       animation: ease-in blink-online .6s;
       animation-delay: var(--xep-animation-delay);
