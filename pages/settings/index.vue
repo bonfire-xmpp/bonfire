@@ -17,7 +17,7 @@
 
 
     <!--Right hand side scrollbar-->
-    <simplebar class="h-100 panel rhs-bg rhs">
+    <simplebar class="simplebar narrow-scrollbar h-100 panel rhs-bg rhs">
 
       <!--Show the selected panel on the rhs-->
       <div class="ml-8 pb-16" style="margin-right: 10vw;">
@@ -29,12 +29,13 @@
   </div>
 
   <div v-else class="lhs-bg w-100 h-100">
-    <overlay-scrollbars class="narrow-scrollbar h-100"
-                        :options="{scrollbars: {autoHide: 'leave', autoHideDelay: 0}}">
+    <simplebar class="simplebar narrow-scrollbar h-100"
+               data-simplebar-auto-hide="false" data-simplebar-force-visible="true"
+               :options="{scrollbars: {autoHide: 'leave', autoHideDelay: 0}}">
 
       <settings-menu-list class="lhs-bg" mobile :menu-list="menuList" v-model="selectedSubmenu"/>
 
-    </overlay-scrollbars>
+    </simplebar>
   </div>
 </template>
 

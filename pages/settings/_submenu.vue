@@ -1,7 +1,8 @@
 <template>
-  <overlay-scrollbars class="h-100 component">
+  <simplebar class="simplebar narrow-scrollbar h-100 component" 
+             data-simplebar-auto-hide="false" data-simplebar-force-visible="true">
     <component class="mx-6" :is="submenu" v-bind="{mobile: true}"/>
-  </overlay-scrollbars>
+  </simplebar>
 </template>
 
 <script>
@@ -16,7 +17,7 @@
   export default {
     name: "submenu",
     layout: "mobileMenu",
-    components: {About, Privacy, XEPs},
+    components: { About, Privacy, XEPs },
     computed: {
       submenu() {
         return this.$route.params.submenu;
@@ -39,8 +40,4 @@
 
 <style scoped lang="scss">
 .component { background: map-get($black, "lighten") !important; }
-
-// <overlay-scrollbars/> loses all its padding when destroyed, causing a visual jump
-// The solution: use margins. Unfortunately, one of its inner elements has a top padding, which we disable here.
-*::v-deep .os-content { padding-top: 0 !important; }
 </style>

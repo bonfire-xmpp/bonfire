@@ -31,18 +31,6 @@
 .hide-horizontal { overflow-x: hidden !important; }
 
 /** Scrollbar **/
-.os-scrollbar-track, .os-scrollbar-track:hover, .os-scrollbar-track.active {
-  background-color: transparentize(map-get($black, "base"), .7) !important;
-}
-
-.wide-scrollbar .os-scrollbar-vertical {
-  width: .7em !important;
-}
-
-.narrow-scrollbar .os-scrollbar-vertical {
-  width: 8px !important;
-}
-
 .narrow-scrollbar .simplebar-track {
   width: 8px !important;
 }

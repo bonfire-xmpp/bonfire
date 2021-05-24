@@ -23,17 +23,18 @@
 
           <bottom-sheet :items="bottomSheetItems" ref="mobileDialog"/>
         </template>
-
-        </div>
+      </div>
     </header-bar>
 
     <!-- Main Section -->
     <main class="d-flex flex-row flex-grow-1 hide-overflow">
-      <div class="d-flex flex-column flex-grow-1 os-host-flexbox">
+      <div class="d-flex flex-column flex-grow-1">
         <!-- Message List -->
-        <overlay-scrollbars
+        <simplebar
+          class="simplebar wide-scrollbar flex-grow-1" 
+          data-simplebar-auto-hide="false" 
+          data-simplebar-force-visible="true"
           ref="messageList"
-          class="flex-grow-1 flex-shrink-1 wide-scrollbar"
           :options="{scrollbars:{clickScrolling: true}}">
           <div class="pt-4 scroller">
             <message-group
@@ -41,7 +42,7 @@
               :key="i"
               :group="group"/>
           </div>
-        </overlay-scrollbars>
+        </simplebar>
 
         <!-- Message Field -->
         <div>
@@ -50,7 +51,8 @@
             @message="sendMessage"
             :label="`Message ${bare}`">
             <template v-if="isTyping">
-              <typing-spinner class="normal ml-n2"/><b class="grey-800--text">{{localPart(bare)}} is typing...</b>
+              <typing-spinner class="normal ml-n2"/>
+              <b class="grey-800--text">{{localPart(bare)}} is typing...</b>
             </template>
           </chat-message-form>
         </div>
@@ -70,6 +72,10 @@
     @include ensure-width(300px)
   }
 
+  .simplebar {
+    min-height: 0;
+  }
+
   .user-card {
     @include v-badge-border-color(map-get($greys, "200"));
     white-space: nowrap;
@@ -84,6 +90,7 @@
 import { mapMutations, mapState } from 'vuex';
 import { Store } from "@/store";
 import { MessageStore } from '@/store/messages';
+import SimpleBar from "simplebar";
 import { search, searchBlock } from "@/store/search";
 
 import MessageGroup from "@/components/Chat/MessageGroup";
@@ -268,6 +275,15 @@ export default {
       );
     },
 
+    init () {
+      const { scrollElement } = this.$refs.messageList;
+      scrollElement.scroll(0, scrollElement.scrollHeight);
+
+      scrollElement.onscroll = ({ target }) => {
+        console.log(target.scrollTop);
+      };
+    },
+
     ...mapMutations({ setActiveChat: Store.$mutations.setActiveChat })
   },
 
@@ -275,11 +291,13 @@ export default {
     async $route(value) {
       this.setActiveChat({type: 'chat', entity: value.params.entity});
       await this.fetchMessages();
+      this.init();
     }
   },
 
   async mounted () {
     await this.fetchMessages();
+    this.init();
   }
 }
 </script>
