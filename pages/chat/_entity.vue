@@ -13,8 +13,7 @@
           single-line dense solo clearable hide-details flat
           background-color="grey-100"
           label="Search" class="searchbar"
-          ref="searchBar"
-        />
+          ref="searchBar"/>
 
         <template v-else>
           <v-btn icon class="mx-2" ref="searchBar" @click="$refs.mobileDialog.open()">
@@ -31,11 +30,10 @@
       <div class="d-flex flex-column flex-grow-1">
         <!-- Message List -->
         <simplebar
-          class="simplebar wide-scrollbar flex-grow-1" 
-          data-simplebar-auto-hide="false" 
+          class="simplebar simplebar-no-gutter wide-scrollbar flex-grow-1" 
+          data-simplebar-auto-hide="true"
           data-simplebar-force-visible="true"
-          ref="messageList"
-          :options="{scrollbars:{clickScrolling: true}}">
+          ref="messageList">
           <div class="pt-4 scroller">
             <message-group
               v-for="(group, i) in messageGroups(messages)"
@@ -70,10 +68,6 @@
 <style lang="scss" scoped>
   .searchbar {
     @include ensure-width(300px)
-  }
-
-  .simplebar {
-    min-height: 0;
   }
 
   .user-card {
@@ -280,7 +274,6 @@ export default {
       scrollElement.scroll(0, scrollElement.scrollHeight);
 
       scrollElement.onscroll = ({ target }) => {
-        console.log(target.scrollTop);
       };
     },
 

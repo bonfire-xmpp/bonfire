@@ -34,7 +34,48 @@
 .narrow-scrollbar .simplebar-track {
   width: 8px !important;
 }
+.wide-scrollbar .simplebar-track {
+  width: .7em !important;
+  & .simplebar-scrollbar:before {
+    left: 0 !important;
+    right: 0 !important;
+    top: 0 !important;
+    bottom: 0 !important;
+  }
+  & .simplebar-track {
+    background: transparentize(map-get($greys, "100"), 0.5) !important;
+    border-radius: .7em;
+  }
+}
 
 b {
   font-weight: 600 !important;
+}
+
+.simplebar {
+  min-height: 0;
+}
+
+.simplebar-horizontal {
+  display: none;
+}
+
+.simplebar-x .simplebar-horizontal {
+  display: initial;
+}
+
+.simplebar-vertical {
+  margin-top: 4px !important;
+  margin-bottom: 4px !important;
+  .simplebar-no-gutter & {
+    margin-right: 4px;
+  }
+  .wide-scrollbar & {
+    margin-top: 10px !important;
+    margin-bottom: 10px !important;
+  }
+}
+.simplebar-horizontal {
+  margin-left: 4px !important;
+  margin-right: 4px !important;
 }

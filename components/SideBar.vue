@@ -1,9 +1,7 @@
 <template>
   <div class="sidebar grey-100 d-flex flex-column">
     <header-bar pad-bottom/>
-    <simplebar class="simplebar narrow-scrollbar flex-grow-1" style="min-height: 0;"
-      data-simplebar-auto-hide="false" data-simplebar-force-visible="true"
-      :options="{scrollbars: {autoHide: 'leave', autoHideDelay: 0}}">
+    <simplebar class="simplebar narrow-scrollbar flex-grow-1">
       <roster-list
           :pinned="[]"
           :items="items"
