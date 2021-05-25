@@ -30,11 +30,11 @@
       <div class="d-flex flex-column flex-grow-1">
         <!-- Message List -->
         <simplebar
-          class="simplebar simplebar-no-gutter wide-scrollbar flex-grow-1" 
-          data-simplebar-auto-hide="true"
+          class="simplebar simplebar-no-gutter wide-scrollbar flex-grow-1"
+          data-simplebar-auto-hide="false"
           data-simplebar-force-visible="true"
           ref="messageList">
-          <div class="pt-4 scroller">
+          <div class="pt-4 mr-4 scroller">
             <message-group
               v-for="(group, i) in messageGroups(messages)"
               :key="i"
