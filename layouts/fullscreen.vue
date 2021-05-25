@@ -1,6 +1,6 @@
 <template>
   <v-app dark>
-    <div id="app" class="d-flex flex-column black">
+    <div id="bonfire" class="d-flex flex-column black">
       <system-bar v-if="displayTitlebar" dark/>
       <div :style="mainTitlebarCompensation" class="d-flex">
         <v-main>
@@ -12,7 +12,7 @@
 </template>
 
 <style lang="scss">
-  #app {
+  #bonfire {
     // Ensures the app container takes up just one screenful
     position: absolute;
     width: 100vw;

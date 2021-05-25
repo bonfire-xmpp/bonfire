@@ -1,7 +1,10 @@
 <template>
-  <div class="header position-relative"
+  <div class="header position-relative d-flex align-center"
        :style="styling"
-       :class="{ 'lighten-on-hover': lightenOnHover, 'mb-2': padBottom }">
+       :class="{ 'lighten-on-hover': lightenOnHover, 'mb-2': padBottom, 'pl-4 pr-4': !mobile }">
+    <v-btn v-if="mobile && menu" icon @click="back" class="mx-2">
+      <v-icon size="1.66em" color="white">mdi-menu</v-icon>
+    </v-btn>
     <slot/>
   </div>
 </template>
@@ -30,14 +33,28 @@
         optional: true,
         default: false,
       },
+      mobile: {
+        type: Boolean,
+        optional: true,
+        default: false,
+      },
+      menu: {
+        type: Boolean,
+        optional: true,
+        default: false,
+      }
     },
 
     computed: {
       styling() {
         return this.backgroundColor ? `background-color: ${this.backgroundColor};` : '' +
-               this.color           ? `color:                      ${this.color};` : '';
+               this.color           ? `color:`          +         `${this.color};` : '';
       }
-    }
+    },
+
+    methods: {
+      back() {document.querySelector('#bonfire > .main-container').scroll({left:0, behavior:'smooth'})}
+    },
   }
 </script>
 

@@ -1,6 +1,6 @@
 // Remove default outlines that draw sometimes on selects
 * {
-  outline: none !important;
+  outline: none;
 }
 
 .reset-link {
@@ -31,18 +31,55 @@
 .hide-horizontal { overflow-x: hidden !important; }
 
 /** Scrollbar **/
-.os-scrollbar-track, .os-scrollbar-track:hover, .os-scrollbar-track.active {
-  background-color: transparentize(map-get($black, "base"), .7) !important;
+// Default is 50% transparent and #000
+.simplebar-scrollbar:before {
+  opacity: 1;
+  background-color: map-get($black, "darken");
 }
 
-.wide-scrollbar .os-scrollbar-vertical {
-  width: .7em !important;
-}
-
-.narrow-scrollbar .os-scrollbar-vertical {
+.narrow-scrollbar .simplebar-track {
   width: 8px !important;
+}
+.wide-scrollbar .simplebar-track {
+  width: 8px !important;
+  background: transparentize(map-get($greys, "100"), 0.5) !important;
+  border-radius: .7em;
+  & .simplebar-scrollbar:before {
+    left: 0 !important;
+    right: 0 !important;
+    top: 0 !important;
+    bottom: 0 !important;
+  }
 }
 
 b {
   font-weight: 600 !important;
+}
+
+[data-simplebar] {
+  min-height: 0;
+}
+
+.simplebar-horizontal {
+  display: none;
+}
+
+.simplebar-x .simplebar-horizontal {
+  display: initial;
+}
+
+.simplebar-vertical {
+  margin-top: 4px !important;
+  margin-bottom: 4px !important;
+  .simplebar-no-gutter & {
+    margin-right: 4px;
+  }
+  .wide-scrollbar & {
+    margin-top: 10px !important;
+    margin-bottom: 10px !important;
+  }
+}
+.simplebar-horizontal {
+  margin-left: 4px !important;
+  margin-right: 4px !important;
 }

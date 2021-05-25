@@ -1,8 +1,8 @@
 <template functional>
-  <badge :color="props.color" :border-color="props.borderColor" bordered>
-    <avatar :size="props.size" :jid="props.jid"/>
+  <badge :color="props.color" :border-color="props.borderColor" bordered :class="[data.class, data.staticClass]" @click="listeners.click && listeners.click($event)">
+    <avatar :size="props.size" :jid="props.jid" @click="listeners.click && listeners.click($event)"/>
     <template #badge>
-      <slot/>
+      <slot @click="listeners.click && listeners.click($event)"/>
     </template>
   </badge>
 </template>
@@ -11,7 +11,10 @@
   export default {
     name: "BadgedAvatar",
     props: {
-      size: Number,
+      size: {
+        type: Number,
+        default: 36
+      },
       jid: String,
       color: String,
       borderColor: String,

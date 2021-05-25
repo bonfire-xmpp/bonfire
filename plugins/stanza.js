@@ -1,6 +1,9 @@
 import * as XMPP from 'stanza';
 import { MessageStore } from "@/store/messages";
+import { XEPStore } from "@/store/xeps";
 import { Store } from "@/store";
+import {loadFromSecure} from "assets/storage";
+import features from "stanza/plugins/features";
 
 const client = XMPP.createClient(undefined);
 
@@ -58,7 +61,28 @@ const generateFunctions = (ctx) => ({
     },
     getOnlineStateFromRank(rank) {
         return this.ranks[rank];
-    }
+    },
+    setOnlineStatus(status) {
+        return ctx.store.dispatch(Store.$actions.updateOnlineStatus, {status});
+    },
+    setStatusMessage(message) {
+        return ctx.store.dispatch(Store.$actions.updateStatusMessage, {message});
+    },
+    async goInvisible() {
+        return ctx.store.dispatch(Store.$actions.updateInvisibility, true);
+    },
+    async goVisible() {
+        return ctx.store.dispatch(Store.$actions.updateInvisibility, false);
+    },
+    async serverDisco() {
+        const disco = {};
+        disco.info = await client.getDiscoInfo(getDomain(client.jid));
+        disco.items = (await client.getDiscoItems(getDomain(client.jid))).items;
+        disco.items = await Promise.all(disco.items.map(async i => ({...i, info: await client.getDiscoInfo(i.jid)})));
+        disco.self = await client.getDiscoInfo(toBare(client.jid));
+        disco.services = (await client.getServices(getDomain(client.jid))).services;
+        return disco;
+    },
 });
 
 const setupListeners = ctx => {
@@ -75,7 +99,14 @@ const setupListeners = ctx => {
     }
 
     async function bind() {
-        client.sendPresence();
+        const [show, status] = loadFromSecure(Store.$states.onlineStatus, Store.$states.statusMessage);
+        client.sendPresence({show, status});
+        ctx.store.commit(Store.$mutations.setOnlineStatus, show);
+        ctx.store.commit(Store.$mutations.setStatusMessage, status);
+
+        await ctx.store.dispatch(`${XEPStore.namespace}/${XEPStore.$actions.updateXepsWithDisco}`);
+
+        // TODO: enable only if supported
         await client.enableCarbons();
         await client.getRoster().then(roster => {
             ctx.store.commit(Store.$mutations.setRoster, roster);
@@ -87,6 +118,25 @@ const setupListeners = ctx => {
 
     client.on('session:started', bind);
     client.on('stream:management:resumed', bind);
+
+    client.on('features', features => {
+        console.log(features);
+
+        if(features.rosterVersioning) {
+            ctx.store.commit(`${XEPStore.namespace}/${XEPStore.$mutations.setServerXep}`,
+                {xep: 'RFC 6121', value: true});
+        }
+
+        if(features.streamManagement) {
+            ctx.store.commit(`${XEPStore.namespace}/${XEPStore.$mutations.setServerXep}`,
+                {xep: 'XEP-0198', value: true});
+        }
+
+        if(features.legacyCapabilities?.[0]?.value) {
+            ctx.store.commit(`${XEPStore.namespace}/${XEPStore.$mutations.setServerXep}`,
+                {xep: 'XEP-0115', value: true});
+        }
+    });
 
     client.on('iq:set:roster', ({roster}) => {
         let items = ctx.store.state[Store.$states.roster]?.items || [];
@@ -137,20 +187,6 @@ const setupListeners = ctx => {
             });
         }
         dispatch(MessageStore.$actions.addMessage, { jid, message });
-    });
-
-    client.on('chat:state', state => {
-        if (state.chatState == "composing") {
-            commit(MessageStore.$mutations.setComposing, { 
-                user: XMPP.JID.toBare(state.from), 
-                composing: true,
-            });
-        } else {
-            commit(MessageStore.$mutations.setComposing, { 
-                user: XMPP.JID.toBare(state.from), 
-                composing: false,
-            });
-        }
     });
 
     /**
@@ -235,7 +271,7 @@ const setupListeners = ctx => {
             }
         }
         ctx.store.commit(Store.$mutations.setRoster, {
-            ...roster, 
+            ...roster,
             items: items,
         });
     });

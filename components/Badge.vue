@@ -1,5 +1,5 @@
 <template functional>
-  <div class="badge-container">
+  <div class="badge-container" :class="[data.class, data.staticClass]" @click="listeners.click && listeners.click($event)">
     <slot/>
     <div class="badge-wrapper w-100 h-100">
       <div class="badge" :class="{dot: !$slots.badge}">

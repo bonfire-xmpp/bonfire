@@ -1,21 +1,21 @@
 <template>
   <v-app dark>
-    <div id="app" class="d-flex flex-column black">
-      <header-bar class="align-content-center-inline unselectable header">
+    <div id="bonfire" class="d-flex flex-column black" :class="{mobile: $device.isMobileOrTablet, tablet: $device.isTablet}">
+      <header-bar mobile class="align-content-center-inline unselectable header">
         <v-btn icon @click="$router.back();" class="mx-2">
           <v-icon size="1.66em" color="white">mdi-arrow-left</v-icon>
         </v-btn>
         <span class="header-title white--text">{{title}}</span>
       </header-bar>
-      <v-main>
-        <nuxt class="pt-1"/>
+      <v-main class="h-100">
+        <nuxt/>
       </v-main>
     </div>
   </v-app>
 </template>
 
 <style lang="scss">
-  #app {
+  #bonfire {
     // Ensures the app container takes up just one screenful
     position: absolute;
     width: 100vw;

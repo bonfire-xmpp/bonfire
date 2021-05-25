@@ -5,9 +5,9 @@
     <span class="gutter indicator-light border-circle-right flex-shrink-0" :class="selected ? 'grey-800' : ''"/>
 
     <!-- Roster item card  -->
-    <div class="flex-grow-1 d-flex rounded main" :aria-selected="selected" >
+    <div class="flex-grow-1 hide-overflow d-flex rounded main" :aria-selected="selected" >
         <!-- Wrap everything except vertical ... into a NuxtLink -->
-        <nuxt-link :to="`/chat/${item.jid}`" class="reset-link flex-grow-1 d-flex">
+        <nuxt-link :to="`/chat/${item.jid}`" class="reset-link flex-grow-1 d-flex hide-overflow">
 
           <!-- Vertical align Avatar -->
           <div class="align-content-center-inline ml-2" style="width: 36px">
@@ -16,7 +16,7 @@
             </badged-avatar>
           </div>
 
-          <div class="main-container ml-2 pr-2 flex-grow-1 my-auto">
+          <div class="main-container ml-2 pr-2 flex-grow-1 my-auto hide-overflow">
             <!-- Online status icon, username@domain -->
             <span>
               <span :class="selected ? '' : 'grey-700--text'">

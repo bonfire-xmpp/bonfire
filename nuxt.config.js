@@ -1,5 +1,6 @@
 // import colors from 'vuetify/es5/util/colors'
 import colors from './assets/colors.js';
+import { black } from "./assets/colors.js";
 
 export default {
   // Disable server-side rendering: https://go.nuxtjs.dev/ssr-mode
@@ -18,6 +19,7 @@ export default {
     meta: [
       { charset: 'utf-8' },
       { name: 'viewport', content: 'width=device-width, initial-scale=1' },
+      { name: 'theme-color', content: black.darken },
       { hid: 'description', name: 'description', content: '' }
     ],
     link: [
@@ -46,7 +48,10 @@ export default {
   // Plugins to run before rendering page: https://go.nuxtjs.dev/config-plugins
   plugins: [
       '@/plugins/stanza.js',
-      '@/plugins/overlayscrollbars.js',
+      '@/plugins/longpress.js',
+      '@/plugins/vuebottomsheet.js',
+      '@/plugins/simplebar.js',
+      '@/plugins/masonry.js',
   ],
 
   // Auto import components: https://go.nuxtjs.dev/config-components
