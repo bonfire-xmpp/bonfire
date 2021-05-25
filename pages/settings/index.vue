@@ -10,14 +10,15 @@
       </v-btn>
 
       <!--List of submenus-->
-      <simplebar class="simplebar narrow-scrollbar" data-simplebar-auto-hide="false" data-simplebar-force-visible="true">
+      <simplebar class="narrow-scrollbar" data-simplebar-auto-hide="true" data-simplebar-force-visible="false">
         <settings-menu-list class="narrow-menu" :menu-list="menuList" v-model="selectedSubmenu"/>
       </simplebar>
     </div>
 
 
     <!--Right hand side scrollbar-->
-    <simplebar class="h-100 panel rhs-bg rhs">
+    <simplebar data-simplebar-auto-hide="false" data-simplebar-force-visible="true"
+        class="wide-scrollbar h-100 panel rhs-bg rhs">
 
       <!--Show the selected panel on the rhs-->
       <div class="ml-8 pb-16" style="margin-right: 10vw;">
@@ -29,12 +30,12 @@
   </div>
 
   <div v-else class="lhs-bg w-100 h-100">
-    <overlay-scrollbars class="narrow-scrollbar h-100"
-                        :options="{scrollbars: {autoHide: 'leave', autoHideDelay: 0}}">
+    <simplebar class="h-100"
+               data-simplebar-auto-hide="false" data-simplebar-force-visible="true">
 
       <settings-menu-list class="lhs-bg" mobile :menu-list="menuList" v-model="selectedSubmenu"/>
 
-    </overlay-scrollbars>
+    </simplebar>
   </div>
 </template>
 

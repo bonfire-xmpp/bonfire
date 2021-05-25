@@ -24,8 +24,6 @@
     "long-press-event": "^2.4.2",
     "lz4js": "^0.2.0",
     "nuxt": "^2.14.12",
-    "overlayscrollbars": "^1.13.1",
-    "overlayscrollbars-vue": "^0.2.2",
     "simplebar-vue": "^1.6.3",
     "stanza": "^12.15.0",
     "vue-masonry-css": "^1.0.3"

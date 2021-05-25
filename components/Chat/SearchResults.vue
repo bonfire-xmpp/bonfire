@@ -1,11 +1,11 @@
 <template>
-  <div class="search-menu grey-100 os-host-flexbox py-2" :class="{hidden}">
-    <overlay-scrollbars class="pr-1 w-100"
-                        :options="scrollbarSettings">
+  <div class="search-menu grey-100 py-2" :class="{hidden}">
+    <simplebar class="narrow-scrollbar pr-1 w-100"
+               data-simplebar-auto-hide="false" data-simplebar-force-visible="true">
       <div class="d-block w-100 h-100">
         <search-result v-for="match in results" :key="match.id" :result="match" class="mb-2"/>
       </div>
-    </overlay-scrollbars>
+    </simplebar>
   </div>
 </template>
 
@@ -21,13 +21,6 @@ export default {
   },
   data() {
     return {
-      scrollbarSettings: {
-        scrollbars: {
-          autoHide: 'leave',
-          autoHideDelay: 0,
-          clickScrolling: true
-        }
-      },
     }
   }
 }
