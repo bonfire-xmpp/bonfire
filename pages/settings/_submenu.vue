@@ -1,5 +1,5 @@
 <template>
-  <simplebar class="simplebar narrow-scrollbar h-100 component" 
+  <simplebar class="narrow-scrollbar h-100 component"
              data-simplebar-auto-hide="false" data-simplebar-force-visible="true">
     <component class="mx-6" :is="submenu" v-bind="{mobile: true}"/>
   </simplebar>
