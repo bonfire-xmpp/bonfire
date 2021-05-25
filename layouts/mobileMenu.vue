@@ -7,7 +7,7 @@
         </v-btn>
         <span class="header-title white--text">{{title}}</span>
       </header-bar>
-      <v-main>
+      <v-main class="h-100">
         <nuxt/>
       </v-main>
     </div>
