@@ -31,20 +31,24 @@
 .hide-horizontal { overflow-x: hidden !important; }
 
 /** Scrollbar **/
+// Default is 50% transparent and #000
+.simplebar-scrollbar:before {
+  opacity: 1;
+  background-color: map-get($black, "darken");
+}
+
 .narrow-scrollbar .simplebar-track {
   width: 8px !important;
 }
 .wide-scrollbar .simplebar-track {
-  width: .7em !important;
+  width: 8px !important;
+  background: transparentize(map-get($greys, "100"), 0.5) !important;
+  border-radius: .7em;
   & .simplebar-scrollbar:before {
     left: 0 !important;
     right: 0 !important;
     top: 0 !important;
     bottom: 0 !important;
-  }
-  & .simplebar-track {
-    background: transparentize(map-get($greys, "100"), 0.5) !important;
-    border-radius: .7em;
   }
 }
 
