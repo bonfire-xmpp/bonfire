@@ -3,7 +3,8 @@
 
     <!--Fixed height header-->
     <slot class="accordion--header" name="header">
-      <div class="accordion--header px-2 d-flex align-center clickable grey-900--text light-shadow"
+      <div class="accordion--header px-2 d-flex align-center clickable grey-900--text"
+           :class="{'light-shadow': expanded}"
            style="z-index: 2;"
            @click="$emit('expanded')">
         <span>{{ header }}</span>
