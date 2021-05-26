@@ -1,5 +1,6 @@
 <template>
   <div class="header position-relative d-flex align-center"
+       style="z-index: 3"
        :style="styling"
        :class="{ 'lighten-on-hover': lightenOnHover, 'mb-2': padBottom, 'pl-4 pr-4': !mobile }">
     <v-btn v-if="mobile && menu" icon @click="back" class="mx-2">
