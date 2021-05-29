@@ -1,12 +1,30 @@
 <template>
   <div class="sidebar grey-100 d-flex flex-column">
-    <header-bar pad-bottom/>
-    <simplebar class="narrow-scrollbar flex-grow-1">
-      <roster-list
-          :pinned="[]"
-          :items="items"
-          :selected-jid="selectedJid"/>
-    </simplebar>
+    <header-bar/>
+    <div class="d-flex flex-grow-1 flex-column">
+        <accordion-item header="Roster"
+                        :expanded="!expanded"
+                        @expanded="expanded = !expanded">
+            <simplebar class="narrow-scrollbar">
+              <roster-list
+                  :pinned="[]"
+                  :items="items"
+                  :selected-jid="selectedJid"/>
+            </simplebar>
+        </accordion-item>
+
+      <v-divider v-if="expanded"/>
+
+        <accordion-item header="Recent" :expanded="!!expanded"
+                        @expanded="expanded = !expanded">
+          <simplebar class="narrow-scrollbar">
+            <roster-list
+                :pinned="[]"
+                :items="items"
+                :selected-jid="selectedJid"/>
+          </simplebar>
+        </accordion-item>
+    </div>
     <self-bar :jid="$stanza.client.jid"/>
   </div>
 </template>
@@ -14,8 +32,20 @@
 <script>
   import { Store } from "@/store";
   import { mapState, mapGetters } from 'vuex';
+  import AccordionItem from "@/components/Accordion/Item";
 
   export default {
+    components: {AccordionItem},
+    data() {
+      return {
+        expanded: 0
+      }
+    },
+    methods: {
+      toggle() {
+        this.expanded = (this.expanded + 1) % 2
+      }
+    },
     computed: {
       ...mapState({
         roster: Store.$states.roster,

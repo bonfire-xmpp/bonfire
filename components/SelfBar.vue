@@ -17,7 +17,7 @@
 </template>
 
 <script>
-import {mapGetters} from "vuex";
+import {mapGetters, mapState} from "vuex";
 import {Store} from "@/store";
 import {setSelector} from '@linusborg/vue-simple-portal'
 import StatusMenuTooltip from "@/components/StatusMenuTooltip";
@@ -36,8 +36,10 @@ setSelector('#app')
       }
     },
     computed: {
-      ...mapGetters({
-        getPresence: Store.$getters.presence,
+      ...mapState({
+        // TODO: Handle invisibility
+        onlineStatus: Store.$states.onlineStatus,
+        statusMessage: Store.$states.statusMessage,
       }),
 
       localPart() {
@@ -45,17 +47,6 @@ setSelector('#app')
       },
 
       domainPart() { return this.$stanza.getDomain(this.jid); },
-
-      presence() { return this.getPresence(this.jid); },
-
-      available() { return this.presence?.available; },
-      statusMessage() { return this.presence?.status; },
-
-      onlineStatus() {
-        if(!this.available) return 'offline';
-        if(!this.presence?.show && this.available) return 'online';
-        return this.presence?.show;
-      },
     },
     methods: {
       changeStatus(to) {
