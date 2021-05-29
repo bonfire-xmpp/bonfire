@@ -104,7 +104,7 @@ const lz4 = require("lz4js");
 
 export default {
   key: 'chat',
-  components: { MessageGroup, ChatMessageForm, SearchResults, Message, HeadingMessage, BodyMessage },
+  components: { SimpleBar, MessageGroup, ChatMessageForm, SearchResults, Message, HeadingMessage, BodyMessage },
   data () {
     return {
       message: "",

@@ -52,6 +52,7 @@ export default {
       '@/plugins/vuebottomsheet.js',
       '@/plugins/simplebar.js',
       '@/plugins/masonry.js',
+      '@/plugins/emojis.js',
   ],
 
   // Auto import components: https://go.nuxtjs.dev/config-components

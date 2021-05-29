@@ -26,6 +26,8 @@
     "nuxt": "^2.14.12",
     "simplebar-vue": "^1.6.3",
     "stanza": "^12.15.0",
+    "twemoji": "^13.0.2",
+    "twemoji-parser": "^13.0.0",
     "vue-masonry-css": "^1.0.3"
   },
   "devDependencies": {
