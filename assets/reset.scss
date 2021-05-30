@@ -90,4 +90,8 @@ b {
   width: 22px;
   background-repeat: no-repeat !important;
   background-size: 22px 22px !important;
+  &:not(.external) {
+    background-image: url("@/static/emoji/atlas.png");
+    background-size: calc(2752px * (22/64)) calc(2688px * (22/64)) !important;
+  }
 }

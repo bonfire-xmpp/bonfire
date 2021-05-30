@@ -25,6 +25,7 @@ export default {
     link: [
       { rel: 'icon', type: 'image/x-icon', href: '/favicon.ico' },
       { rel: 'preconnect', href: 'https://fonts.gstatic.com' },
+      { rel: 'preload', as: 'image', href: '/emoji/atlas.png' },
     ]
   },
 

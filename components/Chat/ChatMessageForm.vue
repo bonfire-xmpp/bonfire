@@ -28,9 +28,8 @@
 </template>
 
 <script>
-  import EmojiChooser from "@/components/Chat/EmojiChooser";
+  import EmojiChooser from "@/components/Chat/Emoji/EmojiChooser";
   import OverlayMenu from "@/components/OverlayMenu";
-  import twemoji from "twemoji";
 
   export default {
     name: "ChatMessageForm",

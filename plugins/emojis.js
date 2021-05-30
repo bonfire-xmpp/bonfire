@@ -1,34 +1,16 @@
-import { parse } from "twemoji-parser";
-let emojis = require("@/static/gemoji/emoji.json");
+let emojis = require("@/static/emoji/emoji.json");
 
-const toKebab = str => str.replaceAll(/\s+/g, "-");
-const mapKeyed = (arr, keyfield) => 
-  Object.fromEntries(
-    arr.map(({ [keyfield]: key, ...value }) => [key, value]));
-const groupBy = (arr, keyfield) => {
+const groupBy = (arr, key) => {
   const groups = {};
-  for (const { [keyfield]: key, ...value } of arr) {
-    (groups[key] ||= []).push(value);
+  for (const x of arr) {
+    (groups[x[key]] ||= []).push(x);
   }
   return groups;
 };
 
-emojis = emojis.map(({description, emoji, ...rest}) => ({ 
-  name: toKebab(description),
-  description,
-  emoji,
-  url: parse(emoji, { assetType: "png" })[0].url,
-  ...rest
-})).filter(({ name }) => !name.includes(":"));
-const emojisByName = mapKeyed(emojis, "name");
-const emojisByEmoji = mapKeyed(emojis, "emoji");
-
-const emoji = {
-  byName: name => emojisByName[name],
-  byEmoji: emoji => emojisByEmoji[emoji],
-  grouped: groupBy(emojis, "category"),
-};
-
 export default (context, inject) => {
-  inject("emoji", emoji);
+  inject("emoji", {
+    grouped: groupBy(emojis.emojis, "category"),
+    ...emojis
+  });
 };

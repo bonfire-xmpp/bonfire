@@ -3,7 +3,7 @@
     <slot :on="open" :off="close" name="activator" class="activator">
     </slot>
 
-    <div class="container ma-0 pa-0" v-click-outside="close" v-if="active">
+    <div class="container ma-0 pa-0" v-click-outside="close" v-if="active" :style="{ 'display': active ? 'initial' : 'none' }">
       <slot :on="open" :off="close" name="default" class="overlay">
       </slot>
     </div>
@@ -39,11 +39,9 @@ export default {
 
   methods: {
     open () {
-      console.log("open");
       this.active = true;
     },
     close () {
-      console.log("close");
       this.active = false;
     },
   },
