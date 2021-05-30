@@ -5,22 +5,24 @@
       <simplebar 
         data-simplebar-auto-hide="false"
         data-simplebar-force-visible="true"
-        class="emoji-list narrow-scrollbar h-100"
+        class="narrow-scrollbar"
         style="width: 54px !important;"
         ref="tabs">
-        <v-btn :ripple="false" icon v-for="(_, name) in $emoji.grouped" :key="name" @click="scrollTo(name)" class="pa-0 ma-0">
-          {{$emoji.grouped[name][0].emoji}}
-        </v-btn>
+        <div class="emoji-tabs d-flex align-center justify-center flex-column flex-nowrap">
+          <v-btn :ripple="false" icon v-for="(_, name) in $emoji.grouped" :key="name" @click="scrollTo(name)" class="pa-0 ma-0">
+            {{$emoji.grouped[name][0].emoji}}
+          </v-btn>
+        </div>
       </simplebar>
 
       <!-- EMOJI LIST -->
-      <div class="d-flex flex-grow-1 flex-column">
+      <div class="d-flex flex-column" style="width: fit-content;">
         <simplebar
           data-simplebar-auto-hide="false"
           data-simplebar-force-visible="true"
-          class="emoji-list narrow-scrollbar h-100 w-100"
+          class="emoji-list narrow-scrollbar h-100"
           ref="emojiList">
-          <div v-for="(group, groupname) in $emoji.grouped" :key="groupname" :class="'emoji-group-' + groupname">
+          <div v-for="(group, groupname) in $emoji.grouped" :key="groupname" :class="['emoji-group-' + proccessGroupName(groupname), 'emoji-category', 'py-0', 'my-0']">
             <p class="groupheader py-4 my-0">{{groupname}}</p>
             <div class="emoji-group" v-for="(subgroup, i) of splitGroups(group, 8)" :key="i">
               <span icon v-for="emoji of subgroup" 
@@ -48,6 +50,34 @@
 </template>
 
 <style scoped lang="scss">
+$anim-duration: 0.1s;
+
+.emoji-chooser {
+  pointer-events: auto;
+  cursor: default;
+  height: 360px;
+  white-space: normal !important;
+}
+.emoji-list {
+  padding-top: 8px;
+  padding-bottom: 8px;
+  width: 310px;
+}
+.emoji-tabs {
+  padding-top: 4px;
+  padding-bottom: 4px;
+}
+.emoji-category {
+  overflow: visible;
+}
+.emoji-group {
+  position: relative;
+  display: block;
+  white-space: nowrap;
+  overflow: visible;
+  width: fit-content;
+  height: 32px;
+}
 .groupheader {
   display: block;
   position: sticky;
@@ -57,11 +87,6 @@
   background: map-get($greys, "100");
   z-index: 1;
 }
-.emoji-list {
-  padding: 16px;
-  display: flex;
-  flex-flow: column nowrap;
-}
 .emoji-button {
   overflow: visible;
   cursor: pointer;
@@ -69,36 +94,30 @@
   width: 22px !important;
   height: 22px !important;
   transform: scale(1.0);
+  position: relative;
   &:hover::v-deep .emoji {
     transform: scale(1.5);
   }
-}
-.emoji-chooser {
-  pointer-events: auto;
-  cursor: default;
-  width: 420px;
-  height: 360px;
-  overflow: visible !important;
-  white-space: normal !important;
-}
-.emoji-category:not(:first-of-type) {
-  display: none !important;
-}
-.emoji-group {
-  display: block;
-  // flex-flow: row wrap;
-  width: 100%;
-  height: 32px;
+  // the header bar cuts off the selected emoji, so this briefly raises
+  // the z-index to overlap it when the emoji is being hovered
+  transition: $anim-duration;
+  z-index: 0;
+  &:hover {
+    z-index: 1;
+  }
 }
 .emoji-chooser::v-deep .emoji {
   cursor: pointer;
   transform: scale(1.0);
-  transition: 0.2s;
-  // visibility: hidden;
+  transition: $anim-duration;
+  overflow: visible;
   width: 22px !important;
   height: 22px !important;
   margin: 0;
   padding: 0;
+}
+.emoji-chooser::v-deep .simplebar-content {
+  padding: 0 !important;
 }
 </style>
 
@@ -164,11 +183,14 @@ export default {
       }
       return groups;
     },
+    proccessGroupName (groupName) {
+      return groupName.replaceAll(/\s+/g, "-").toLowerCase();
+    },
     scrollTo(groupName) {
       const scrollel = this.$refs.emojiList.scrollElement;
       scrollel.scrollTo(
         0,
-        scrollel.getElementsByClassName("emoji-group-" + groupName)[0].offsetTop
+        scrollel.getElementsByClassName("emoji-group-" + this.proccessGroupName(groupName))[0].offsetTop
       );
     },
     insertEmoji(emoji) {
