@@ -1,3 +1,4 @@
+import { parse } from "twemoji-parser";
 let emojis = require("@/static/gemoji/emoji.json");
 
 const toKebab = str => str.replaceAll(/\s+/g, "-");
@@ -12,17 +13,19 @@ const groupBy = (arr, keyfield) => {
   return groups;
 };
 
-emojis = emojis.map(({description, ...rest}) => ({ 
+emojis = emojis.map(({description, emoji, ...rest}) => ({ 
   name: toKebab(description),
   description,
+  emoji,
+  url: parse(emoji, { assetType: "png" })[0].url,
   ...rest
 })).filter(({ name }) => !name.includes(":"));
 const emojisByName = mapKeyed(emojis, "name");
+const emojisByEmoji = mapKeyed(emojis, "emoji");
 
 const emoji = {
-  byName(name) {
-    return emojisByName[name];
-  },
+  byName: name => emojisByName[name],
+  byEmoji: emoji => emojisByEmoji[emoji],
   grouped: groupBy(emojis, "category"),
 };
 

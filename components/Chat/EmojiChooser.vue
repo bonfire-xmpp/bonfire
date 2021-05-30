@@ -9,8 +9,8 @@
         style="width: 54px !important;"
         ref="tabs">
         <div class="emoji-tabs d-flex align-center justify-center flex-column flex-nowrap">
-          <v-btn :ripple="false" icon v-for="(_, name) in $emoji.grouped" :key="name" @click="scrollTo(name)" class="pa-0 ma-0">
-            {{$emoji.grouped[name][0].emoji}}
+          <v-btn :ripple="false" icon v-for="(group, name) in $emoji.grouped" :key="name" @click="scrollTo(name)" class="pa-0 ma-0">
+            <img height="22" :src="group[0].url">
           </v-btn>
         </div>
       </simplebar>
@@ -32,17 +32,15 @@
                 @mouseenter="emojihover"
                 @mouseleave="emojileave"
                 @click="insertEmoji(emoji.emoji)">
-                <div class="emoji" :data-src="getEmojiUrl(emoji.emoji)"></div>
+                <div class="emoji" :data-src="emoji.url"></div>
               </span>
             </div>
           </div>
         </simplebar>
         <!-- BOTTOM BAR -->
-        <div style="height: 54px; position: relative;" ref="selection">
-          <div style="display: block; position: absolute; text-transform: capitalize; bottom: 0;" class="d-flex align-center flex-row">
-            <img height="22" class="d-inline-block mr-4" style="margin-bottom: 11px;" :src="selectedEmoji">
-            <p class="d-inline-block ma-0" style="height: 22px;">{{selectedEmojiLabel}}</p>
-          </div>
+        <div style="height: 54px; text-transform: capitalize;" ref="selection" class="d-flex flex-row flex-nowrap align-center">
+          <img height="22" class="mr-4" :src="selectedEmoji">
+          <p class="d-inline ma-0 mt-2">{{selectedEmojiLabel}}</p>
         </div>
       </div>
     </div>
@@ -75,8 +73,9 @@ $anim-duration: 0.1s;
   display: block;
   white-space: nowrap;
   overflow: visible;
-  width: fit-content;
+  width: 100%;
   height: 32px;
+  visibility: hidden;
 }
 .groupheader {
   display: block;
@@ -98,13 +97,6 @@ $anim-duration: 0.1s;
   &:hover::v-deep .emoji {
     transform: scale(1.5);
   }
-  // the header bar cuts off the selected emoji, so this briefly raises
-  // the z-index to overlap it when the emoji is being hovered
-  transition: $anim-duration;
-  z-index: 0;
-  &:hover {
-    z-index: 1;
-  }
 }
 .emoji-chooser::v-deep .emoji {
   cursor: pointer;
@@ -123,9 +115,6 @@ $anim-duration: 0.1s;
 
 <script>
 import twemoji from "twemoji";
-import { parse } from "twemoji-parser";
-
-const clamp = (x, l, u) => Math.max(Math.min(x, u), l);
 
 export default {
   name: "EmojiChooser",
@@ -150,30 +139,29 @@ export default {
     },
     hideOffscreen () {
       const scrollel = this.$refs.emojiList.scrollElement;
-      const scrolltop = scrollel.scrollTop;
-      const scrollbottom = scrolltop + scrollel.clientHeight;
-      const queue = [];
-      const offset = 400;
-      for (const el of scrollel.getElementsByClassName("emoji-group")) {
-        const eltop = el.offsetTop;
-        const elbottom = eltop + el.clientHeight;
-        const top = clamp(eltop, scrolltop - offset, scrollbottom + offset);
-        const bottom = clamp(elbottom, scrolltop - offset, scrollbottom + offset);
-        if (top == bottom) {
-          el.style.visibility = "hidden";
-        } else {
-          queue.push(el);
-        }
+      const offset = 300;
+      const scrolltop = scrollel.scrollTop - offset;
+      const scrollbottom = scrollel.scrollTop + scrollel.clientHeight + offset;
+      const visqueue = [], invisqueue = [];
+      for (const el of scrollel.querySelectorAll(".emoji-group")) {
+        // if bottom edge is above viewport or top edge is below
+        const hidden = el.offsetTop + el.clientHeight <= scrolltop || el.offsetTop >= scrollbottom;
+        (hidden ? invisqueue : visqueue).push(el);
       }
-      for (const el of queue) {
-        for (const img of el.getElementsByClassName("emoji")) {
+      for (const el of visqueue) {
+        for (const img of el.querySelectorAll(".emoji")) {
           if (!img.style.background) img.style.background = "url('" + img.getAttribute("data-src") + "')";
         }
-        el.style.visibility = "visible";
+        el.style.visibility = "inherit";
       }
+      this.$nextTick(() => {
+        for (const el of invisqueue) {
+          el.style.visibility = "hidden";
+        }
+      });
     },
     getEmojiUrl (emoji) {
-      return parse(emoji, { assetType: "png" })[0].url;
+      return this.$emoji.byEmoji(emoji).url;
     },
     splitGroups (arr, gsize) {
       const groups = [];
@@ -205,7 +193,12 @@ export default {
     twemoji.parse(this.$refs.tabs.$el);
     this.group = "Smileys & Emotion";
     const scrollel = this.$refs.emojiList.scrollElement;
-    scrollel.onscroll = this.hideOffscreen;
+
+    let timeout = null;
+    scrollel.onscroll = () => {
+      if (timeout) clearTimeout(timeout);
+      timeout = setTimeout(this.hideOffscreen, 5);
+    };
     setTimeout(() => this.hideOffscreen());
   },
 }
