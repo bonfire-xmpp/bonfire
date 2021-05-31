@@ -20,7 +20,9 @@ jobs:
         if: success()
         uses: crazy-max/ghaction-github-pages@v2
         with:
-          target_branch: live
+          target_branch: master
+          repo: bonfire-xmpp.github.io
           build_dir: dist
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_PAT: ${{ secrets.BUILD_REPO_PAT }}
