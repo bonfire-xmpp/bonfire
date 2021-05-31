@@ -11,14 +11,20 @@
                 ref="textArea"
                 @keydown="keypress">
       <template #append>
-        <overlay-menu class="ma-0">
+        <overlay-menu class="ma-0" v-if="!$device.isMobileOrTablet">
           <template #activator="{ on }">
             <v-icon class="chat-form-button" @click="on">mdi-emoticon</v-icon>
           </template>
           <template #default="{ off }">
-            <emoji-chooser @insert-emoji="insertEmoji($event); off()"></emoji-chooser>
+            <emoji-chooser style="height: 380px !important;" @insert-emoji="insertEmoji($event); off()"></emoji-chooser>
           </template>
         </overlay-menu>
+        <span v-else>
+          <v-icon class="chat-form-button" @click="$refs.emojiDialog.open()">mdi-emoticon</v-icon>
+          <bottom-sheet ref="emojiDialog">
+            <emoji-chooser @insert-emoji="insertEmoji($event); $refs.emojiDialog.close()"></emoji-chooser>
+          </bottom-sheet>
+        </span>
       </template>
     </v-textarea>
     <div class="gutter white--text d-flex flex-row align-center">
@@ -162,5 +168,17 @@
       // margin-top: 3px;
       // margin-bottom: 3px;
     }
+  }
+
+  ::v-deep .bottom-sheet__card.fx-default {
+    background: map-get($greys, "100") !important;
+    margin-left: 0;
+    margin-right: 0;
+  }
+
+  ::v-deep .bottom-sheet__content > .v-list:first-child {
+    margin-bottom: 0 !important;
+    margin-top: 0 !important;
+    height: 100% !important;
   }
 </style>

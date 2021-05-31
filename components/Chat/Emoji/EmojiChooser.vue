@@ -1,6 +1,6 @@
 <template>
-  <div class="emoji-chooser grey-100 d-block elevation-3">
-    <div class="d-flex flex-row flex-nowrap h-100" style="overflow: hidden;">
+  <div class="emoji-chooser d-block">
+    <div class="d-flex flex-row flex-nowrap h-100 justify-space-between" style="overflow: hidden;">
       <!-- TABS -->
       <simplebar 
         data-simplebar-auto-hide="false"
@@ -9,26 +9,27 @@
         style="width: 54px !important;"
         ref="tabs">
         <div class="emoji-tabs d-flex align-center justify-center flex-column flex-nowrap">
-          <v-btn :ripple="false" icon v-for="(group, name) in $emoji.grouped" :key="name" @click="scrollTo(name)" :class="['emoji-tab-' + proccessGroupName(name), 'pa-0', 'ma-0', 'emoji-tab']">
-            <div class="emoji" :style="{ 'background-position': getEmojiOffset(group[0]) }"/>
-          </v-btn>
+          <div v-for="(group, name) in $emoji.grouped" :key="name" 
+                 @click="scrollTo(name)" :class="['emoji-tab-' + processGroupName(name), 'pa-0', 'ma-0', 'my-2', 'emoji-tab', 'emoji']"
+                 :style="{ 'background-position': getEmojiOffset(group[0]) }"/>
         </div>
       </simplebar>
 
       <!-- EMOJI LIST -->
-      <div class="d-flex flex-column" style="width: fit-content;">
+      <div class="d-flex flex-column flex-grow-1 align-center">
         <simplebar
           data-simplebar-auto-hide="false"
           data-simplebar-force-visible="true"
           class="emoji-list narrow-scrollbar h-100"
           ref="emojiList">
-          <emoji-category v-for="(group, groupname) in $emoji.grouped" :key="groupname"
+          <emoji-category v-for="(group, groupname) in $emoji.grouped" :key="groupname" :shown="shown[groupname]"
                           :group="group" :groupname="groupname"
                           @emojihover="emojihover" @emojileave="emojileave" @insert-emoji="insertEmoji"/>
         </simplebar>
         <!-- BOTTOM BAR -->
-        <div style="height: 54px; text-transform: capitalize;" ref="selection" class="d-flex flex-row flex-nowrap align-center">
-          <div v-if="selectedEmoji" height="22" class="mr-4 emoji" :style="{ 'background-position': getEmojiOffset(selectedEmoji) }"></div>
+        <div style="text-transform: capitalize;" ref="selection" class="emoji-bottombar d-flex flex-row flex-nowrap align-center">
+          <div v-if="selectedEmoji" class="mr-4 emoji" :style="{ 'background-position': getEmojiOffset(selectedEmoji) }"></div>
+          <div v-else style="height: 22px"/>
           <p class="d-inline ma-0 mt-2">{{selectedEmojiLabel}}</p>
         </div>
       </div>
@@ -38,24 +39,43 @@
 
 <style scoped lang="scss">
 $anim-duration: 0.2s;
+$background: map-get($greys, "100");
 
 .emoji-chooser {
   pointer-events: auto;
   cursor: default;
-  height: 360px;
+  // height: 360px;
+  max-width: 500px;
   white-space: normal !important;
+  background: $background;
+  height: 100%;
+  width: 100%;
+  margin-left: auto;
+  margin-right: auto;
 }
 .emoji-list {
   padding-top: 8px;
   padding-bottom: 8px;
-  width: 310px;
+  width: 280px;
+  height: auto !important;
 }
 .emoji-tabs {
   padding-top: 4px;
   padding-bottom: 4px;
 }
 .emoji-tab {
+  flex-grow: 0;
+  flex-shrink: 1;
+  width: 0;
   transition: $anim-duration * 2;
+}
+.emoji-bottombar {
+  background: $background;
+  height: 48px;
+  flex-shrink: 0;
+  width: 100%;
+  margin-left: auto;
+  margin-right: auto;
 }
 .emoji-chooser::v-deep .emoji {
   cursor: pointer;
@@ -75,6 +95,7 @@ $anim-duration: 0.2s;
 <script>
 import EmojiCategory from "@/components/Chat/Emoji/EmojiCategory";
 import * as Common from "./common";
+import Vue from "vue";
 
 export default {
   name: "EmojiChooser",
@@ -84,6 +105,8 @@ export default {
     return {
       selectedEmoji: "",
       selectedEmojiLabel: "",
+
+      shown: {},
     };
   },
 
@@ -100,7 +123,7 @@ export default {
     async updateActiveTab () {
       const scrollel = this.$refs.emojiList.scrollElement;
       for (const el of scrollel.querySelectorAll(".emoji-category")) {
-        const hdr = this.$refs.tabs.$el.querySelector(".emoji-tab-" + el.getAttribute("data-groupname"));
+        const hdr = this.$refs.tabs.$el.querySelector(".emoji-tab-" + this.processGroupName(el.getAttribute("data-groupname")));
         if (el.offsetTop <= scrollel.scrollTop && el.offsetTop + el.clientHeight > scrollel.scrollTop) {
           hdr.style.transform = "scale(1.5)";
         } else {
@@ -121,26 +144,20 @@ export default {
 
       for (const el of scrollel.querySelectorAll(".emoji-category")) {
         // if bottom edge is above viewport or top edge is below
-        const hidden = el.offsetTop + el.clientHeight <= scrolltop || el.offsetTop >= scrollbottom;
+        const hidden = el.offsetTop + el.clientHeight < scrolltop || el.offsetTop > scrollbottom;
         (hidden ? invisqueue : visqueue).push(el);
       }
       for (const el of visqueue) {
-        el.style.visibility = "visible";
-        if (!el.hasAttribute("data-marked")) {
-          for (const emoji of el.querySelectorAll(".emoji")) {
-            emoji.style.backgroundPosition ||= emoji.getAttribute("data-bgpos");
-          }
-          el.setAttribute("data-marked", "");
-        }
+        Vue.set(this.shown, el.getAttribute("data-groupname"), true);
       }
       for (const el of invisqueue) {
-        el.style.visibility = "hidden";
+        Vue.set(this.shown, el.getAttribute("data-groupname"), false);
       }
     },
     scrollTo(groupName) {
       const scrollel = this.$refs.emojiList.scrollElement;
       let scrollpos = scrollel.scrollTop;
-      let scrolltgt = scrollel.getElementsByClassName("emoji-group-" + this.proccessGroupName(groupName))[0].offsetTop;
+      let scrolltgt = scrollel.getElementsByClassName("emoji-group-" + this.processGroupName(groupName))[0].offsetTop;
       const duration = Math.max(0, 800 - 100 / Math.abs(scrolltgt - scrollpos));
       function easeInOutCubic(x) {
         return x < 0.5 ? 4 * x * x * x : 1 - Math.pow(-2 * x + 2, 3) / 2;
@@ -158,7 +175,7 @@ export default {
       /*
       scrollel.scrollTo(
         0,
-        scrollel.getElementsByClassName("emoji-group-" + this.proccessGroupName(groupName))[0].offsetTop
+        scrollel.getElementsByClassName("emoji-group-" + this.processGroupName(groupName))[0].offsetTop
       );
       */
     },
@@ -172,10 +189,10 @@ export default {
   mounted () {
     const scrollel = this.$refs.emojiList.scrollElement;
     let timeout = null;
-    scrollel.onscroll = () => {
+    scrollel.addEventListener("scroll", () => {
       if (timeout) clearTimeout(timeout);
       timeout = setTimeout(() => this.scrollUpdate(), 5);
-    };
+    }, { passive: true });
     this.scrollUpdate();
   },
 }
