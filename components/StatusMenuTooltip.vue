@@ -26,6 +26,12 @@
           </v-list-item-action>
         </v-list-item>
 
+        <v-list-item @click.stop="" :ripple="false">
+          <v-icon color="white" size="1.33em" class="mr-2">mdi-reorder-horizontal</v-icon>
+          <v-list-item-title class="white--text" style="font-size: 1em;">Resource Priority: </v-list-item-title>
+          <number-input :max="127" :min="-127" v-model="resourcePriority"/>
+        </v-list-item>
+
       </v-list>
 
     </v-menu>
@@ -43,6 +49,11 @@
             </v-btn>
           </v-list-item-action>
         </v-list-item>
+        <v-list-item @click.stop="" :ripple="false">
+          <v-icon color="white" size="1.33em" class="mr-2">mdi-reorder-horizontal</v-icon>
+          <v-list-item-title class="white--text" style="font-size: 1em;">Resource Priority: </v-list-item-title>
+          <number-input class="number-input" :max="127" :min="-127"/>
+        </v-list-item>
       </bottom-sheet>
     </portal>
 
@@ -53,8 +64,9 @@
 <script>
 import CustomStatusModal from "@/components/CustomStatusModal"
 import {setSelector, Portal} from '@linusborg/vue-simple-portal'
-import {mapState} from "vuex";
+import {mapMutations, mapState} from "vuex";
 import {Store} from "@/store";
+import {SettingsStore} from "@/store/settings";
 setSelector('#app');
 
 export default {
@@ -74,6 +86,14 @@ export default {
       currentStatus: Store.$states.statusMessage,
     }),
 
+    ...mapState(SettingsStore.namespace, {
+      resourcePriorityV: SettingsStore.$states.resourcePriority,
+    }),
+    resourcePriority: {
+      get() { return this.resourcePriorityV; },
+      set(v) { this.setResourcePriority(v); },
+    },
+
     statusMenu() {
       return [
         {icon: 'mdi-circle', title: 'Online', color: 'online', handler: () => this.changeStatus('online')},
@@ -86,6 +106,10 @@ export default {
     },
   },
   methods: {
+    ...mapMutations(SettingsStore.namespace, {
+      setResourcePriority: 'SET_' + SettingsStore.$states.resourcePriority
+    }),
+
     changeStatus(to) {
       if(to === 'invisible') return this.$stanza.goInvisible();
       this.$stanza.setOnlineStatus(to);
@@ -106,4 +130,7 @@ export default {
 </script>
 
 <style scoped lang="scss">
+.number-input::v-deep * {
+  border-color: map-get($greys, "700") !important;
+}
 </style>

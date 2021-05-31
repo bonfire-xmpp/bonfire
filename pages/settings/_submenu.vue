@@ -6,6 +6,7 @@
 </template>
 
 <script>
+  import Profile from "@/components/Settings/Panels/Profile";
   import About from "@/components/Settings/Panels/About";
   import Privacy from "@/components/Settings/Panels/Privacy";
   import XEPs from "@/components/Settings/Panels/XEPs";
@@ -17,7 +18,7 @@
   export default {
     name: "submenu",
     layout: "mobileMenu",
-    components: { About, Privacy, XEPs },
+    components: { Profile, About, Privacy, XEPs },
     computed: {
       submenu() {
         return this.$route.params.submenu;

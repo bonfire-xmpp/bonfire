@@ -4,6 +4,7 @@ import { XEPStore } from "@/store/xeps";
 import { Store } from "@/store";
 import {loadFromSecure} from "assets/storage";
 import features from "stanza/plugins/features";
+import {SettingsStore} from "@/store/settings";
 
 const client = XMPP.createClient(undefined);
 
@@ -154,6 +155,11 @@ const setupListeners = ctx => {
         }
         ctx.store.commit(Store.$mutations.setRoster, {...roster, items});
     });
+
+        console.log(ctx.store.watch);
+    ctx.store.watch(s => {
+        return s[SettingsStore.namespace][SettingsStore.$states.resourcePriority]
+    }, priority => client.sendPresence({priority}), {immediate: true})
 
     /**
      * INCOMING PRESENCE/MOOD DATA
