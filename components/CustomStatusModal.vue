@@ -8,7 +8,6 @@
           <v-icon color="grey-600">mdi-close</v-icon>
         </v-btn>
       </v-card-title>
-      <!-- <v-divider class="mb-4"/> -->
 
       <v-card-text class="flex-grow-1 black-lighten">
         <v-form @submit.prevent="setStatus">
