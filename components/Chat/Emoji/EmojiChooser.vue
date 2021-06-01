@@ -27,10 +27,10 @@
                           @emojihover="emojihover" @emojileave="emojileave" @insert-emoji="insertEmoji"/>
         </simplebar>
         <!-- BOTTOM BAR -->
-        <div style="text-transform: capitalize;" ref="selection" class="emoji-bottombar d-flex flex-row flex-nowrap align-center">
+        <div ref="selection" class="emoji-bottombar d-flex flex-row flex-nowrap align-center">
           <div v-if="selectedEmoji" class="mr-4 emoji" :style="{ 'background-position': getEmojiOffset(selectedEmoji) }"></div>
           <div v-else style="height: 22px"/>
-          <p class="d-inline ma-0 mt-2">{{selectedEmojiLabel}}</p>
+          <p class="subtitle-2 d-inline ma-0 mt-2">{{selectedEmojiLabel}}</p>
         </div>
       </div>
     </div>
@@ -113,7 +113,7 @@ export default {
   methods: {
     emojihover (emoji) {
       this.selectedEmoji = emoji;
-      this.selectedEmojiLabel = emoji.description;
+      this.selectedEmojiLabel = emoji.aliases.map(x => ":" + x + ":").join(" ");
     },
     emojileave() {
       this.selectedEmoji = "";
@@ -140,19 +140,18 @@ export default {
       const offset = 200;
       const scrolltop = scrollel.scrollTop - offset;
       const scrollbottom = scrollel.scrollTop + scrollel.clientHeight + offset;
-      const visqueue = [], invisqueue = [];
+      const queue = [];
 
       for (const el of scrollel.querySelectorAll(".emoji-category")) {
         // if bottom edge is above viewport or top edge is below
         const hidden = el.offsetTop + el.clientHeight < scrolltop || el.offsetTop > scrollbottom;
-        (hidden ? invisqueue : visqueue).push(el);
+        queue.push([el, !hidden]);
       }
-      for (const el of visqueue) {
-        Vue.set(this.shown, el.getAttribute("data-groupname"), true);
+      const newshown = { ...this.shown };
+      for (const [el, shown] of queue) {
+        newshown[el.getAttribute("data-groupname")] = shown;
       }
-      for (const el of invisqueue) {
-        Vue.set(this.shown, el.getAttribute("data-groupname"), false);
-      }
+      this.shown = newshown;
     },
     scrollTo(groupName) {
       const scrollel = this.$refs.emojiList.scrollElement;
@@ -191,7 +190,7 @@ export default {
     let timeout = null;
     scrollel.addEventListener("scroll", () => {
       if (timeout) clearTimeout(timeout);
-      timeout = setTimeout(() => this.scrollUpdate(), 5);
+      timeout = setTimeout(() => this.scrollUpdate(), 10);
     }, { passive: true });
     this.scrollUpdate();
   },

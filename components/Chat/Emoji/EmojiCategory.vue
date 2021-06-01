@@ -1,8 +1,8 @@
 <template>
   <div :class="['emoji-group-' + processGroupName(groupname), 'emoji-category', 'py-0', 'my-0']" :data-groupname="groupname">
-    <p class="groupheader py-4 my-0">{{groupname}}</p>
+    <p class="emoji-category-header py-4 my-0">{{groupname}}</p>
     <div v-if="shown">
-      <div class="emoji-group" v-for="(subgroup, i) of splitGroups(group, 8)" :key="i">
+      <div class="emoji-group" v-for="(subgroup, i) of splitGroups(group, emojisPerRow)" :key="i">
         <span icon v-for="emoji of subgroup" 
           :key="emoji.emoji" 
           :data-emoji="emoji.name"
@@ -33,14 +33,19 @@
   width: 0;
   height: 32px;
 }
-.groupheader {
+.emoji-category-header {
   display: block;
   position: sticky;
   left: 0;
   top: 0;
   width: 100%;
-  background: map-get($greys, "100");
+  background: linear-gradient(to top, transparent 15px, map-get($greys, "100") 15px);
+  padding-bottom: 20px !important;
   z-index: 1;
+  pointer-events: none;
+  & + * > .emoji-group:first-child {
+    margin-top: -10px !important;
+  }
 }
 .emoji-button {
   overflow: visible;
@@ -76,11 +81,16 @@ export default {
       required: false,
       default: false,
     },
+    emojisPerRow: {
+      type: Number,
+      required: false,
+      default: 8,
+    }
   },
 
   computed: {
     categoryHeight () {
-      return Math.ceil(this.group.length / 8) * (22 + 6*2) + "px";
+      return (Math.ceil(this.group.length / this.emojisPerRow) * 32 - 10) + "px";
     },
   },
 
