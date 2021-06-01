@@ -155,10 +155,19 @@ const setupListeners = ctx => {
         ctx.store.commit(Store.$mutations.setRoster, {...roster, items});
     });
 
-        console.log(ctx.store.watch);
+    // Watch changes to presence data, and re-send presence when needed
     ctx.store.watch(s => {
-        return s[SettingsStore.namespace][SettingsStore.$states.resourcePriority]
-    }, priority => client.sendPresence({priority}), {immediate: true})
+        return {
+            priority: s[SettingsStore.namespace][SettingsStore.$states.resourcePriority],
+            show: s[Store.$states.onlineStatus],
+            status: s[Store.$states.statusMessage],
+        }
+    }, ({priority, show, status}) => {
+        // Update config with priority
+        client.updateConfig({priority});
+        // And send out a presence with the new priority
+        client.sendPresence({priority, show, status});
+    }, {immediate: true})
 
     /**
      * INCOMING PRESENCE/MOOD DATA
