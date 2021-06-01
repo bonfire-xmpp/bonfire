@@ -13,7 +13,7 @@
 </template>
 
 <script>
-  import { JID } from 'stanza';
+  import { JID } from '@bonfire-xmpp/verse';
 
   export default {
     name: "HeadingMessage",

@@ -1,6 +1,6 @@
 import { SettingsStore } from "@/store/settings";
 
-import { Utils } from 'stanza';
+import { Utils } from '@bonfire-xmpp/verse';
 
 import * as storage from '@/assets/storage'
 import {loadFromSecure, loadFromSession} from '@/assets/storage'

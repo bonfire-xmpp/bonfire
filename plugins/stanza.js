@@ -1,9 +1,8 @@
-import * as XMPP from 'stanza';
+import * as XMPP from '@bonfire-xmpp/verse';
 import { MessageStore } from "@/store/messages";
 import { XEPStore } from "@/store/xeps";
 import { Store } from "@/store";
 import {loadFromSecure} from "assets/storage";
-import features from "stanza/plugins/features";
 import {SettingsStore} from "@/store/settings";
 
 const client = XMPP.createClient(undefined);

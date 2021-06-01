@@ -55,7 +55,7 @@
 </template>
 
 <script>
-  import { JID } from 'stanza';
+  import { JID } from '@bonfire-xmpp/verse';
 
   import { Store } from "@/store";
   import { MessageStore } from '@/store/messages';
