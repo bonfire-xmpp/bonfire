@@ -2,24 +2,25 @@
   <v-dialog class="rounded-xl" :value="value" @input="$emit('input', $event)" width="500" :fullscreen="$device.isMobileOrTablet">
     <v-card outlined class="white--text rounded-lg unselectable d-flex flex-column">
 
-      <v-card-title class="text-center font-weight-black d-block black">
+      <v-card-title class="text-center font-weight-black d-block black-lighten">
         <span>Set custom status</span>
         <v-btn icon class="float-right mt-n1" @click.stop="$emit('input', false)">
           <v-icon color="grey-600">mdi-close</v-icon>
         </v-btn>
       </v-card-title>
-      <v-divider class="mb-4"/>
+      <!-- <v-divider class="mb-4"/> -->
 
-      <v-card-text class="flex-grow-1">
+      <v-card-text class="flex-grow-1 black-lighten">
         <v-form @submit.prevent="setStatus">
           <div class="field-desc pb-1 font-weight-medium grey-600--text">Set your custom message</div>
-          <v-text-field autofocus clearable outlined dense placeholder="Listening to music!" single-line solo v-model="status"/>
+          <v-text-field autofocus clearable outlined dense placeholder="Listening to music!" single-line v-model="status"/>
         </v-form>
       </v-card-text>
 
       <v-divider/>
-      <v-card-actions class="pb-3 black flex-row-reverse">
-        <v-btn :ripple="false" @click="setStatus" small depressed color="primary">Set</v-btn>
+      <v-card-actions class="pb-3 flex-row-reverse black action-buttons">
+        <v-btn :ripple="false" @click="$emit('input', false)" small depressed color="primary">Save</v-btn>
+        <v-btn :ripple="false" @click="setStatus" small depressed color="black">Cancel</v-btn>
       </v-card-actions>
     </v-card>
   </v-dialog>
@@ -74,5 +75,9 @@ export default {
   min-height: 0 !important;
   padding: 0 !important;
   margin: 0 !important;
+}
+
+.action-buttons > * {
+  margin-left: 12px;
 }
 </style>
