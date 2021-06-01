@@ -172,8 +172,10 @@ const setupListeners = ctx => {
         ctx.store.commit(Store.$mutations.updatePresence, {available: false, ...presence});
     });
 
-    client.on('avatar', event => {
-        ctx.store.dispatch(Store.$actions.downloadAvatar, {jid: event.jid});
+    client.on('avatar', async event => {
+        // TODO: look more into the relevant XEPs for avatars
+        if(event.avatars[0].id !== await ctx.store.dispatch(Store.$actions.getAvatarId, event.jid))
+            ctx.store.dispatch(Store.$actions.downloadAvatar, {jid: event.jid, id: event.avatars[0].id});
     });
 
 

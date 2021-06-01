@@ -52,6 +52,7 @@ const $states = {
     roster: 'ROSTER',
 
     avatars: 'AVATARS',
+    avatarIds: 'AVATAR_IDS',
 
     resources: 'RESOURCES',
     presences: 'PRESENCES',
@@ -72,8 +73,10 @@ const $getters = {
 const $actions = {
     login: 'LOGIN',
     tryRestoreSession: 'TRY_RESTORE_SESSION',
+
     downloadAvatar: 'DOWNLOAD_AVATAR',
     getAvatar: 'GET_AVATAR',
+    getAvatarId: 'GET_AVATAR_ID',
 
     updateOnlineStatus: 'UPDATE_ONLINE_STATUS',
     updateStatusMessage: 'UPDATE_STATUS_MESSAGE',
@@ -100,6 +103,7 @@ const $mutations = {
     setPresence: 'SET_PRESENCE',
 
     updateAvatar: 'UPDATE_AVATAR',
+    updateAvatarId: 'UPDATE_AVATAR_ID',
 
     setStreamManagement: 'SET_STREAM_MANAGEMENT',
     setAccount: 'SET_ACCOUNT',
@@ -131,7 +135,10 @@ export const state = () => ({
     [$states.account]: null,
     [$states.activeChat]: null,
     [$states.roster]: {},
+
     [$states.avatars]: {},
+    [$states.avatarIds]: {},
+
     [$states.resources]: {},
     [$states.presences]: {},
 
@@ -253,10 +260,19 @@ export const actions = {
         }))]);
     },
 
-    async [$actions.downloadAvatar]({ commit, state }, { jid }) {
+    /**
+     * Downloads the avatar for a given JID, optionally updating the avatar ID.
+     * Downloaded avatars are stored as Blobs, with data URLs being saved in the store.
+     * Avatar IDs are saved in the store (and LocalStorage) so as to improve
+     * @param jid Target user JID
+     * @param id Avatar ID. Optional
+     * @returns {Promise<String>} Data URL to downloaded avatar
+     */
+    async [$actions.downloadAvatar]({ commit, state }, { jid, id }) {
         const bare = this.$stanza.toBare(jid);
         const download = async () => {
             try {
+                // TODO: get avatar ID here, too
                 const avatar = await this.$stanza.client.getAvatar(bare);
                 commit($mutations.updateAvatar, {jid, avatar: avatar.content.data})
             } catch (e) {
@@ -279,12 +295,22 @@ export const actions = {
         downloadAvatarJidThrottleMap[bare] = promise;
 
         // Remove it from the map on completion
-        promise.then(() => delete downloadAvatarJidThrottleMap[bare]);
+        promise.then(() => {
+            delete downloadAvatarJidThrottleMap[bare];
+
+            // Save the avatar ID
+            commit($mutations.updateAvatarId, {jid, id});
+        });
 
         // And return it to the user
         return promise;
     },
 
+    /**
+     * Gets the avatar for `jid`, downloading it if necessary.
+     * @param jid Target user JID
+     * @returns {Promise<String | null>} The data URL to the avatar, or null if none.
+     */
     async [$actions.getAvatar]({ dispatch, commit, state }, { jid }) {
         const bare = this.$stanza.toBare(jid);
 
@@ -309,6 +335,27 @@ export const actions = {
 
         // Downloaded
         return url;
+    },
+
+    /**
+     * Grabs the latest stored avatar ID for the target JID.
+     * @param jid Target user JID
+     * @returns {String | undefined} The avatar ID, if any.
+     */
+    [$actions.getAvatarId] ({ commit, state }, jid) {
+        const bare = this.$stanza.toBare(jid);
+        let id = state[$states.avatarIds][bare]
+
+        // We don't have one in the store, try restoring from permanent storage
+        if(!id) {
+            id = storage.permanent.getItem('avatarId-' + bare);
+            if(id) {
+                // Save it to store
+                commit($mutations.updateAvatarId, {jid: bare, id});
+            }
+        }
+
+        return id;
     },
 
     async [$actions.updateOnlineStatus]({ commit, state, dispatch }, {status: show}) {
@@ -460,6 +507,13 @@ export const mutations = {
         }
 
         Vue.set(state[$states.avatars], bare, url);
+    },
+
+    [$mutations.updateAvatarId] ( state, {jid, id} ) {
+        const bare = this.$stanza.toBare(jid);
+
+        Vue.set(state[$states.avatarIds], bare, id);
+        storage.permanent.setItem('avatarId-' + bare, id);
     },
 
     [$mutations.setPresence] ( state, data ) {
