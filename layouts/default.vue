@@ -119,6 +119,11 @@ export default {
       return this.$store.state[Store.$states.stanzaInitialized];
     },
   },
+  watch: {
+    $route() {
+      this.scrollToMain();
+    }
+  },
 }
 </script>
 
