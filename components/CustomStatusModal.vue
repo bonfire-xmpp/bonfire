@@ -18,8 +18,8 @@
 
       <v-divider/>
       <v-card-actions class="pb-3 flex-row-reverse black action-buttons">
-        <v-btn :ripple="false" @click="$emit('input', false)" small depressed color="primary">Save</v-btn>
-        <v-btn :ripple="false" @click="setStatus" small depressed color="black">Cancel</v-btn>
+        <v-btn :ripple="false" @click="setStatus" small depressed color="primary">Save</v-btn>
+        <v-btn :ripple="false" @click="$emit('input', false)" small depressed color="black">Cancel</v-btn>
       </v-card-actions>
     </v-card>
   </v-dialog>
