@@ -101,8 +101,8 @@ const setupListeners = ctx => {
     async function bind() {
         const [show, status] = loadFromSecure(Store.$states.onlineStatus, Store.$states.statusMessage);
         client.sendPresence({show, status});
-        ctx.store.commit(Store.$mutations.setOnlineStatus, show);
-        ctx.store.commit(Store.$mutations.setStatusMessage, status);
+        show && ctx.store.commit(Store.$mutations.setOnlineStatus, show);
+        status && ctx.store.commit(Store.$mutations.setStatusMessage, status);
 
         await ctx.store.dispatch(`${XEPStore.namespace}/${XEPStore.$actions.updateXepsWithDisco}`);
 
