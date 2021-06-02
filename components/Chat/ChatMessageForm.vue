@@ -1,15 +1,12 @@
 <template>
   <form @submit.prevent="emitMessage"
         class="px-4 message-form mt-n2">
-    
-    <v-textarea solo flat dense
-                no-resize hide-details single-line
-                auto-grow :rows="1"
-                background-color="grey-300"
-                v-model="message"
+
+    <text-input v-model="message"
                 :placeholder="label"
                 ref="textArea"
-                @keydown="keypress">
+                @enter="emitMessage"
+                @keypress="change">
       <template #append>
         <overlay-menu class="ma-0" v-if="!$device.isMobileOrTablet">
           <template #activator="{ on }">
@@ -26,7 +23,8 @@
           </bottom-sheet>
         </span>
       </template>
-    </v-textarea>
+      asdf
+    </text-input>
     <div class="gutter white--text d-flex flex-row align-center">
       <slot/>
     </div>
@@ -105,7 +103,6 @@
     cursor: pointer;
     transition: 0.2s;
     color: yellow;
-    margin-top: 6px;
     &:hover {
       filter: brightness(1.0) saturate(1.0);
     }
