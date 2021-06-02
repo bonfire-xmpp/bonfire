@@ -142,8 +142,8 @@ export const state = () => ({
     [$states.resources]: {},
     [$states.presences]: {},
 
-    [$states.onlineStatus]: undefined,
-    [$states.statusMessage]: undefined,
+    [$states.onlineStatus]: "online",
+    [$states.statusMessage]: "",
     [$states.invisibility]: false,
 });
 
