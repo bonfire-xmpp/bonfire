@@ -30,6 +30,7 @@ export default {
 
   router: {
     middleware: ['loginRedirect'],
+    base: process.env.NUXT_BASE || '/',
   },
 
   // Global CSS: https://go.nuxtjs.dev/config-css
