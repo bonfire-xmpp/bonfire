@@ -33,6 +33,8 @@ export default {
 $number-input-border-color: map-get($greys, "200");
 $number-input-background-color: map-get($black, "base");
 $number-input-button-background-color: map-get($black, "lighten");
+$number-input-outer-border-width: 1px;
+$number-input-outer-inner-width: 1px;
 
 input[type="number"] {
   appearance: textfield;
@@ -50,7 +52,7 @@ input[type="number"] {
 button {
   width: 3ex;
   background-color: $number-input-button-background-color;
-  border: 2px solid $number-input-border-color;
+  border: $number-input-outer-border-width solid $number-input-border-color;
   font-weight: 900;
   font-size: 1.1em;
 
@@ -64,9 +66,9 @@ button {
 
   &:active, &:focus {
     background-color: lighten($number-input-button-background-color, 20);
-    border: 2px solid lighten($number-input-border-color, 10);
-    &.l { border-right: 1px solid lighten($number-input-border-color, 10); }
-    &.r { border-left:  1px solid lighten($number-input-border-color, 10); }
+    border: $number-input-outer-border-width solid lighten($number-input-border-color, 10);
+    &.l { border-right: $number-input-outer-inner-width solid lighten($number-input-border-color, 10); }
+    &.r { border-left:  $number-input-outer-inner-width solid lighten($number-input-border-color, 10); }
   }
 }
 
@@ -76,8 +78,8 @@ input {
   color: map-get($white, "base");
   font-weight: 600;
 
-  border-top: 2px solid $number-input-border-color;
-  border-bottom: 2px solid $number-input-border-color;
+  border-top: $number-input-outer-border-width solid $number-input-border-color;
+  border-bottom: $number-input-outer-border-width solid $number-input-border-color;
 }
 
 
