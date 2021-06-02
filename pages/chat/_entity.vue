@@ -289,6 +289,8 @@ export default {
   },
 
   async mounted () {
+    // Happens only once, on first render
+    this.setActiveChat({type: 'chat', entity: this.$route.params.entity});
     await this.fetchMessages();
     this.init();
   }
