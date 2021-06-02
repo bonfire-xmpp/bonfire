@@ -4,6 +4,7 @@ const $states = {
     sendTypingReceipts: 'SEND_TYPING_RECEIPTS',
     messageReadReceipts: 'MESSAGE_READ_RECEIPTS',
     activeChatReceipts: 'ACTIVE_CHAT_RECEIPTS',
+    resourcePriority: 'RESOURCE_PRIORITY',
 };
 
 const $actions = {
@@ -58,11 +59,12 @@ export const state = () => ({
     [$states.activeChatReceipts]: false,
     [$states.messageReadReceipts]: true,
     [$states.sendTypingReceipts]: true,
+    [$states.resourcePriority]: 1,
 });
 
 export const mutations = {
     ...generateMutations(permanent,
-        $states.activeChatReceipts, $states.messageReadReceipts, $states.sendTypingReceipts)
+        ...Object.values($states))
 }
 
 export const actions = {

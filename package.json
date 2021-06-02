@@ -14,6 +14,7 @@
     "build:electron-linux": "cd electron && npm run electron:build-linux"
   },
   "dependencies": {
+    "@bonfire-xmpp/verse": "^1.0.0",
     "@msgpack/msgpack": "^2.4.1",
     "@nuxtjs/style-resources": "^1.0.0",
     "@webzlodimir/vue-bottom-sheet": "^1.2.0",
@@ -25,7 +26,6 @@
     "lz4js": "^0.2.0",
     "nuxt": "^2.14.12",
     "simplebar-vue": "^1.6.3",
-    "stanza": "^12.15.0",
     "vue-masonry-css": "^1.0.3"
   },
   "devDependencies": {

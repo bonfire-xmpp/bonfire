@@ -94,7 +94,7 @@ import Message from "@/components/Chat/Message";
 import HeadingMessage from "@/components/Chat/Message/HeadingMessage";
 import BodyMessage from "@/components/Chat/Message/BodyMessage";
 
-import * as XMPP from "stanza";
+import * as XMPP from "@bonfire-xmpp/verse";
 
 import messageDb from '@/assets/messageDb.js';
 import * as msgpack from "@msgpack/msgpack";

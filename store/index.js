@@ -1,6 +1,6 @@
 import { SettingsStore } from "@/store/settings";
 
-import { Utils } from 'stanza';
+import { Utils } from '@bonfire-xmpp/verse';
 
 import * as storage from '@/assets/storage'
 import {loadFromSecure, loadFromSession} from '@/assets/storage'
@@ -359,24 +359,17 @@ export const actions = {
     },
 
     async [$actions.updateOnlineStatus]({ commit, state, dispatch }, {status: show}) {
-        const status = state[$states.statusMessage];
-        const invisibility = state[$states.invisibility];
-
         // No show: pure online
         if(!show || show === 'online') {
-            this.$stanza.client.sendPresence({status});
             commit($mutations.setOnlineStatus, show);
             return;
         }
 
-        this.$stanza.client.sendPresence({show, status});
         await dispatch($actions.updateInvisibility, false);
         commit($mutations.setOnlineStatus, show);
     },
 
     [$actions.updateStatusMessage]({ commit, state }, {message: status}) {
-        const show = state[$states.onlineStatus];
-        this.$stanza.client.sendPresence({show, status});
         commit($mutations.setStatusMessage, status);
     },
 
@@ -387,7 +380,6 @@ export const actions = {
         if(invisible && !invisibility) await this.$stanza.client.goInvisible(true);
         else if(!invisible && invisibility) {
             await this.$stanza.client.goVisible();
-            this.$stanza.client.sendPresence();
         }
 
         commit($mutations.setInvisibility, invisible);

@@ -1,12 +1,18 @@
 export default [
+
     {
         header: "User Settings",
         content: [
             {
+                title: "Profile",
+                type: "submenu",
+                to: "profile"
+            },
+            {
                 title: "Privacy",
                 type: "submenu",
                 to: "privacy"
-            }
+            },
         ]
     },
     {

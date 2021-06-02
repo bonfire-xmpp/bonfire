@@ -1,9 +1,9 @@
-import * as XMPP from 'stanza';
+import * as XMPP from '@bonfire-xmpp/verse';
 import { MessageStore } from "@/store/messages";
 import { XEPStore } from "@/store/xeps";
 import { Store } from "@/store";
 import {loadFromSecure} from "assets/storage";
-import features from "stanza/plugins/features";
+import {SettingsStore} from "@/store/settings";
 
 const client = XMPP.createClient(undefined);
 
@@ -154,6 +154,20 @@ const setupListeners = ctx => {
         }
         ctx.store.commit(Store.$mutations.setRoster, {...roster, items});
     });
+
+    // Watch changes to presence data, and re-send presence when needed
+    ctx.store.watch(s => {
+        return {
+            priority: s[SettingsStore.namespace][SettingsStore.$states.resourcePriority],
+            show: s[Store.$states.onlineStatus],
+            status: s[Store.$states.statusMessage],
+        }
+    }, ({priority, show, status}) => {
+        // Update config with priority
+        client.updateConfig({priority});
+        // And send out a presence with the new priority
+        client.sendPresence({priority, show, status});
+    }, {immediate: true})
 
     /**
      * INCOMING PRESENCE/MOOD DATA

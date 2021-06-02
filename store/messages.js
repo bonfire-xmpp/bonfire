@@ -3,7 +3,7 @@ import { Store } from "@/store/index";
 import Vue from "vue";
 import * as msgpack from "@msgpack/msgpack";
 import { populateSearchIndex } from "./search";
-import * as XMPP from 'stanza';
+import * as XMPP from '@bonfire-xmpp/verse';
 const lz4 = require("lz4js");
 
 /**
