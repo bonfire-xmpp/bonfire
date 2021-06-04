@@ -90,7 +90,7 @@ b {
   width: 22px;
   background-repeat: no-repeat !important;
   background-size: 22px 22px !important;
-  &:not(.external):not(img) {
+  &:not(.external) {
     background-image: url("@/static/emoji/atlas.png");
     background-size: $emoji-atlas-width * (22px / $emoji-atlas-emoji-size)
                      $emoji-atlas-height * (22px / $emoji-atlas-emoji-size) !important;

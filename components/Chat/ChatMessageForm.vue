@@ -6,7 +6,7 @@
                 :placeholder="label"
                 ref="textArea"
                 @enter="emitMessage"
-                @keypress="change">
+                @input="change">
       <template #append>
         <overlay-menu class="ma-0" v-if="!$device.isMobileOrTablet">
           <template #activator="{ on }">
@@ -23,7 +23,6 @@
           </bottom-sheet>
         </span>
       </template>
-      asdf
     </text-input>
     <div class="gutter white--text d-flex flex-row align-center">
       <slot/>
@@ -55,15 +54,6 @@
     },
 
     methods: {
-      keypress(e) {
-        if(e.which === 13 && !e.shiftKey) {
-          e.preventDefault();
-          this.emitMessage();
-        } else {
-          this.change();
-        }
-      },
-
       emitMessage() {
         if (!this.message.length) return;
         this.$emit('message', this.message);
@@ -74,21 +64,16 @@
         // Start composing on start edge
         if(!this.composingTimeout) {
           this.$emit('composing');
-          console.log('composing')
+          // console.log('composing')
         }
 
         // Debounce
         clearTimeout(this.composingTimeout);
         this.composingTimeout = setTimeout(() => {
           this.composingTimeout = undefined;
-          console.log('paused')
+          // console.log('paused')
           this.$emit('paused');
         }, 2000);
-
-        // TODO: v-textarea doesn't have HTML contents for whatever reason,
-        //       so twemoji.parse cannot replace emoji glyphs with images
-        //       this may require a rewrite of v-textarea unfortunately
-        // twemoji.parse(this.$refs.textArea.$el);
       },
 
       insertEmoji (emoji) {

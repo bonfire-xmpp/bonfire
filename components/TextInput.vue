@@ -12,7 +12,7 @@
            ref="input">
       </div>
       <div class="position-absolute my-2 unselectable grey-700--text" style="top:0; z-index: 1"
-           v-if="!data">{{placeholder}}</div>
+           v-if="!value">{{placeholder}}</div>
     </simplebar>
     <div class="flex-shrink-0 align-self-start pt-2">
       <slot name="append"/>
@@ -22,25 +22,56 @@
 
 <script>
 import twemoji from 'twemoji';
+import {getEmojiOffset} from './Chat/Emoji/common';
+
+const emojiNameRegex = new RegExp(":(.*?):", "g")
+
 export default {
   name: "TextInput",
   props: {
     placeholder: String,
     value: String,
   },
-  data() {
-    return {
-      data: ""
-    }
-  },
   methods: {
+    getData() {
+      const input = this.$refs.input.cloneNode(true);
+
+      while(input.children.length) {
+        const child = input.children[0];
+        if (child.tagName === "IMG") {
+          child.outerHTML = child.getAttribute("alt");
+        }
+      }
+
+      return input.innerText;
+    },
+    setData(v){ this.$refs.input.innerText = v; },
+
     update() {
-      this.data = this.$refs.input.innerText;
+      const replaced =
+          this.getData().replace(
+              emojiNameRegex,
+              (_, u) => {
+                const e = this.$emoji.byname[u];
+                if(e) return `<img alt=":${e.name}:" src="/empty.png" class="emoji" style="background-position: ${getEmojiOffset(e)}">`
+                else  return u;
+              })
+      // console.log(replaced);
+      if(replaced !== this.$refs.input.innerHTML)
+        this.$refs.input.innerHTML = replaced;
+
+      this.$emit('input', this.getData())
     },
 
     onPaste(e) {
       e.preventDefault();
-      const text = (e.originalEvent || e).clipboardData.getData('text/plain');
+      const text = (e.originalEvent || e).clipboardData.getData('text/plain')
+          .replaceAll(
+              this.$emoji.regex,
+              u => {
+                const e = this.$emoji.byemoji[u]?.name;
+                return e ? ':'+e+':' : u;
+              });
       window.document.execCommand('insertText', false, text);
     },
 
@@ -54,12 +85,15 @@ export default {
         }
       }
       this.$emit('keypress', e);
-    }
+    },
   },
+
+  mounted() { this.setData(this.value ?? ''); },
   watch: {
-    data() {
-      twemoji.parse(this.$refs.input);
-      this.$emit('input', this.data)
+    value(newValue, oldValue) {
+      if(this.getData() !== newValue)
+        this.setData(newValue ?? '');
+      // this.$nextTick(this.update)
     }
   },
 }
@@ -84,9 +118,12 @@ export default {
 
 // TODO: fix the way they break line height
 *::v-deep img.emoji {
-  height: 1em;
-  width: 1em;
-  margin: 0 .05em 0 .1em;
-  vertical-align: -0.1em;
+//  height: 1em;
+//  width: 1em;
+//  margin: 0 .05em 0 .1em;
+//  vertical-align: -0.1em;
+  text-indent: 100%;
+  white-space: nowrap;
+  overflow: hidden;
 }
 </style>

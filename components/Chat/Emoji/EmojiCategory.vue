@@ -3,13 +3,13 @@
     <p class="emoji-category-header py-4 my-0">{{groupname}}</p>
     <div v-if="shown">
       <div class="emoji-group" v-for="(subgroup, i) of splitGroups(group, emojisPerRow)" :key="i">
-        <span icon v-for="emoji of subgroup" 
-          :key="emoji.emoji" 
+        <span icon v-for="emoji of subgroup"
+          :key="emoji.emoji"
           :data-emoji="emoji.name"
           class="emoji-button"
           @mouseenter.prevent="$emit('emojihover', emoji)"
           @mouseleave.prevent="$emit('emojileave')"
-          @click.prevent="$emit('insert-emoji', emoji.emoji)">
+          @click.prevent="$emit('insert-emoji', ':'+emoji.name+':')">
           <div class="emoji" :style="{ 'background-position': getEmojiOffset(emoji) }"></div>
         </span>
       </div>
