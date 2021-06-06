@@ -7,10 +7,9 @@
            @blur="update"
            @paste="onPaste"
            @keypress="onKeypress"
-           class="position-relative flex-grow-1"
-           style="z-index: 2"
-           ref="input">
-      </div>
+           class="position-relative flex-grow-1 body-1"
+           style="z-index: 2; white-space: pre-wrap;"
+           ref="input"/>
       <div class="position-absolute my-2 unselectable grey-700--text" style="top:0; z-index: 1"
            v-if="!value">{{placeholder}}</div>
     </simplebar>
@@ -24,7 +23,7 @@
 import twemoji from 'twemoji';
 import {getEmojiOffset} from './Chat/Emoji/common';
 
-const emojiNameRegex = new RegExp(":(.*?):", "g")
+const emojiNameRegex = new RegExp(":(.*?):", "g");
 
 export default {
   name: "TextInput",
@@ -32,35 +31,89 @@ export default {
     placeholder: String,
     value: String,
   },
+
   methods: {
     getData() {
       const input = this.$refs.input.cloneNode(true);
 
-      while(input.children.length) {
+      while (input.children.length) {
         const child = input.children[0];
-        if (child.tagName === "IMG") {
+        if (child.tagName === "IMG")
           child.outerHTML = child.getAttribute("alt");
-        }
+        else child.remove();
       }
 
       return input.innerText;
     },
-    setData(v){ this.$refs.input.innerText = v; },
+    setData(v) { this.$refs.input.innerText = v; },
+
+    getCaretPosition() {
+      const sel = window.getSelection();
+      let total = 0;
+      let node = sel.getRangeAt(0).startContainer;
+      total += sel.getRangeAt(0).startOffset;
+      while ((node = node.previousSibling)) {
+        if (node.nodeType === 3) {
+          total += node.length;
+        } else {
+          total += 1;
+        }
+      }
+      return total;
+    },
+
+    setCaretPosition(pos) {
+      const sel = window.getSelection();
+      const range = sel.getRangeAt(0);
+      let node = this.$refs.input.childNodes[0];
+      let total = pos;
+      
+      while (node) {
+        if (node.nodeType === 3) {
+          if (total < node.length) {
+            range.setStart(node, total);
+            range.setEnd(node, total);
+            return;
+          }
+          total -= node.length;
+        } else {
+          if (total < 1) {
+            range.setStartAfter(node);
+            range.setEndAfter(node);
+            return;
+          }
+          total -= 1;
+        }
+        node = node.nextSibling;
+      }
+    },
 
     update() {
+      let len = 0;
       const replaced =
           this.getData().replace(
-              emojiNameRegex,
-              (_, u) => {
+            emojiNameRegex,
+              (match, u) => {
                 const e = this.$emoji.byname[u];
-                if(e) return `<img alt=":${e.name}:" src="/empty.png" class="emoji" style="background-position: ${getEmojiOffset(e)}">`
-                else  return u;
-              })
-      // console.log(replaced);
+                if (e) {
+                  // add all emojis that don't exist yet
+                  len += match.length;
+                  return `<img alt="${match}" src="/empty.png" class="emoji atlas" style="background-position: ${getEmojiOffset(e)};">`;
+                }
+                return match;
+              });
+      // subtract all emojis that already exist as images
+      for (const child of this.$refs.input.children) {
+        len -= child.getAttribute("alt")?.length || 0;
+      }
+      const pos = this.getCaretPosition() - len;
+
       if(replaced !== this.$refs.input.innerHTML)
         this.$refs.input.innerHTML = replaced;
 
-      this.$emit('input', this.getData())
+      this.setCaretPosition(pos);
+
+      this.$emit('input', this.getData());
     },
 
     onPaste(e) {
@@ -78,6 +131,8 @@ export default {
     onKeypress(e) {
       if(e.key === 'Enter') {
         if(e.shiftKey) {
+          e.preventDefault();
+          window.document.execCommand('insertText', false, '<br>');
           this.$emit('enter:shift');
         } else {
           e.preventDefault();
@@ -109,6 +164,9 @@ export default {
 
   outline: none;
   //overflow: hidden;
+  &::v-deep img.emoji {
+    transform: translateY(-1px);
+  }
 }
 
 *::v-deep .simplebar-vertical {
@@ -121,7 +179,7 @@ export default {
 //  height: 1em;
 //  width: 1em;
 //  margin: 0 .05em 0 .1em;
-//  vertical-align: -0.1em;
+  vertical-align: middle;
   text-indent: 100%;
   white-space: nowrap;
   overflow: hidden;

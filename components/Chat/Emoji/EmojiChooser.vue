@@ -10,7 +10,7 @@
         ref="tabs">
         <div class="emoji-tabs d-flex align-center justify-center flex-column flex-nowrap">
           <div v-for="(group, name) in $emoji.grouped" :key="name" 
-                 @click="scrollTo(name)" :class="['emoji-tab-' + processGroupName(name), 'pa-0', 'ma-0', 'my-2', 'emoji-tab', 'emoji']"
+                 @click="scrollTo(name)" :class="['emoji-tab-' + processGroupName(name), 'pa-0', 'ma-0', 'my-2', 'emoji-tab', 'emoji', 'atlas']"
                  :style="{ 'background-position': getEmojiOffset(group[0]) }"/>
         </div>
       </simplebar>
@@ -28,7 +28,7 @@
         </simplebar>
         <!-- BOTTOM BAR -->
         <div ref="selection" class="emoji-bottombar d-flex flex-row flex-nowrap align-center">
-          <div v-if="selectedEmoji" class="mr-4 emoji" :style="{ 'background-position': getEmojiOffset(selectedEmoji) }"></div>
+          <div v-if="selectedEmoji" class="mr-4 emoji atlas" :style="{ 'background-position': getEmojiOffset(selectedEmoji) }"></div>
           <div v-else style="height: 22px"/>
           <p class="subtitle-2 d-inline ma-0 mt-2">{{selectedEmojiLabel}}</p>
         </div>
