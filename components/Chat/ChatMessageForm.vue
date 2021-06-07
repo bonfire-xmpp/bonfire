@@ -84,7 +84,7 @@
         if (range) {
           sel.addRange(range);
         }
-        window.document.execCommand("insertText", false, emoji);
+        this.$refs.textArea.insertText(emoji);
       },
     },
   }

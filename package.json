@@ -21,6 +21,7 @@
     "dexie": "^3.0.3",
     "electron-localshortcut": "^3.2.1",
     "fuzzy-matching": "^0.4.3",
+    "insert-text-at-cursor": "^0.3.0",
     "long-press-event": "^2.4.2",
     "lz4js": "^0.2.0",
     "nuxt": "^2.14.12",

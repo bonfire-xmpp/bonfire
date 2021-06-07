@@ -21,6 +21,7 @@
 
 <script>
 import {getEmojiOffset} from './Chat/Emoji/common';
+import insertTextAtCursor from 'insert-text-at-cursor';
 
 function replaceEmojis(intext, cond, func) {
   let started = false,
@@ -97,6 +98,7 @@ export default {
         this.$refs.input.innerHTML = replaced;
         this.setCaretPosition(pos);
       }
+      this.range = window.getSelection().getRangeAt(0);
 
       this.$emit('input', this.getData());
     },
@@ -119,7 +121,7 @@ export default {
 
     setCaretPosition(pos) {
       const sel = window.getSelection();
-      const range = sel.getRangeAt(0);
+      const range = document.createRange();
       let node = this.$refs.input.childNodes[0];
       let total = pos;
       
@@ -128,6 +130,8 @@ export default {
           if (total < node.length) {
             range.setStart(node, total);
             range.setEnd(node, total);
+            sel.removeAllRanges();
+            sel.addRange(range);
             return;
           }
           total -= node.length;
@@ -135,31 +139,40 @@ export default {
           if (total <= 1) {
             range.setStartAfter(node);
             range.setEndAfter(node);
+            sel.removeAllRanges();
+            sel.addRange(range);
             return;
           }
           total -= 1;
+        }
+        if (!node.nextSibling) {
+          range.setStartAfter(node);
+          range.setEndAfter(node);
+          return;
         }
         node = node.nextSibling;
       }
     },
 
+    insertText(text) { insertTextAtCursor(this.$refs.input, text); },
+
     onPaste(e) {
       e.preventDefault();
       const text = (e.originalEvent || e).clipboardData.getData('text/plain')
-          .replaceAll(
-              this.$emoji.regex,
-              u => {
-                const e = this.$emoji.byemoji[u]?.name;
-                return e ? ':'+e+':' : u;
-              });
-      window.document.execCommand('insertText', false, text);
+        .replaceAll(
+            this.$emoji.regex,
+            u => {
+              const e = this.$emoji.byemoji[u]?.name;
+              return e ? ':'+e+':' : u;
+            });
+      this.insertText(text);
     },
 
     onKeypress(e) {
       if(e.key === 'Enter') {
         if(e.shiftKey) {
           e.preventDefault();
-          window.document.execCommand('insertText', false, '\n');
+          this.insertText("\n");
           this.$emit('enter:shift');
         } else {
           e.preventDefault();
@@ -179,7 +192,8 @@ export default {
       }
     };
     this.range = document.createRange();
-    this.range.setStart(this.$refs.input, 0);
+    this.$refs.input.appendChild(document.createTextNode(""));
+    this.range.setStart(this.$refs.input.childNodes[0], 0);
     this.setData(this.value ?? ''); 
   },
   watch: {
