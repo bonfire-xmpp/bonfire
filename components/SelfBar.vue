@@ -1,6 +1,6 @@
 <template>
   <div id="self-bar" class="self-bar d-flex align-center px-3 white--text position-relative">
-    <badged-avatar class="clickable" :jid="jid" :color="onlineStatus" @click.stop="statusMenuTooltip = true"/>
+    <badged-avatar clickable :jid="jid" :color="onlineStatus" @click.stop="statusMenuTooltip = true"/>
     <status-menu-tooltip attach="#self-bar" v-model="statusMenuTooltip"/>
 
     <main class="d-flex flex-column hide-overflow ml-2 local-status flex-grow-1">
