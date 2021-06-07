@@ -64,8 +64,9 @@
         // Start composing on start edge
         if(!this.composingTimeout) {
           this.$emit('composing');
-          // console.log('composing')
+          this.range = window.getSelection().getRangeAt(0);
         }
+
 
         // Debounce
         clearTimeout(this.composingTimeout);
@@ -77,7 +78,13 @@
       },
 
       insertEmoji (emoji) {
-        this.message += emoji;
+        const range = this.$refs.textArea.range;
+        const sel = window.getSelection();
+        sel.removeAllRanges();
+        if (range) {
+          sel.addRange(range);
+        }
+        window.document.execCommand("insertText", false, emoji);
       },
     },
   }

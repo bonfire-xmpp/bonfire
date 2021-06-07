@@ -3,8 +3,8 @@
   <div class="d-flex w-100 rounded-lg grey-300 px-4" style="transform: scale(1)">
     <simplebar class="position-relative flex-grow-1 py-2 narrow-scrollbar input d-flex">
       <div contenteditable="true"
-           @input="update"
-           @blur="update"
+           @input="$nextTick(() => setData(getData()))"
+           @blur="setData(getData())"
            @paste="onPaste"
            @keypress="onKeypress"
            class="position-relative flex-grow-1 body-1"
@@ -20,16 +20,46 @@
 </template>
 
 <script>
-import twemoji from 'twemoji';
 import {getEmojiOffset} from './Chat/Emoji/common';
 
-const emojiNameRegex = new RegExp(":(.*?):", "g");
+function replaceEmojis(intext, cond, func) {
+  let started = false,
+      ei = 0, 
+      text = intext.slice();
+  for (let i = text.length - 1; i >= 0; --i) {
+    if (started) {
+      if (text[i] === ':') {
+        const emojiName = text.slice(i + 1, ei);
+        if (cond(emojiName)) {
+          const before = text.slice(0, i),
+                after = text.slice(ei + 1),
+                newtext = before + func(emojiName) + after;
+          text = newtext;
+          started = false;
+        } else {
+          ei = i;
+          started = true;
+        }
+      }
+    } else if (text[i] === ':') {
+      ei = i;
+      started = true;
+    }
+  }
+  return text;
+}
 
 export default {
   name: "TextInput",
   props: {
     placeholder: String,
     value: String,
+  },
+
+  data () {
+    return {
+      range: null,
+    };
   },
 
   methods: {
@@ -45,7 +75,31 @@ export default {
 
       return input.innerText;
     },
-    setData(v) { this.$refs.input.innerText = v; },
+
+    setData(value) {
+      let len = 0;
+      const replaced =
+        replaceEmojis(
+            value,
+            name => this.$emoji.byname[name],
+            name => {
+              const e = this.$emoji.byname[name];
+              len += name.length + 2 - 1;
+              return `<img alt=":${name}:" src="/empty.png" class="emoji atlas" style="background-position: ${getEmojiOffset(e)};">`;
+            });
+      // subtract all emojis that already exist as images
+      for (const child of this.$refs.input.children) {
+        len -= (child && child.getAttribute("alt")?.length - 1) || 0;
+      }
+
+      if (replaced !== this.$refs.input.innerHTML) {
+        const pos = this.getCaretPosition() - len;
+        this.$refs.input.innerHTML = replaced;
+        this.setCaretPosition(pos);
+      }
+
+      this.$emit('input', this.getData());
+    },
 
     getCaretPosition() {
       const sel = window.getSelection();
@@ -59,6 +113,7 @@ export default {
           total += 1;
         }
       }
+
       return total;
     },
 
@@ -77,7 +132,7 @@ export default {
           }
           total -= node.length;
         } else {
-          if (total < 1) {
+          if (total <= 1) {
             range.setStartAfter(node);
             range.setEndAfter(node);
             return;
@@ -86,34 +141,6 @@ export default {
         }
         node = node.nextSibling;
       }
-    },
-
-    update() {
-      let len = 0;
-      const replaced =
-          this.getData().replace(
-            emojiNameRegex,
-              (match, u) => {
-                const e = this.$emoji.byname[u];
-                if (e) {
-                  // add all emojis that don't exist yet
-                  len += match.length;
-                  return `<img alt="${match}" src="/empty.png" class="emoji atlas" style="background-position: ${getEmojiOffset(e)};">`;
-                }
-                return match;
-              });
-      // subtract all emojis that already exist as images
-      for (const child of this.$refs.input.children) {
-        len -= child.getAttribute("alt")?.length || 0;
-      }
-      const pos = this.getCaretPosition() - len;
-
-      if(replaced !== this.$refs.input.innerHTML)
-        this.$refs.input.innerHTML = replaced;
-
-      this.setCaretPosition(pos);
-
-      this.$emit('input', this.getData());
     },
 
     onPaste(e) {
@@ -132,7 +159,7 @@ export default {
       if(e.key === 'Enter') {
         if(e.shiftKey) {
           e.preventDefault();
-          window.document.execCommand('insertText', false, '<br>');
+          window.document.execCommand('insertText', false, '\n');
           this.$emit('enter:shift');
         } else {
           e.preventDefault();
@@ -143,12 +170,22 @@ export default {
     },
   },
 
-  mounted() { this.setData(this.value ?? ''); },
+  mounted() { 
+    document.onselectionchange = () => {
+      if (!window.getSelection().rangeCount) return;
+      const range = window.getSelection().getRangeAt(0);
+      if (range.commonAncestorContainer == this.$refs.input) {
+        this.range = range;
+      }
+    };
+    this.range = document.createRange();
+    this.range.setStart(this.$refs.input, 0);
+    this.setData(this.value ?? ''); 
+  },
   watch: {
     value(newValue, oldValue) {
       if(this.getData() !== newValue)
         this.setData(newValue ?? '');
-      // this.$nextTick(this.update)
     }
   },
 }
