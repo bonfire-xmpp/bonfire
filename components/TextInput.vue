@@ -7,7 +7,7 @@
            @blur="setData(getData())"
            @paste="onPaste"
            @keypress="onKeypress"
-           class="position-relative flex-grow-1 body-1"
+           class="position-relative flex-grow-1"
            style="z-index: 2; white-space: pre-wrap;"
            ref="input"/>
       <div class="position-absolute my-2 unselectable grey-700--text" style="top:0; z-index: 1"
@@ -98,7 +98,8 @@ export default {
         this.$refs.input.innerHTML = replaced;
         this.setCaretPosition(pos);
       }
-      this.range = window.getSelection().getRangeAt(0);
+      if (window.getSelection().rangeCount) 
+        this.range = window.getSelection().getRangeAt(0);
 
       this.$emit('input', this.getData());
     },
@@ -185,7 +186,7 @@ export default {
 
   mounted() { 
     document.onselectionchange = () => {
-      if (!window.getSelection().rangeCount) return;
+      if (window.getSelection().rangeCount <= 0) return;
       const range = window.getSelection().getRangeAt(0);
       if (range.commonAncestorContainer == this.$refs.input) {
         this.range = range;
@@ -194,7 +195,10 @@ export default {
     this.range = document.createRange();
     this.$refs.input.appendChild(document.createTextNode(""));
     this.range.setStart(this.$refs.input.childNodes[0], 0);
+    window.getSelection().removeAllRanges();
+    window.getSelection().addRange(this.range);
     this.setData(this.value ?? ''); 
+    
   },
   watch: {
     value(newValue, oldValue) {
