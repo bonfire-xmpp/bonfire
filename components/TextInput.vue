@@ -220,7 +220,7 @@ export default {
   outline: none;
   //overflow: hidden;
   &::v-deep img.emoji {
-    transform: translateY(-1px);
+    transform: translateY(-2px);
   }
 }
 
