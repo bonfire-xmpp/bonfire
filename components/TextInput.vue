@@ -220,7 +220,7 @@ export default {
   }
 }
 
-*::v-deep .simplebar-vertical {
+.input::v-deep .simplebar-vertical {
   position: fixed;
   right: 0;
 }
