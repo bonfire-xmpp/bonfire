@@ -5,6 +5,7 @@
       <div contenteditable="true"
            @input="onInput"
            @blur="setData(getData())"
+           @click="onClick"
            @paste="onPaste"
            @keypress="onKeypress"
            class="position-relative flex-grow-1"
@@ -76,7 +77,7 @@ export default {
         }
       }
 
-      if (input.innerHTML == "<br>") input.innerHTML = "";
+      input.innerHTML = input.innerHTML.replace(/<br>$/, "");
       return input.innerHTML;
     },
 
@@ -98,14 +99,16 @@ export default {
         }
       }
 
-      if (replaced !== this.$refs.input.innerHTML) {
+      const changed = replaced === this.$refs.input.innerHTML;
+
+      if (!changed) {
         const pos = this.getCaretPosition() - len;
         this.$refs.input.innerHTML = replaced;
         this.setCaretPosition(pos);
       }
       if (window.getSelection().rangeCount) 
         this.range = window.getSelection().getRangeAt(0);
-      this.$emit('input', this.getData());
+      if (changed) this.$emit('input', this.getData());
     },
 
     getCaretPosition() {
@@ -167,6 +170,10 @@ export default {
       this.insertText(text);
     },
 
+    onClick(e) {
+      this.$emit("text-click", e);
+    },
+
     onKeypress(e) {
       if(e.key === 'Enter') {
         if(e.shiftKey) {
@@ -181,12 +188,13 @@ export default {
       this.$emit('keypress', e);
     },
     onInput({ data }) {
+      const curdata = this.getData();
       if (this.$emoji.regex.test(data)) {
-        this.$nextTick(() => this.setData(this.getData()));
+        this.$nextTick(() => this.setData(curdata));
       } else {
         if (window.getSelection().rangeCount) 
           this.range = window.getSelection().getRangeAt(0);
-        this.$emit('input', this.getData());
+        this.$emit('input', curdata);
       }
     },
   },
@@ -208,7 +216,7 @@ export default {
     
   },
   watch: {
-    value(newValue, oldValue) {
+    value(newValue) {
       if(this.getData() !== newValue)
         this.setData(newValue ?? '');
     }
