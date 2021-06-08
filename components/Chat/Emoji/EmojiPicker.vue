@@ -98,7 +98,7 @@ import * as Common from "./common";
 import Vue from "vue";
 
 export default {
-  name: "EmojiChooser",
+  name: "EmojiPicker",
   components: { EmojiCategory },
 
   data () {

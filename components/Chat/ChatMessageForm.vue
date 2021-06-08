@@ -13,13 +13,13 @@
             <v-icon class="chat-form-button" @click="on">mdi-emoticon</v-icon>
           </template>
           <template #default="{ off }">
-            <emoji-chooser style="height: 380px !important;" @insert-emoji="insertEmoji($event); off()"></emoji-chooser>
+            <emoji-picker style="height: 380px !important;" @insert-emoji="insertEmoji($event); off()"/>
           </template>
         </overlay-menu>
         <span v-else>
           <v-icon class="chat-form-button" @click="$refs.emojiDialog.open()">mdi-emoticon</v-icon>
           <bottom-sheet ref="emojiDialog">
-            <emoji-chooser @insert-emoji="insertEmoji($event); $refs.emojiDialog.close()"></emoji-chooser>
+            <emoji-picker @insert-emoji="insertEmoji($event); $refs.emojiDialog.close()"/>
           </bottom-sheet>
         </span>
       </template>
@@ -31,12 +31,12 @@
 </template>
 
 <script>
-  import EmojiChooser from "@/components/Chat/Emoji/EmojiChooser";
+  import EmojiPicker from "@/components/Chat/Emoji/EmojiPicker";
   import OverlayMenu from "@/components/OverlayMenu";
 
   export default {
     name: "ChatMessageForm",
-    components: { EmojiChooser, OverlayMenu },
+    components: { EmojiPicker, OverlayMenu },
 
     props: {
       label: {

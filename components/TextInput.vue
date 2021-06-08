@@ -3,7 +3,7 @@
   <div class="d-flex w-100 rounded-lg grey-300 px-4" style="transform: scale(1)">
     <simplebar class="position-relative flex-grow-1 py-2 narrow-scrollbar input d-flex">
       <div contenteditable="true"
-           @input="$nextTick(() => setData(getData()))"
+           @input="onInput"
            @blur="setData(getData())"
            @paste="onPaste"
            @keypress="onKeypress"
@@ -67,30 +67,35 @@ export default {
     getData() {
       const input = this.$refs.input.cloneNode(true);
 
-      while (input.children.length) {
+      for (let i = 0; i < input.children.length;) {
         const child = input.children[0];
-        if (child.tagName === "IMG")
+        if (child.tagName === "IMG") {
           child.outerHTML = child.getAttribute("alt");
-        else child.remove();
+        } else {
+          ++i;
+        }
       }
 
-      return input.innerText;
+      if (input.innerHTML == "<br>") input.innerHTML = "";
+      return input.innerHTML;
     },
 
     setData(value) {
       let len = 0;
-      const replaced =
-        replaceEmojis(
-            value,
-            name => this.$emoji.byname[name],
-            name => {
-              const e = this.$emoji.byname[name];
-              len += name.length + 2 - 1;
-              return `<img alt=":${name}:" src="/empty.png" class="emoji atlas" style="background-position: ${getEmojiOffset(e)};">`;
-            });
-      // subtract all emojis that already exist as images
+      const replaced = value.replaceAll(
+        this.$emoji.regex, 
+        ec => {
+              const e = this.$emoji.byemoji[ec];
+              len += ec.length - 1;
+              if (!e) return ec;
+              return `<img alt="${ec}" src="/empty.png" class="emoji atlas" style="background-position: ${getEmojiOffset(e)};">`;
+        });
+      // subtract all emojis that are already substituted as images,
+      // as they are already factored into the caret position 
       for (const child of this.$refs.input.children) {
-        len -= (child && child.getAttribute("alt")?.length - 1) || 0;
+        if (child.tagName === "IMG") {
+          len -= child.getAttribute("alt").length - 1;
+        }
       }
 
       if (replaced !== this.$refs.input.innerHTML) {
@@ -100,7 +105,6 @@ export default {
       }
       if (window.getSelection().rangeCount) 
         this.range = window.getSelection().getRangeAt(0);
-
       this.$emit('input', this.getData());
     },
 
@@ -159,13 +163,7 @@ export default {
 
     onPaste(e) {
       e.preventDefault();
-      const text = (e.originalEvent || e).clipboardData.getData('text/plain')
-        .replaceAll(
-            this.$emoji.regex,
-            u => {
-              const e = this.$emoji.byemoji[u]?.name;
-              return e ? ':'+e+':' : u;
-            });
+      const text = (e.originalEvent || e).clipboardData.getData('text/plain');
       this.insertText(text);
     },
 
@@ -173,7 +171,7 @@ export default {
       if(e.key === 'Enter') {
         if(e.shiftKey) {
           e.preventDefault();
-          this.insertText("\n");
+          this.insertText('\n');
           this.$emit('enter:shift');
         } else {
           e.preventDefault();
@@ -181,6 +179,15 @@ export default {
         }
       }
       this.$emit('keypress', e);
+    },
+    onInput({ data }) {
+      if (this.$emoji.regex.test(data)) {
+        this.$nextTick(() => this.setData(this.getData()));
+      } else {
+        if (window.getSelection().rangeCount) 
+          this.range = window.getSelection().getRangeAt(0);
+        this.$emit('input', this.getData());
+      }
     },
   },
 
