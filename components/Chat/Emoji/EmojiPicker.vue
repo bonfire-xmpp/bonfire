@@ -1,5 +1,5 @@
 <template>
-  <div class="emoji-chooser d-block">
+  <div class="emoji-chooser d-block rounded hide-overflow">
     <div class="d-flex flex-row flex-nowrap h-100 justify-space-between" style="overflow: hidden;">
       <!-- TABS -->
       <simplebar 
@@ -10,8 +10,8 @@
         ref="tabs">
         <div class="emoji-tabs d-flex align-center justify-center flex-column flex-nowrap">
           <div v-for="(group, name) in $emoji.grouped" :key="name" 
-                 @click="scrollTo(name)" :class="['emoji-tab-' + processGroupName(name), 'pa-0', 'ma-0', 'my-2', 'emoji-tab', 'emoji', 'atlas']"
-                 :style="{ 'background-position': getEmojiOffset(group[0]) }"/>
+               @click="scrollTo(name)" :class="['emoji-tab-' + processGroupName(name), 'pa-0', 'ma-0', 'my-2', 'emoji-tab', 'emoji', 'atlas']"
+               :style="{ 'background-position': getEmojiOffset(group[0]) }"/>
         </div>
       </simplebar>
 

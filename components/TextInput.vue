@@ -162,7 +162,9 @@ export default {
       }
     },
 
-    insertText(text) { insertTextAtCursor(this.$refs.input, text); },
+    insertText(text) { 
+      insertTextAtCursor(this.$refs.input, text); 
+    },
 
     onPaste(e) {
       e.preventDefault();

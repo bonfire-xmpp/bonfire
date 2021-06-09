@@ -69,7 +69,6 @@ export default {
 
   methods: { 
     submit () {
-      console.log("test");
       this.$emit("submit", this.entries[this.selected]);
     },
 

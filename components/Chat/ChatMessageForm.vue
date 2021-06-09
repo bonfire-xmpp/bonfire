@@ -165,7 +165,7 @@
           e.preventDefault();
           return false;
         } else if (e.key === "ArrowDown") {
-          if (this.autocompleteActive) ++this.$refs.autocomplete.selected;
+          if (this.autocompleteActive) --this.$refs.autocomplete.selected;
           e.preventDefault();
           return false;
         } else if (e.key === "Tab") {
