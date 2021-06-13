@@ -164,7 +164,7 @@ export default {
     sendMessage(message) {
       this.$stanza.client.sendMessage({
         type: "chat",
-        to: this.$route.params.entity,
+        to: this.bare,
         body: message,
       });
     },

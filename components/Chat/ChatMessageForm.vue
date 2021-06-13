@@ -12,8 +12,9 @@
         <autocomplete 
           v-if="autocompleteActive" 
           ref="autocomplete" 
-          
+          v-click-outside="closeAutocomplete"
           :entries="autocompleteEntries"
+          style="visibility: hidden;"
           @submit="completeEmoji"/>
         <overlay-menu class="ma-0" v-if="!$device.isMobileOrTablet">
           <template #activator="{ on }">
@@ -56,19 +57,20 @@
 
     data() {
       return {
-        message: "",
         composingTimeout: null,
 
         autocompleteActive: false,
         autocompleteEntries: [],
+
+        message: "",
       }
     },
 
     methods: {
       emitMessage() {
-        if (!this.message.length) return;
+        if (!this.message?.length) return;
         this.$emit('message', this.message);
-        this.message = '';
+        this.message = "";
       },
 
       change(data) {
@@ -79,7 +81,9 @@
         }
 
         // Update autocomplete state
-        this.updateAutocomplete(data);
+        // setImmediate to wait for new text area range
+        setImmediate(() =>
+          this.updateAutocomplete(this.$refs.textArea.range));
 
         // Debounce
         clearTimeout(this.composingTimeout);
@@ -97,32 +101,44 @@
         if (range) {
           sel.addRange(range);
         }
-        this.$refs.textArea.insertText(emoji);
+        this.$refs.textArea.focus();
+        document.execCommand("insertText", false, emoji);
       },
 
-      updateAutocomplete(data) {
-        const searchstr = data.slice(0, this.$refs.textArea.getCaretPosition() + 1);
+      updateAutocomplete(range) {
+        if (!range) return;
+        const data = range.startContainer.textContent;
+        let searchstr = data.slice(0, range.startOffset);
+        searchstr = searchstr.slice(searchstr.lastIndexOf(':'));
 
         const match = searchstr.match(/:([^\s:]{2,})$/);
         if (match) {
           const candidates = 
             this.$emoji.searchmap[match[1].slice(0, 2)]
-            ?.filter(({ name }) => name.split("_").some(x => x.startsWith(match[1])));
+            ?.filter(({ name }) => 
+              name.startsWith(match[1]) || name.split("_").some(x => x.includes(match[1])));
 
           const wasactive = this.autocompleteActive;
           if (candidates?.length) {
-            this.$nextTick(() => {
+            setImmediate(() => {
               const autocomplete = this.$refs.autocomplete;
               if (!autocomplete) return;
-              const areaRect = this.$refs.textArea.$el.getBoundingClientRect();
-              const leftA = areaRect.left;
-              const leftB = window.getSelection().getRangeAt(0).getBoundingClientRect().left;
+              const { left: leftA, bottom: topA } = this.$refs.textArea.$el.getBoundingClientRect();
+              const { left: leftB, top: topB } = this.$refs.textArea.range.getBoundingClientRect();
+              let offsetX = Math.min(Math.max(0, leftB - leftA - 280/2), this.$refs.textArea.$el.clientWidth - 280);
+              let offsetY = topB - topA + 40;
 
-              let offset = Math.min(Math.max(0, leftB - leftA - 280/2), this.$refs.textArea.$el.clientWidth - 280);
-              autocomplete.$el.style.transform = `translateX(${offset}px)`;
-
-              if (!wasactive)
-                setImmediate(() => autocomplete.$el.style.transition = "transform 0.2s");
+              // animation
+              if (!wasactive) autocomplete.$el.style.visibility = "hidden";
+              this.$nextTick(() => {
+                autocomplete.$el.style.transform = `translate(${offsetX}px, ${offsetY}px)`;
+              });
+              if (!wasactive) {
+                setTimeout(() => {
+                  autocomplete.$el.style.transition = "transform 0.2s";
+                  autocomplete.$el.style.visibility = "visible";
+                }, 10);
+              }
             });
           } else {
             if (this.$refs.autocomplete) 
@@ -145,39 +161,50 @@
       },
 
       completeEmoji(emoji) {
-        const searchstr = this.$refs.textArea.getData().slice(0, this.$refs.textArea.getCaretPosition() + 1);
-        const length = searchstr.length - searchstr.lastIndexOf(":");
-
         const sel = window.getSelection();
-
+        let searchstr = sel.focusNode.textContent.slice(0, sel.focusOffset);
+        searchstr = searchstr.slice(searchstr.lastIndexOf(":"));
+        
+        const range = sel.getRangeAt(0);
         sel.removeAllRanges();
-        const range = this.$refs.textArea.range;
         sel.addRange(range);
-        range.setStart(range.startContainer, Math.max(0, range.startOffset - length));
-        this.$refs.textArea.insertText(emoji.emoji);
+        range.setStart(sel.focusNode, sel.focusOffset - searchstr.length);
+        document.execCommand("insertText", false, emoji.emoji);
 
         this.closeAutocomplete();
       },
 
       onKeyPress(e) {
-        if (e.key === "ArrowUp") {
-          if (this.autocompleteActive) ++this.$refs.autocomplete.selected;
-          e.preventDefault();
-          return false;
-        } else if (e.key === "ArrowDown") {
-          if (this.autocompleteActive) --this.$refs.autocomplete.selected;
-          e.preventDefault();
-          return false;
-        } else if (e.key === "Tab") {
-          this.completeEmoji(this.$refs.autocomplete.entries[this.$refs.autocomplete.selected]);
-          e.preventDefault();
-          return false;
+        if (this.autocompleteActive) {
+          switch (e.key) {
+            case "ArrowUp": {
+              ++this.$refs.autocomplete.selected;
+              e.preventDefault();
+              return false;
+            };
+            case "ArrowDown": {
+              --this.$refs.autocomplete.selected;
+              e.preventDefault();
+              return false;
+            };
+            case "Tab":
+            case "Enter": {
+              this.completeEmoji(this.$refs.autocomplete.entries[this.$refs.autocomplete.selected]);
+              e.preventDefault();
+              return false;
+            }
+            case "Escape": {
+              this.closeAutocomplete();
+              e.preventDefault();
+              return false;
+            }
+          }
         }
         return true;
       },
 
       onClick (e) {
-        setImmediate(() => this.updateAutocomplete(this.$refs.textArea.getData()));
+        setImmediate(() => this.updateAutocomplete(this.$refs.textArea.range));
       }
     },
   }
@@ -188,6 +215,7 @@
     cursor: pointer;
     transition: 0.2s;
     color: yellow;
+    margin-top: 7px;
     &:hover {
       filter: brightness(1.0) saturate(1.0);
     }
@@ -227,40 +255,5 @@
     & > * {
       display: inline;
     }
-  }
-
-  *::v-deep .v-text-field__slot {
-    & textarea::placeholder {
-      overflow: hidden;
-      white-space: nowrap;
-      text-overflow: ellipsis;
-    }
-  }
-
-  ::v-deep .v-input__append-inner {
-    margin: 0 !important;
-    padding: 0 !important;
-    min-height: 38px;
-    min-height: 38px;
-    align-self: stretch !important;
-    // background: red;
-    & > * {
-      // width: 32px;
-      // height: 32px;
-      // margin-top: 3px;
-      // margin-bottom: 3px;
-    }
-  }
-
-  ::v-deep .bottom-sheet__card.fx-default {
-    background: map-get($greys, "100") !important;
-    margin-left: 0;
-    margin-right: 0;
-  }
-
-  ::v-deep .bottom-sheet__content > .v-list:first-child {
-    margin-bottom: 0 !important;
-    margin-top: 0 !important;
-    height: 100% !important;
   }
 </style>

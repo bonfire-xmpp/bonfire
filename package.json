@@ -22,13 +22,11 @@
     "electron-localshortcut": "^3.2.1",
     "emoji-regex": "^9.2.2",
     "fuzzy-matching": "^0.4.3",
-    "insert-text-at-cursor": "^0.3.0",
     "long-press-event": "^2.4.2",
     "lz4js": "^0.2.0",
     "nuxt": "^2.14.12",
     "simplebar-vue": "^1.6.3",
     "stanza": "^12.15.0",
-    "twemoji": "^13.0.2",
     "twemoji-parser": "^13.0.0",
     "vue-masonry-css": "^1.0.3"
   },
