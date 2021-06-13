@@ -1,10 +1,13 @@
 <template>
-  <div>
+  <div ref="container">
+    <div ref="caret" class="caret"/>
     <div 
       class="text-area" 
       contenteditable="true"
       @keydown="handleKeyDown"
       @keypress="handleKeyPress"
+      @focus="handleFocus"
+      @blur="handleBlur"
       @click="handleClick"
       @paste="handlePaste"
       @input="handleInput"
@@ -23,6 +26,7 @@
     padding-bottom: 8px;
     display: block;
     min-height: 40px;
+    caret-color: transparent;
   }
 }
 
@@ -33,6 +37,21 @@
   margin-top: 7px;
   color: map-get($white, "darken");
   pointer-events: none;
+}
+
+.caret {
+  display: block;
+  height: 24px;
+  border-left: solid 1px white;
+  position: absolute;
+  left: 0;
+  top: 0;
+  margin: 0;
+  padding: 0;
+  opacity: 0.0;
+  transform: translate(0, 0);
+  transition: opacity 0.1s, transform 0.1s;
+  z-index: 10;
 }
 
 ::v-deep b {
@@ -90,13 +109,14 @@ export default {
       range: null,
       focusrange: null,
       internalvalue: "",
+      caretActive: false,
     }
   },
 
   methods: {
     addDiv () {
       const div = document.createElement("DIV");
-      div.appendChild(document.createTextNode(""));
+      div.appendChild(document.createTextNode("\0"));
       this.$refs.area.appendChild(div);
       const range = document.createRange();
       range.setStart(div.childNodes[0], 0);
@@ -115,12 +135,13 @@ export default {
         const div = document.createElement("DIV");
         range.surroundContents(div);
         range.selectNodeContents(div);
-        // range.collapse();
+        range.collapse();
         sel.removeAllRanges();
         sel.addRange(range);
       } else if (this.$refs.area.childNodes?.[0]?.tagName !== "DIV") {
         this.addDiv();
       }
+      this.updateCaret();
       this.updateValue();
     },
 
@@ -155,7 +176,7 @@ export default {
             }            
           }
         }
-
+        this.updateCaret();
         this.$emit("input", this.internalvalue);
       }
     },
@@ -192,7 +213,7 @@ export default {
           return false;
         }
       }
-      this.correctDOM();
+      setImmediate(() => this.correctDOM());
       this.$emit("keydown", e);
     },
 
@@ -214,6 +235,47 @@ export default {
       sel.addRange(this.focusrange);
     },
 
+    updateCaret () {
+      const caret = this.$refs.caret;
+      const cont = this.$refs.container;
+
+      const { left: leftA, top: topA } = cont.getBoundingClientRect();
+      let range = this.range;
+      if (!range) {
+        range = document.createRange();
+        range.setStart(this.$area.childNodes[0].childNodes[0], 0);
+        range.setEnd(this.$area.childNodes[0].childNodes[0], 0);
+      }
+      // const { left: leftB, top: topB } = sel.getRangeAt(0).getBoundingClientRect();
+      const { left: leftB, top: topB } = range.getBoundingClientRect();
+
+      const posX = leftB - leftA;
+      const posY = topB - topA;
+      caret.style.transform = `translate(${posX}px, ${posY}px)`;
+      caret.style.opacity = "1.0";
+    },
+    animateCaret () {
+      const caret = this.$refs.caret;
+      const on = () => {
+        caret.style.opacity = "1.0";
+        setTimeout(off, 500);
+      };
+      const off = () => {
+        caret.style.opacity = "0.0";
+        setTimeout(() => {
+          if (this.caretActive) on();
+        }, 500);
+      };
+      on();
+    },
+    handleFocus () {
+      this.caretActive = true;
+      this.animateCaret();
+    },
+    handleBlur () {
+      this.caretActive = false;
+    },
+
     updateValue () {
       let lines = [];
       for (const c of this.$refs.area.children) {
@@ -229,7 +291,7 @@ export default {
         }
         lines.push(value);
       }
-      this.internalvalue = lines.join("\n");
+      this.internalvalue = lines.join("\n").replaceAll(/\u0000/g, "");
     }
   },
 
@@ -245,8 +307,10 @@ export default {
     document.addEventListener("selectionchange", () => {
       if (sel.focusNode?.parentNode.parentNode === this.$refs.area) {
         this.range = sel.getRangeAt(0);
+        this.updateCaret();
       } else if (sel.focusNode?.parentNode === this.$refs.area) {
         this.focusrange = sel.getRangeAt(0);
+        this.updateCaret();
       }
     });
     this.correctDOM();
