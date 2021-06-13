@@ -9,8 +9,8 @@
           class="emoji-button"
           @mouseenter.prevent="$emit('emojihover', emoji)"
           @mouseleave.prevent="$emit('emojileave')"
-          @click.prevent="$emit('insert-emoji', ':'+emoji.name+':')">
-          <div class="emoji" :style="{ 'background-position': getEmojiOffset(emoji) }"></div>
+          @click.prevent="$emit('insert-emoji', emoji.emoji)">
+          <div class="emoji atlas" :style="{ 'background-position': getEmojiOffset(emoji) }"></div>
         </span>
       </div>
     </div>

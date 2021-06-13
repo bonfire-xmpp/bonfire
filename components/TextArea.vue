@@ -1,0 +1,319 @@
+<template>
+  <div ref="container">
+    <div ref="caret" class="caret"/>
+    <div 
+      class="text-area" 
+      contenteditable="true"
+      @keydown="handleKeyDown"
+      @keypress="handleKeyPress"
+      @focus="handleFocus"
+      @blur="handleBlur"
+      @click="handleClick"
+      @paste="handlePaste"
+      @input="handleInput"
+      ref="area">
+    </div>
+    <span class="placeholder" v-if="!internalvalue.length">{{placeholder}}</span>
+  </div>
+</template>
+
+<style scoped lang="scss">
+.text-area {
+  display: block;
+  min-height: 40px;
+  & ::v-deep div {
+    padding-top: 8px;
+    padding-bottom: 8px;
+    display: block;
+    min-height: 40px;
+    caret-color: transparent;
+  }
+}
+
+.placeholder {
+  display: block;
+  position: absolute;
+  top: 0;
+  margin-top: 7px;
+  color: map-get($white, "darken");
+  pointer-events: none;
+}
+
+.caret {
+  display: block;
+  height: 24px;
+  border-left: solid 1px white;
+  position: absolute;
+  left: 0;
+  top: 0;
+  margin: 0;
+  padding: 0;
+  opacity: 0.0;
+  transform: translate(0, 0);
+  transition: opacity 0.1s, transform 0.1s;
+  z-index: 10;
+}
+
+::v-deep b {
+  font-weight: 800;
+}
+</style>
+
+<script>
+import {getEmojiOffset} from './Chat/Emoji/common';
+const sel = window.getSelection();
+
+function replaceEmojis(intext, cond, func) {
+  let started = false,
+      ei = 0, 
+      text = intext.slice();
+  for (let i = text.length - 1; i >= 0; --i) {
+    if (started) {
+      if (text[i] === ':') {
+        const emojiName = text.slice(i + 1, ei);
+        if (cond(emojiName)) {
+          const before = text.slice(0, i),
+                after = text.slice(ei + 1),
+                newtext = before + func(emojiName) + after;
+          text = newtext;
+          started = false;
+        } else {
+          ei = i;
+          started = true;
+        }
+      }
+    } else if (text[i] === ':') {
+      ei = i;
+      started = true;
+    }
+  }
+  return text;
+}
+
+export default {
+  name: "TextArea",
+
+  props: {
+    placeholder: {
+      type: String,
+      optional: true,
+      default: "",
+    },
+    value: {
+      type: String,
+    },
+  },
+
+  data () {
+    return {
+      range: null,
+      focusrange: null,
+      internalvalue: "",
+      caretActive: false,
+    }
+  },
+
+  methods: {
+    addDiv () {
+      const div = document.createElement("DIV");
+      div.appendChild(document.createTextNode("\0"));
+      this.$refs.area.appendChild(div);
+      const range = document.createRange();
+      range.setStart(div.childNodes[0], 0);
+      range.setEnd(div.childNodes[0], 0);
+      this.range = range;
+      sel.removeAllRanges();
+      sel.addRange(range);
+    },
+
+    correctDOM () {
+      if (this.$refs.area.childNodes?.[0]?.tagName == "BR") {
+        this.$refs.area.innerHTML = "";
+      } else if (this.$refs.area.childNodes?.[0]?.nodeType === 3) {
+        const range = document.createRange();
+        range.selectNode(this.$refs.area.childNodes[0]);
+        const div = document.createElement("DIV");
+        range.surroundContents(div);
+        range.selectNodeContents(div);
+        range.collapse();
+        sel.removeAllRanges();
+        sel.addRange(range);
+      } else if (this.$refs.area.childNodes?.[0]?.tagName !== "DIV") {
+        this.addDiv();
+      }
+      this.updateCaret();
+      this.updateValue();
+    },
+
+    handleKeyPress () {
+      this.correctDOM();
+    },
+
+    handleInput (e) {
+      this.correctDOM();
+      for (const c of this.$refs.area.children) {
+        for (const n of c.childNodes) {
+          if (n.nodeType === 3) {
+            const newtext = replaceEmojis(n.textContent, em => this.$emoji.byname[em], em => {
+              const e = this.$emoji.byname[em];
+              return `<img alt="${e.emoji}" src="/empty.png" class="emoji atlas" style="background-position: ${getEmojiOffset(this.$emoji.byname[em])};">`;
+            }).replaceAll(this.$emoji.regex, em => {
+              const e = this.$emoji.byemoji[em];
+              return `<img alt="${e.emoji}" src="/empty.png" class="emoji atlas" style="background-position: ${getEmojiOffset(e)};">`;
+            });
+            if (newtext !== n.textContent) {
+              const range = document.createRange();
+              range.selectNode(n);
+              range.deleteContents();
+              const node = document.createElement("DIV");
+              node.innerHTML = newtext;
+              for (let i = node.childNodes.length - 1; i >= 0; --i) {
+                range.insertNode(node.childNodes[i]);
+              }
+              range.collapse();
+              sel.removeAllRanges();
+              sel.addRange(range);
+            }            
+          }
+        }
+        this.updateCaret();
+        this.$emit("input", this.internalvalue);
+      }
+    },
+
+    handleKeyDown (e) {
+      const range = sel.getRangeAt(0);
+      if (e.key === "Backspace" && e.ctrlKey && range.startOffset !== range.endOffset) {
+        range.deleteContents();
+        range.collapse();
+      } else if (e.key === "Enter" && e.shiftKey) {
+        this.addDiv();
+        e.preventDefault();
+        return false;
+      } else if (e.key === "ArrowUp") {
+        const prev = sel.getRangeAt(0).startContainer.parentElement.previousSibling;
+        if (prev?.innerHTML === "") {
+          const range = document.createRange();
+          range.setStart(prev.childNodes[0], 0);
+          range.setEnd(prev.childNodes[0], 0);
+          sel.removeAllRanges();
+          sel.addRange(range);
+          e.preventDefault();
+          return false;
+        }
+      } else if (e.key === "ArrowDown") {
+        const next = sel.getRangeAt(0).startContainer.parentElement.nextSibling;
+        if (next?.innerHTML === "") {
+          const range = document.createRange();
+          range.setStart(next.childNodes[0], 0);
+          range.setEnd(next.childNodes[0], 0);
+          sel.removeAllRanges();
+          sel.addRange(range);
+          e.preventDefault();
+          return false;
+        }
+      }
+      setImmediate(() => this.correctDOM());
+      this.$emit("keydown", e);
+    },
+
+    handlePaste (e) {
+      const data = (e.clipboardData ?? window.clipboardData).getData('text/plain');
+      document.execCommand("insertText", false, data);
+      this.correctDOM();
+      e.preventDefault();
+      return false;
+    },
+
+    handleClick (e) {
+      this.$emit("click", e);
+    },
+
+    focus () {
+      this.$refs.area.focus();
+      sel.removeAllRanges();
+      sel.addRange(this.focusrange);
+    },
+
+    updateCaret () {
+      const caret = this.$refs.caret;
+      const cont = this.$refs.container;
+
+      const { left: leftA, top: topA } = cont.getBoundingClientRect();
+      let range = this.range;
+      if (!range) {
+        range = document.createRange();
+        range.setStart(this.$area.childNodes[0].childNodes[0], 0);
+        range.setEnd(this.$area.childNodes[0].childNodes[0], 0);
+      }
+      // const { left: leftB, top: topB } = sel.getRangeAt(0).getBoundingClientRect();
+      const { left: leftB, top: topB } = range.getBoundingClientRect();
+
+      const posX = leftB - leftA;
+      const posY = topB - topA;
+      caret.style.transform = `translate(${posX}px, ${posY}px)`;
+      caret.style.opacity = "1.0";
+    },
+    animateCaret () {
+      const caret = this.$refs.caret;
+      const on = () => {
+        caret.style.opacity = "1.0";
+        setTimeout(off, 500);
+      };
+      const off = () => {
+        caret.style.opacity = "0.0";
+        setTimeout(() => {
+          if (this.caretActive) on();
+        }, 500);
+      };
+      on();
+    },
+    handleFocus () {
+      this.caretActive = true;
+      this.animateCaret();
+    },
+    handleBlur () {
+      this.caretActive = false;
+    },
+
+    updateValue () {
+      let lines = [];
+      for (const c of this.$refs.area.children) {
+        let value = "";
+        for (const n of c.childNodes) {
+          if (n.nodeType === 3) {
+            value += n.textContent;
+          } else if (n.tagName === "IMG") {
+            value += n.alt ?? "";
+          } else {
+            value += n.textContent;
+          }
+        }
+        lines.push(value);
+      }
+      this.internalvalue = lines.join("\n").replaceAll(/\u0000/g, "");
+    }
+  },
+
+  watch: {
+    value (newval) {
+      if (newval === this.internalvalue) return;
+      this.$refs.area.innerHTML = newval;
+      this.correctDOM();
+    },
+  },
+
+  mounted () {
+    document.addEventListener("selectionchange", () => {
+      if (sel.focusNode?.parentNode.parentNode === this.$refs.area) {
+        this.range = sel.getRangeAt(0);
+        this.updateCaret();
+      } else if (sel.focusNode?.parentNode === this.$refs.area) {
+        this.focusrange = sel.getRangeAt(0);
+        this.updateCaret();
+      }
+    });
+    this.correctDOM();
+  }
+}
+</script>
