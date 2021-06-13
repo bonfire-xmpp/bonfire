@@ -31,6 +31,8 @@ export default {
     handleClick (e) { this.$emit('click', e); },
     handleInput (e) { this.$emit('input', e); },
     handleEnter (e) {
+      if (e.shiftKey)
+        return true;
       this.$emit('enter', e);
       e.preventDefault();
       return false;

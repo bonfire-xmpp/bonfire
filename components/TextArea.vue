@@ -10,7 +10,7 @@
       @input="handleInput"
       ref="area">
     </div>
-    <span class="placeholder" v-if="!value.length">{{placeholder}}</span>
+    <span class="placeholder" v-if="!internalvalue.length">{{placeholder}}</span>
   </div>
 </template>
 
@@ -94,36 +94,32 @@ export default {
   },
 
   methods: {
+    addDiv () {
+      const div = document.createElement("DIV");
+      div.appendChild(document.createTextNode(""));
+      this.$refs.area.appendChild(div);
+      const range = document.createRange();
+      range.setStart(div.childNodes[0], 0);
+      range.setEnd(div.childNodes[0], 0);
+      this.range = range;
+      sel.removeAllRanges();
+      sel.addRange(range);
+    },
+
     correctDOM () {
-      if (this.$refs.area.childNodes?.[0]?.tagName === "BR") {
+      if (this.$refs.area.childNodes?.[0]?.tagName == "BR") {
         this.$refs.area.innerHTML = "";
-      }
-      if (this.$refs.area.childNodes?.[0]?.nodeType === 3) {
+      } else if (this.$refs.area.childNodes?.[0]?.nodeType === 3) {
         const range = document.createRange();
         range.selectNode(this.$refs.area.childNodes[0]);
         const div = document.createElement("DIV");
         range.surroundContents(div);
         range.selectNodeContents(div);
-        range.collapse();
+        // range.collapse();
         sel.removeAllRanges();
         sel.addRange(range);
-      }
-      if (this.$refs.area.childNodes?.[0]?.tagName !== "DIV") {
-        const div = document.createElement("DIV");
-        const p = document.createElement("P");
-        p.style.display = "inline";
-        p.style.marginTop = "auto";
-        p.style.marginBottom = "auto";
-        p.style.width = "1px";
-        p.style.marginRight = "-1px";
-        div.appendChild(p);
-        this.$refs.area.appendChild(div);
-        const range = document.createRange();
-        range.setStart(div.childNodes[0], 0);
-        range.setEnd(div.childNodes[0], 0);
-        this.range = range;
-        sel.removeAllRanges();
-        sel.addRange(range);
+      } else if (this.$refs.area.childNodes?.[0]?.tagName !== "DIV") {
+        this.addDiv();
       }
       this.updateValue();
     },
@@ -139,10 +135,10 @@ export default {
           if (n.nodeType === 3) {
             const newtext = replaceEmojis(n.textContent, em => this.$emoji.byname[em], em => {
               const e = this.$emoji.byname[em];
-              return `<img alt="${e.emoji}" src="/blank.png" class="emoji atlas" style="background-position: ${getEmojiOffset(this.$emoji.byname[em])};">`;
+              return `<img alt="${e.emoji}" src="/empty.png" class="emoji atlas" style="background-position: ${getEmojiOffset(this.$emoji.byname[em])};">`;
             }).replaceAll(this.$emoji.regex, em => {
               const e = this.$emoji.byemoji[em];
-              return `<img alt="${e.emoji}" src="/blank.png" class="emoji atlas" style="background-position: ${getEmojiOffset(e)};">`;
+              return `<img alt="${e.emoji}" src="/empty.png" class="emoji atlas" style="background-position: ${getEmojiOffset(e)};">`;
             });
             if (newtext !== n.textContent) {
               const range = document.createRange();
@@ -169,6 +165,32 @@ export default {
       if (e.key === "Backspace" && e.ctrlKey && range.startOffset !== range.endOffset) {
         range.deleteContents();
         range.collapse();
+      } else if (e.key === "Enter" && e.shiftKey) {
+        this.addDiv();
+        e.preventDefault();
+        return false;
+      } else if (e.key === "ArrowUp") {
+        const prev = sel.getRangeAt(0).startContainer.parentElement.previousSibling;
+        if (prev?.innerHTML === "") {
+          const range = document.createRange();
+          range.setStart(prev.childNodes[0], 0);
+          range.setEnd(prev.childNodes[0], 0);
+          sel.removeAllRanges();
+          sel.addRange(range);
+          e.preventDefault();
+          return false;
+        }
+      } else if (e.key === "ArrowDown") {
+        const next = sel.getRangeAt(0).startContainer.parentElement.nextSibling;
+        if (next?.innerHTML === "") {
+          const range = document.createRange();
+          range.setStart(next.childNodes[0], 0);
+          range.setEnd(next.childNodes[0], 0);
+          sel.removeAllRanges();
+          sel.addRange(range);
+          e.preventDefault();
+          return false;
+        }
       }
       this.correctDOM();
       this.$emit("keydown", e);
@@ -193,8 +215,9 @@ export default {
     },
 
     updateValue () {
-      let value = "";
+      let lines = [];
       for (const c of this.$refs.area.children) {
+        let value = "";
         for (const n of c.childNodes) {
           if (n.nodeType === 3) {
             value += n.textContent;
@@ -204,8 +227,9 @@ export default {
             value += n.textContent;
           }
         }
+        lines.push(value);
       }
-      this.internalvalue = value;
+      this.internalvalue = lines.join("\n");
     }
   },
 
