@@ -18,7 +18,7 @@
           <div v-if="dim" class="sidebar-peek" @click="scrollToMain"/>
         </div>
         <!--1px on the left edge, used to observe and dim rhs-->
-        <div v-if="$device.isMobileOrTablet" v-intersect="observed" class="position-absolute"/>
+        <div v-if="$device.isMobileOrTablet" v-intersect="observed" class="position-absolute" style="width: 1px"/>
         <side-bar class="unselectable sidebar" :class="{'rounded-tr rounded-br': $device.isMobileOrTablet}" ref="sidebar"/>
 
         <v-main class="flex-grow-1 main-content position-relative" :class="$device.isMobileOrTablet && 'ml-2'" ref="mainPanel">
@@ -51,9 +51,9 @@ export default {
       document.elementsFromPoint(e.clientX,e.clientY)[1].click()
     },
     passLongpress(e) {
-      // console.log('longpress', e);
+      // console.log('long-press', e);
       document.elementsFromPoint(e.detail.clientX,e.detail.clientY)[1]
-          .dispatchEvent(new CustomEvent('long-press', e.detail));
+          .dispatchEvent(new CustomEvent('long-press', {bubbles: true, detail: e.detail}));
     },
 
     // On Chrome (<=89), horizontally snapped scrolls can be canceled by scrolling vertically.
