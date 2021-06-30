@@ -113,7 +113,7 @@ const setupListeners = ctx => {
         });
         ctx.store.commit(Store.$mutations.stanzaInitialized);
 
-        Notification.requestPermission();
+        ctx.$notification.requestPermission();
     }
 
     client.on('session:started', bind);
@@ -198,9 +198,11 @@ const setupListeners = ctx => {
         message.from = XMPP.JID.toBare(message.from);
         // if message isn't from the client, show a notification
         if (message.from != XMPP.JID.toBare(client.jid)) {
-            new Notification(`Bonfire - ${jid}`, {
+            ctx.$notification.show({
+                title: jid,
                 body: message.body,
-            });
+                image: ctx.store.state[Store.$states.avatars][jid],
+            })
         }
         dispatch(MessageStore.$actions.addMessage, { jid, message });
     });

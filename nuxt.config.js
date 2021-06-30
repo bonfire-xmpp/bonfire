@@ -48,6 +48,7 @@ export default {
 
   // Plugins to run before rendering page: https://go.nuxtjs.dev/config-plugins
   plugins: [
+      '@/plugins/notification.js',
       '@/plugins/stanza.js',
       '@/plugins/longpress.js',
       '@/plugins/vuebottomsheet.js',
