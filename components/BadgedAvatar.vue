@@ -21,7 +21,7 @@
       </div>
     </template>
 
-    <v-list dense :elevation="0" class="rounded" nav>
+    <v-list dense :elevation="0" class="rounded" nav v-if="resources">
       <v-list-item v-for="([jid, item], i) in resources" :key="i">
         <v-icon :color="getColor(item)" size="0.9em" class="mr-2">mdi-circle</v-icon>
         <v-list-item-title :class="getColor(item) + '--text'" style="font-size: 1em;">
@@ -68,7 +68,7 @@
       }),
 
       resources() {
-        return Object.entries(this.allResources[this.$stanza.toBare(this.jid)])
+        return Object.entries(this.allResources[this.$stanza.toBare(this.jid)] || {})
                 .filter(([k]) => k !== "" && k !== "_/computed");
       }
     },
