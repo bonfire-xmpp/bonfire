@@ -54,14 +54,12 @@
         // Start composing on start edge
         if(!this.composingTimeout) {
           this.$emit('composing');
-          console.log('composing')
         }
 
         // Debounce
         clearTimeout(this.composingTimeout);
         this.composingTimeout = setTimeout(() => {
           this.composingTimeout = undefined;
-          console.log('paused')
           this.$emit('paused');
         }, 2000);
       },

@@ -1,9 +1,11 @@
 import * as XMPP from '@bonfire-xmpp/verse';
-import { MessageStore } from "@/store/messages";
-import { XEPStore } from "@/store/xeps";
-import { Store } from "@/store";
+import {MessageStore} from "@/store/messages";
+import {XEPStore} from "@/store/xeps";
+import {Store} from "@/store";
 import {loadFromSecure} from "assets/storage";
 import {SettingsStore} from "@/store/settings";
+
+import * as Modules from './stanza-modules';
 
 const client = XMPP.createClient(undefined);
 
@@ -108,9 +110,12 @@ const setupListeners = ctx => {
 
         // TODO: enable only if supported
         await client.enableCarbons();
-        await client.getRoster().then(roster => {
-            ctx.store.commit(Store.$mutations.setRoster, roster);
-        });
+
+        for (let module in Modules) {
+            if(ctx.isDev) console.debug(`[Stanza] Calling bind() on module \`${Modules[module].name}\``)
+            await Modules[module].bind({client, ctx});
+        }
+
         ctx.store.commit(Store.$mutations.stanzaInitialized);
 
         Notification.requestPermission();
@@ -120,8 +125,6 @@ const setupListeners = ctx => {
     client.on('stream:management:resumed', bind);
 
     client.on('features', features => {
-        console.log(features);
-
         if(features.rosterVersioning) {
             ctx.store.commit(`${XEPStore.namespace}/${XEPStore.$mutations.setServerXep}`,
                 {xep: 'RFC 6121', value: true});
@@ -136,23 +139,6 @@ const setupListeners = ctx => {
             ctx.store.commit(`${XEPStore.namespace}/${XEPStore.$mutations.setServerXep}`,
                 {xep: 'XEP-0115', value: true});
         }
-    });
-
-    client.on('iq:set:roster', ({roster}) => {
-        let items = ctx.store.state[Store.$states.roster]?.items || [];
-        for (let item of roster.items) {
-            const idx = items.findIndex(i => i.jid == item.jid);
-            if (idx > 0) {
-                if (item.subscription == "remove") {
-                    items.splice(idx, 1);
-                }
-            } else {
-                if (item.subscription == "to" || item.subscription == "both") {
-                    items.push(item);
-                }
-            }
-        }
-        ctx.store.commit(Store.$mutations.setRoster, {...roster, items});
     });
 
     // Watch changes to presence data, and re-send presence when needed
@@ -197,10 +183,12 @@ const setupListeners = ctx => {
         message.from ||= client.jid;
         message.from = XMPP.JID.toBare(message.from);
         // if message isn't from the client, show a notification
-        if (message.from != XMPP.JID.toBare(client.jid)) {
-            new Notification(`Bonfire - ${jid}`, {
-                body: message.body,
-            });
+        if (message.from !== XMPP.JID.toBare(client.jid)) {
+            try {
+                new Notification(`Bonfire - ${jid}`, {
+                    body: message.body,
+                });
+            } catch (e) {}
         }
         dispatch(MessageStore.$actions.addMessage, { jid, message });
     });
@@ -272,26 +260,6 @@ const setupListeners = ctx => {
         }
     });
 
-    client.on('iq:set:roster', ({roster}) => {
-        let items = (ctx.store.state[Store.$states.roster] || {items: []}).items.slice();
-        for (let item of roster.items) {
-            let idx = items.findIndex(i => i.jid == item.jid);
-            if (idx > 0) {
-                if (item.subscription == "remove") {
-                    items.splice(idx, 1);
-                }
-            } else {
-                if (item.subscription != "remove") {
-                    items.push(item);
-                }
-            }
-        }
-        ctx.store.commit(Store.$mutations.setRoster, {
-            ...roster,
-            items: items,
-        });
-    });
-
     /** DEBUG  **/
     client.on("*", (...args) => {
         // console.log(args);
@@ -309,5 +277,15 @@ export default (ctx, inject) => {
     inject("stanza", {
         client,
         ...generateFunctions(ctx),
+        ...(() => {
+            const obj = {};
+
+            for (let module in Modules) {
+                if(ctx.isDev) console.debug(`[Stanza] Installing module \`${Modules[module].name}\``)
+                obj[Modules[module].name] = Modules[module].install({client, ctx});
+            }
+
+            return obj;
+        })(),
     });
 }

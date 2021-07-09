@@ -53,8 +53,6 @@ export const actions = {
             return commit($mutations.setServerXep, {xep: "XEP-0030", value: false});
         }
 
-        console.log(data);
-
         commit($mutations.setServerXep, {xep: "XEP-0030", value: true});
         for (let [xep, check] of checks.entries()) {
             const value = check(data);

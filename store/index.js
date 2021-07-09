@@ -3,7 +3,7 @@ import { SettingsStore } from "@/store/settings";
 import { Utils } from '@bonfire-xmpp/verse';
 
 import * as storage from '@/assets/storage'
-import {loadFromSecure, loadFromSession} from '@/assets/storage'
+import {loadFromPermanent, loadFromSecure, loadFromSession, secure} from '@/assets/storage'
 
 import Vue from 'vue';
 
@@ -50,6 +50,8 @@ const $states = {
 
     // See stanza.js/Roster
     roster: 'ROSTER',
+    pending: 'PENDING',
+    rosterAcceptPrivacyRead: 'ROSTER_ACCEPT_PRIVACY_READ',
 
     avatars: 'AVATARS',
     avatarIds: 'AVATAR_IDS',
@@ -108,6 +110,9 @@ const $mutations = {
     setStreamManagement: 'SET_STREAM_MANAGEMENT',
     setAccount: 'SET_ACCOUNT',
     setRoster: 'SET_ROSTER',
+    diffUpdateRoster: 'DIFF_UPDATE_ROSTER',
+    addPending: 'ADD_PENDING',
+    removePending: 'REMOVE_PENDING',
 
     setOnlineStatus: 'SET_ONLINE_STATUS',
     setStatusMessage: 'SET_STATUS_MESSAGE',
@@ -135,6 +140,8 @@ export const state = () => ({
     [$states.account]: null,
     [$states.activeChat]: null,
     [$states.roster]: {},
+    [$states.pending]: [],
+    [$states.rosterAcceptPrivacyRead]: false,
 
     [$states.avatars]: {},
     [$states.avatarIds]: {},
@@ -184,11 +191,11 @@ export const actions = {
         }
 
         try {
-            const [jid, server, password, transports] = loadFromSecure(
-                $states.jid, $states.server, $states.password, $states.transports
+            const [jid, server, password, transports, roster] = loadFromSecure(
+                $states.jid, $states.server, $states.password, $states.transports, $states.roster
             );
 
-            if(jid && password) await dispatch($actions.login, {jid, server, password, transports});
+            if(jid && password) await dispatch($actions.login, {jid, server, password, transports, roster});
         } catch (e) {
             console.debug("Couldn't restore credentials", e);
         }
@@ -201,13 +208,17 @@ export const actions = {
                     Vue.set(presenceData, presenceDatum, presenceData[presenceDatum]);
                 commit($mutations.setPresence, presenceData);
             }
+
+            const [pending, rosterAcceptPrivacyRead] = loadFromPermanent($states.pending, $states.rosterAcceptPrivacyRead);
+            if(pending) commit('SET_PENDING', pending);
+            if(rosterAcceptPrivacyRead) commit('SET_ROSTER_ACCEPT_PRIVACY_READ', rosterAcceptPrivacyRead);
         }
 
         // Restore user settings
         dispatch(`${SettingsStore.namespace}/${SettingsStore.$actions.restoreUserSettings}`);
     },
 
-    async [$actions.login]({ commit }, { jid, password, server, transports, resource }) {
+    async [$actions.login]({ commit }, { jid, password, server, transports, resource, roster }) {
         let options = {
             jid,
             password,
@@ -215,6 +226,7 @@ export const actions = {
             transports: transports || {bosh: true, websocket: true},
             resource: resource || `${Math.round(Math.random() * 100)}-bonfire`,
             allowReconnect: true,
+            rosterVer: roster?.version,
         };
         this.$stanza.client.updateConfig(options);
 
@@ -247,6 +259,8 @@ export const actions = {
 
             commit($mutations.setJid, jid);
             commit($mutations.setPassword, password);
+
+            roster && commit($mutations.setRoster, roster);
             resolve()
         })),
 
@@ -427,7 +441,81 @@ export const mutations = {
     ...generateMutations(storage.secure,
         $states.jid, $states.password, $states.server, $states.transports, $states.onlineStatus, $states.statusMessage),
 
-    ...generateMutations($states.account, $states.roster, $states.loginDate, $states.pageTitle, $states.invisibility),
+    ...generateMutations(storage.permanent,
+        $states.rosterAcceptPrivacyRead),
+
+    ...generateMutations($states.account, $states.loginDate, $states.pageTitle, $states.invisibility, $states.pending),
+
+    // Necessary custom 'set' mutation because the roster object is a complex, deep object,
+    // so it needs special care to be Vuex reactive.
+    [$mutations.setRoster] ( state, roster ) {
+        Vue.set(state[$states.roster], 'version', roster.version);
+        if(!state[$states.roster].items) Vue.set(state[$states.roster], 'items', []);
+        roster.items.forEach((x, i) => Vue.set(state[$states.roster].items, i, x));
+        secure.setItem($states.roster, JSON.stringify(roster));
+    },
+
+    /**
+     * Updates the current roster using the provided diff
+     * @param state The current vuex state
+     * @param roster The roster diff object
+     */
+    [$mutations.diffUpdateRoster] ( state, roster ) {
+        // We're already up to date
+        if(state[$states.roster].version === roster.version) return;
+
+        // The current roster
+        let items = state[$states.roster]?.items || [];
+
+        // For each item in the diff
+        for (let item of roster.items) {
+            const idx = items.findIndex(i => i.jid === item.jid);
+
+            // If the current item exists in the current roster, update it
+            if(idx !== -1) {
+                // If we have no subscription, or the item is removed,
+                // find it in the current roster and remove it from there
+                if (item.subscription === "remove" || (item.subscription === "none" && !item.pending)) {
+                    items.splice(idx, 1);
+                } else {
+                    Vue.set(items, idx, item);
+                }
+
+            // If the current doesn't exist in the current roster, add it
+            } else {
+                if (["to", "from", "both"].includes(item.subscription) || item.pending)
+                    items.push(item);
+            }
+        }
+
+        // Set the roster with the updated items and new version
+        const data = {version: roster.version, items};
+        secure.setItem($states.roster, JSON.stringify(data));
+
+        // Just need to set the version, everything else in the items array happens reactively
+        roster.version && Vue.set(state[$states.roster], 'version', roster.version);
+    },
+
+    /**
+     * Adds a JID to the list of pending subscriptions
+     * @param state Current Vuex state
+     * @param jid
+     */
+    [$mutations.addPending] ( state, jid ) {
+        state[$states.pending].push(jid);
+        secure.setItem($states.pending, JSON.stringify(state[$states.pending]));
+    },
+
+    /**
+     * Removes a JID from the list of pending subscriptions, if it exists
+     * @param state Current Vuex state
+     * @param jid
+     */
+    [$mutations.removePending] ( state, jid ) {
+        const idx = state[$states.pending].indexOf(jid);
+        if(idx !== -1) state[$states.pending].splice(idx, 1);
+        secure.setItem($states.pending, JSON.stringify(state[$states.pending]));
+    },
 
     [$mutations.setActiveChat] ( state, data ) {
         if(state.settings[SettingsStore.$states.activeChatReceipts]) {

@@ -7,7 +7,7 @@
         </v-btn>
         <span class="header-title white--text">{{title}}</span>
       </header-bar>
-      <v-main class="h-100">
+      <v-main class="h-100 pt-2 black--lighten">
         <nuxt/>
       </v-main>
     </div>
@@ -36,6 +36,8 @@
     font-size: 1.2em;
     vertical-align: sub !important;
   }
+
+  .black--lighten { background-color: map-get($black, 'lighten') }
 </style>
 
 <script>

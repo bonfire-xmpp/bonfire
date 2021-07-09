@@ -1,14 +1,13 @@
 <template>
   <contractible-list v-if="items && items.length" :title="`${name} (${items.length})`">
-    <roster-item v-for="(item, i) in items"
-                 :item="item" :key="i"
-                 :class="i && 'mt-1'"
-                 :selected="i === selected"
-                 :approve="pending"
-                 @approve="approve"
-                 @reject="reject"/>
-    <template #contracted v-if="selected !== undefined">
-      <roster-item :item="items[selected]" selected :approve="pending"/>
+    <template v-for="(item, i) in items">
+      <roster-item v-if="item" :item="item" :key="i"
+                   :class="i && 'mt-1'"
+                   :selected="selected.includes(i)"
+                   :approve="pending"/>
+    </template>
+    <template #contracted v-if="selected.length">
+      <roster-item :item="items[selected[0]]" selected :approve="pending"/>
     </template>
   </contractible-list>
 </template>
@@ -22,8 +21,9 @@
       items: Array,
       pending: Boolean,
       selected: {
-        type: Number,
+        type: Array,
         optional: true,
+        default: [],
       }
     },
     methods: {

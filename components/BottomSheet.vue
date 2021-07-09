@@ -7,7 +7,7 @@
                      :nuxt="!!item.to" :to="item.to"
                      :href="item.href" v-if="!item.divider">
           <v-icon v-if="item.icon" :color="item.color || 'white'" :size="iconSize" class="mr-2">{{item.icon}}</v-icon>
-          <v-list-item-title :class="(item.color || 'white') + '--text'">{{item.title}}</v-list-item-title>
+          <v-list-item-title :class="(item.color || 'white') + '--text'" v-html="item.title"/>
         </v-list-item>
         <v-divider v-else class="mx-4 my-2"/>
       </template>
