@@ -53,7 +53,7 @@ export default {
     passLongpress(e) {
       // console.log('longpress', e);
       document.elementsFromPoint(e.detail.clientX,e.detail.clientY)[1]
-          .dispatchEvent(new CustomEvent('long-press', e.detail));
+          .dispatchEvent(new CustomEvent('long-press', {bubbles:true, ...e.detail}));
     },
 
     // On Chrome (<=89), horizontally snapped scrolls can be canceled by scrolling vertically.
