@@ -1,0 +1,100 @@
+// Remove default outlines that draw sometimes on selects
+* {
+  outline: none;
+}
+
+.reset-link {
+  text-decoration: none !important;
+  cursor: pointer !important;
+  color: map-get($white, "lighten") !important;
+}
+
+.no-transition {
+  transition: none !important;
+}
+
+// Unselectable text
+.unselectable {
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  -khtml-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
+}
+
+.hide-overflow {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+.hide-horizontal { overflow-x: hidden !important; }
+
+/** Scrollbar **/
+// Default is 50% transparent and #000
+.simplebar-scrollbar:before {
+  opacity: 1;
+  background-color: map-get($black, "darken");
+}
+
+.narrow-scrollbar .simplebar-track {
+  width: 8px !important;
+}
+.wide-scrollbar .simplebar-track {
+  width: 8px !important;
+  background: transparentize(map-get($greys, "100"), 0.5) !important;
+  border-radius: .7em;
+  & .simplebar-scrollbar:before {
+    left: 0 !important;
+    right: 0 !important;
+    top: 0 !important;
+    bottom: 0 !important;
+  }
+}
+
+b {
+  font-weight: 600 !important;
+}
+
+[data-simplebar] {
+  min-height: 0;
+}
+
+.simplebar-horizontal {
+  display: none;
+}
+
+.simplebar-x .simplebar-horizontal {
+  display: initial;
+}
+
+.simplebar-vertical {
+  margin-top: 4px !important;
+  margin-bottom: 4px !important;
+  .simplebar-no-gutter & {
+    margin-right: 4px;
+  }
+  .wide-scrollbar & {
+    margin-top: 10px !important;
+    margin-bottom: 10px !important;
+  }
+}
+.simplebar-horizontal {
+  margin-left: 4px !important;
+  margin-right: 4px !important;
+}
+
+hr {
+  border-width: 1px;
+  border-top-color: #2dd36f;
+  background-color: theme("colors.grey[300]");
+}
+
+input:-webkit-autofill,
+input:-webkit-autofill:hover,
+input:-webkit-autofill:focus,
+input:-webkit-autofill:active
+{
+  -webkit-transition: color 99999s ease-out, background-color 99999s ease-out;
+  -webkit-transition-delay: 99999s;
+}

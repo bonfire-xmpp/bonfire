@@ -1,0 +1,56 @@
+/* eslint-disable @typescript-eslint/no-var-requires */
+
+const {createMacro, MacroError} = require("babel-plugin-macros");
+
+// Traverse @/views/ and build a router config
+// It's a separate, non-macro, preval file because nested macros aren't supported (great job).
+// What's more, it can't pass a `() => import("path")` for components, so it passes the string instead,
+//  and we convert it in-AST.
+const routes = require("./_gen-routes_preval");
+
+function generateRoutes({references, state, babel: {types: t}}) {
+    console.log(routes);
+
+    const convert = x => {
+        if(Array.isArray(x)) {
+            return t.arrayExpression(x.map(convert))
+        }
+
+        else if(typeof x === "object") {
+            const subexprs = [];
+            for (const k in x) {
+                if(typeof x[k] === "function") continue;
+                if(k === "componentLazy" || k === "componentStrict") {
+                    subexprs.push(
+                        t.objectProperty(
+                            t.identifier("component"),
+                            (k === "componentLazy")
+                            // Lazy (deferred) load
+                            // Turn `component: "@/views/name"` into `component: () => import("@/views/name")`
+                            ? t.arrowFunctionExpression([], t.callExpression(t.identifier('import'), [t.stringLiteral(x[k])]))
+
+                            // Strict (eager) load
+                            // Turn `component: "@/views/name"` into `component: require("@/views/name").default`
+                            : t.memberExpression(t.callExpression(t.identifier('require'), [t.stringLiteral(x[k])]), t.identifier("default"))
+                        )
+                    )
+                } else {
+                    subexprs.push(t.objectProperty(t.identifier(k), convert(x[k])))
+                }
+            }
+            return t.objectExpression(subexprs);
+        }
+
+        else if(typeof x === "string") {
+            return t.stringLiteral(x);
+        }
+    }
+
+    if(!references.default.every(d => t.isCallExpression(d.parentPath))) {
+        throw new MacroError(`gen-routes is only valid in funcall() syntax!`);
+    }
+
+    references.default.map(d => d.parentPath.replaceWith(convert(routes)));
+}
+
+module.exports = createMacro(generateRoutes);

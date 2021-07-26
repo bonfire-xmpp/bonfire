@@ -1,0 +1,260 @@
+diff --git a/node_modules/simplebar-vue/dist/.babelrc b/node_modules/simplebar-vue/dist/.babelrc
+new file mode 100644
+index 0000000..e3f952f
+--- /dev/null
++++ b/node_modules/simplebar-vue/dist/.babelrc
+@@ -0,0 +1,11 @@
++{
++    "plugins": ["@babel/syntax-dynamic-import"],
++    "presets": [
++        [
++            "@babel/preset-env",
++            {
++                "modules": false
++            }
++        ]
++    ]
++}
+diff --git a/node_modules/simplebar-vue/dist/simplebar-vue.esm.js b/node_modules/simplebar-vue/dist/simplebar-vue.esm.js
+index c474b98..107d7a4 100644
+--- a/node_modules/simplebar-vue/dist/simplebar-vue.esm.js
++++ b/node_modules/simplebar-vue/dist/simplebar-vue.esm.js
+@@ -7,11 +7,9 @@
+  * Under MIT License
+  */
+ 
+-import 'core-js/modules/es.array.concat';
+-import 'core-js/modules/es.object.assign';
+ import SimpleBar from 'simplebar';
++import { openBlock, createBlock, createVNode, mergeProps, toHandlers, renderSlot } from 'vue';
+ 
+-//
+ var script = {
+   name: 'simplebar-vue',
+   mounted: function mounted() {
+@@ -28,110 +26,123 @@ var script = {
+   }
+ };
+ 
+-var __vue_script__ = script;
+-/* template */
+-
+-var __vue_render__ = function __vue_render__() {
+-  var _vm = this;
+-
+-  var _h = _vm.$createElement;
+-
+-  var _c = _vm._self._c || _h;
+-
+-  return _c("div", {
+-    ref: "element"
+-  }, [_c("div", {
+-    staticClass: "simplebar-wrapper"
+-  }, [_vm._m(0), _vm._v(" "), _c("div", {
+-    staticClass: "simplebar-mask"
+-  }, [_c("div", {
+-    staticClass: "simplebar-offset"
+-  }, [_c("div", _vm._g({
+-    ref: "scrollElement",
+-    staticClass: "simplebar-content-wrapper"
+-  }, Object.assign({}, _vm.$listeners.scroll && {
+-    scroll: _vm.$listeners.scroll
+-  })), [_c("div", {
+-    ref: "contentElement",
+-    staticClass: "simplebar-content"
+-  }, [_vm._t("default")], 2)])])]), _vm._v(" "), _c("div", {
+-    staticClass: "simplebar-placeholder"
+-  })]), _vm._v(" "), _vm._m(1), _vm._v(" "), _vm._m(2)]);
+-};
+-
+-var __vue_staticRenderFns__ = [function () {
+-  var _vm = this;
+-
+-  var _h = _vm.$createElement;
+-
+-  var _c = _vm._self._c || _h;
+-
+-  return _c("div", {
+-    staticClass: "simplebar-height-auto-observer-wrapper"
+-  }, [_c("div", {
+-    staticClass: "simplebar-height-auto-observer"
+-  })]);
+-}, function () {
+-  var _vm = this;
+-
+-  var _h = _vm.$createElement;
++function ownKeys(object, enumerableOnly) {
++  var keys = Object.keys(object);
+ 
+-  var _c = _vm._self._c || _h;
++  if (Object.getOwnPropertySymbols) {
++    var symbols = Object.getOwnPropertySymbols(object);
+ 
+-  return _c("div", {
+-    staticClass: "simplebar-track simplebar-horizontal"
+-  }, [_c("div", {
+-    staticClass: "simplebar-scrollbar"
+-  })]);
+-}, function () {
+-  var _vm = this;
+-
+-  var _h = _vm.$createElement;
++    if (enumerableOnly) {
++      symbols = symbols.filter(function (sym) {
++        return Object.getOwnPropertyDescriptor(object, sym).enumerable;
++      });
++    }
+ 
+-  var _c = _vm._self._c || _h;
++    keys.push.apply(keys, symbols);
++  }
+ 
+-  return _c("div", {
+-    staticClass: "simplebar-track simplebar-vertical"
+-  }, [_c("div", {
+-    staticClass: "simplebar-scrollbar"
+-  })]);
+-}];
+-__vue_render__._withStripped = true;
+-/* style */
++  return keys;
++}
+ 
+-var __vue_inject_styles__ = undefined;
+-/* scoped */
++function _objectSpread2(target) {
++  for (var i = 1; i < arguments.length; i++) {
++    var source = arguments[i] != null ? arguments[i] : {};
++
++    if (i % 2) {
++      ownKeys(Object(source), true).forEach(function (key) {
++        _defineProperty(target, key, source[key]);
++      });
++    } else if (Object.getOwnPropertyDescriptors) {
++      Object.defineProperties(target, Object.getOwnPropertyDescriptors(source));
++    } else {
++      ownKeys(Object(source)).forEach(function (key) {
++        Object.defineProperty(target, key, Object.getOwnPropertyDescriptor(source, key));
++      });
++    }
++  }
+ 
+-var __vue_scope_id__ = undefined;
+-/* functional template */
++  return target;
++}
+ 
+-var __vue_is_functional_template__ = false;
+-/* component normalizer */
++function _defineProperty(obj, key, value) {
++  if (key in obj) {
++    Object.defineProperty(obj, key, {
++      value: value,
++      enumerable: true,
++      configurable: true,
++      writable: true
++    });
++  } else {
++    obj[key] = value;
++  }
+ 
+-function __vue_normalize__(template, style, script, scope, functional, moduleIdentifier, createInjector, createInjectorSSR) {
+-  var component = (typeof script === 'function' ? script.options : script) || {}; // For security concerns, we use only base name in production mode.
++  return obj;
++}
+ 
+-  component.__file = "/Users/adriendenat/Sites/simplebar/packages/simplebar-vue/index.vue";
++var _hoisted_1 = {
++  ref: "element"
++};
++var _hoisted_2 = {
++  class: "simplebar-wrapper"
++};
+ 
+-  if (!component.render) {
+-    component.render = template.render;
+-    component.staticRenderFns = template.staticRenderFns;
+-    component._compiled = true;
+-    if (functional) component.functional = true;
+-  }
++var _hoisted_3 = /*#__PURE__*/createVNode("div", {
++  class: "simplebar-height-auto-observer-wrapper"
++}, [/*#__PURE__*/createVNode("div", {
++  class: "simplebar-height-auto-observer"
++})], -1
++/* HOISTED */
++);
+ 
+-  component._scopeId = scope;
++var _hoisted_4 = {
++  class: "simplebar-mask"
++};
++var _hoisted_5 = {
++  class: "simplebar-offset"
++};
++var _hoisted_6 = {
++  class: "simplebar-content",
++  ref: "contentElement"
++};
+ 
+-  return component;
++var _hoisted_7 = /*#__PURE__*/createVNode("div", {
++  class: "simplebar-placeholder"
++}, null, -1
++/* HOISTED */
++);
++
++var _hoisted_8 = /*#__PURE__*/createVNode("div", {
++  class: "simplebar-track simplebar-horizontal"
++}, [/*#__PURE__*/createVNode("div", {
++  class: "simplebar-scrollbar"
++})], -1
++/* HOISTED */
++);
++
++var _hoisted_9 = /*#__PURE__*/createVNode("div", {
++  class: "simplebar-track simplebar-vertical"
++}, [/*#__PURE__*/createVNode("div", {
++  class: "simplebar-scrollbar"
++})], -1
++/* HOISTED */
++);
++
++function render(_ctx, _cache, $props, $setup, $data, $options) {
++  return openBlock(), createBlock("div", _hoisted_1, [createVNode("div", _hoisted_2, [_hoisted_3, createVNode("div", _hoisted_4, [createVNode("div", _hoisted_5, [createVNode("div", mergeProps({
++    class: "simplebar-content-wrapper",
++    ref: "scrollElement"
++  }, toHandlers(_objectSpread2({}, _ctx.$attrs.onScroll && {
++    scroll: _ctx.$attrs.onScroll
++  }))), [createVNode("div", _hoisted_6, [renderSlot(_ctx.$slots, "default")], 512
++  /* NEED_PATCH */
++  )], 16
++  /* FULL_PROPS */
++  )])]), _hoisted_7]), _hoisted_8, _hoisted_9], 512
++  /* NEED_PATCH */
++  );
+ }
+-/* style inject */
+-
+-/* style inject SSR */
+-
+ 
+-var simplebar = __vue_normalize__({
+-  render: __vue_render__,
+-  staticRenderFns: __vue_staticRenderFns__
+-}, __vue_inject_styles__, __vue_script__, __vue_scope_id__, __vue_is_functional_template__);
++script.render = render;
++script.__file = "index.vue";
+ 
+-export default simplebar;
++export default script;
+diff --git a/node_modules/simplebar-vue/dist/simplebar-vue.js b/node_modules/simplebar-vue/dist/simplebar-vue.js
+index bf1414c..734e6e7 100644
+--- a/node_modules/simplebar-vue/dist/simplebar-vue.js
++++ b/node_modules/simplebar-vue/dist/simplebar-vue.js
+@@ -7,4 +7,4 @@
+  * Under MIT License
+  */
+ 
+-!function(t,e){"object"==typeof exports&&"undefined"!=typeof module?module.exports=e(require("simplebar")):"function"==typeof define&&define.amd?define(["simplebar"],e):(t=t||self).SimpleBar=e(t.SimpleBar)}(this,(function(t){"use strict";t=t&&t.hasOwnProperty("default")?t.default:t;var e="undefined"!=typeof globalThis?globalThis:"undefined"!=typeof window?window:"undefined"!=typeof global?global:"undefined"!=typeof self?self:{};function r(t,e){return t(e={exports:{}},e.exports),e.exports}var n,o,i,c,a="object",u=function(t){return t&&t.Math==Math&&t},f=u(typeof globalThis==a&&globalThis)||u(typeof window==a&&window)||u(typeof self==a&&self)||u(typeof e==a&&e)||Function("return this")(),s=function(t){try{return!!t()}catch(t){return!0}},l=!s((function(){return 7!=Object.defineProperty({},"a",{get:function(){return 7}}).a})),p={}.propertyIsEnumerable,d=Object.getOwnPropertyDescriptor,v={f:d&&!p.call({1:2},1)?function(t){var e=d(this,t);return!!e&&e.enumerable}:p},m=function(t,e){return{enumerable:!(1&t),configurable:!(2&t),writable:!(4&t),value:e}},h={}.toString,y=function(t){return h.call(t).slice(8,-1)},b="".split,g=s((function(){return!Object("z").propertyIsEnumerable(0)}))?function(t){return"String"==y(t)?b.call(t,""):Object(t)}:Object,w=function(t){if(null==t)throw TypeError("Can't call method on "+t);return t},_=function(t){return g(w(t))},O=function(t){return"object"==typeof t?null!==t:"function"==typeof t},S=function(t,e){if(!O(t))return t;var r,n;if(e&&"function"==typeof(r=t.toString)&&!O(n=r.call(t)))return n;if("function"==typeof(r=t.valueOf)&&!O(n=r.call(t)))return n;if(!e&&"function"==typeof(r=t.toString)&&!O(n=r.call(t)))return n;throw TypeError("Can't convert object to primitive value")},j={}.hasOwnProperty,E=function(t,e){return j.call(t,e)},x=f.document,C=O(x)&&O(x.createElement),P=!l&&!s((function(){return 7!=Object.defineProperty((t="div",C?x.createElement(t):{}),"a",{get:function(){return 7}}).a;var t})),T=Object.getOwnPropertyDescriptor,k={f:l?T:function(t,e){if(t=_(t),e=S(e,!0),P)try{return T(t,e)}catch(t){}if(E(t,e))return m(!v.f.call(t,e),t[e])}},M=function(t){if(!O(t))throw TypeError(String(t)+" is not an object");return t},$=Object.defineProperty,A={f:l?$:function(t,e,r){if(M(t),e=S(e,!0),M(r),P)try{return $(t,e,r)}catch(t){}if("get"in r||"set"in r)throw TypeError("Accessors not supported");return"value"in r&&(t[e]=r.value),t}},F=l?function(t,e,r){return A.f(t,e,m(1,r))}:function(t,e,r){return t[e]=r,t},I=function(t,e){try{F(f,t,e)}catch(r){f[t]=e}return e},L=r((function(t){var e=f["__core-js_shared__"]||I("__core-js_shared__",{});(t.exports=function(t,r){return e[t]||(e[t]=void 0!==r?r:{})})("versions",[]).push({version:"3.2.1",mode:"global",copyright:"© 2019 Denis Pushkarev (zloirock.ru)"})})),N=L("native-function-to-string",Function.toString),q=f.WeakMap,z="function"==typeof q&&/native code/.test(N.call(q)),B=0,R=Math.random(),D=function(t){return"Symbol("+String(void 0===t?"":t)+")_"+(++B+R).toString(36)},G=L("keys"),W={},K=f.WeakMap;if(z){var U=new K,V=U.get,Y=U.has,H=U.set;n=function(t,e){return H.call(U,t,e),e},o=function(t){return V.call(U,t)||{}},i=function(t){return Y.call(U,t)}}else{var J=G[c="state"]||(G[c]=D(c));W[J]=!0,n=function(t,e){return F(t,J,e),e},o=function(t){return E(t,J)?t[J]:{}},i=function(t){return E(t,J)}}var Q,X={set:n,get:o,has:i,enforce:function(t){return i(t)?o(t):n(t,{})},getterFor:function(t){return function(e){var r;if(!O(e)||(r=o(e)).type!==t)throw TypeError("Incompatible receiver, "+t+" required");return r}}},Z=r((function(t){var e=X.get,r=X.enforce,n=String(N).split("toString");L("inspectSource",(function(t){return N.call(t)})),(t.exports=function(t,e,o,i){var c=!!i&&!!i.unsafe,a=!!i&&!!i.enumerable,u=!!i&&!!i.noTargetGet;"function"==typeof o&&("string"!=typeof e||E(o,"name")||F(o,"name",e),r(o).source=n.join("string"==typeof e?e:"")),t!==f?(c?!u&&t[e]&&(a=!0):delete t[e],a?t[e]=o:F(t,e,o)):a?t[e]=o:I(e,o)})(Function.prototype,"toString",(function(){return"function"==typeof this&&e(this).source||N.call(this)}))})),tt=f,et=function(t){return"function"==typeof t?t:void 0},rt=Math.ceil,nt=Math.floor,ot=function(t){return isNaN(t=+t)?0:(t>0?nt:rt)(t)},it=Math.min,ct=function(t){return t>0?it(ot(t),9007199254740991):0},at=Math.max,ut=Math.min,ft=function(t){return function(e,r,n){var o,i=_(e),c=ct(i.length),a=function(t,e){var r=ot(t);return r<0?at(r+e,0):ut(r,e)}(n,c);if(t&&r!=r){for(;c>a;)if((o=i[a++])!=o)return!0}else for(;c>a;a++)if((t||a in i)&&i[a]===r)return t||a||0;return!t&&-1}},st={includes:ft(!0),indexOf:ft(!1)}.indexOf,lt=function(t,e){var r,n=_(t),o=0,i=[];for(r in n)!E(W,r)&&E(n,r)&&i.push(r);for(;e.length>o;)E(n,r=e[o++])&&(~st(i,r)||i.push(r));return i},pt=["constructor","hasOwnProperty","isPrototypeOf","propertyIsEnumerable","toLocaleString","toString","valueOf"],dt=pt.concat("length","prototype"),vt={f:Object.getOwnPropertyNames||function(t){return lt(t,dt)}},mt={f:Object.getOwnPropertySymbols},ht=function(t,e){return arguments.length<2?et(tt[t])||et(f[t]):tt[t]&&tt[t][e]||f[t]&&f[t][e]}("Reflect","ownKeys")||function(t){var e=vt.f(M(t)),r=mt.f;return r?e.concat(r(t)):e},yt=function(t,e){for(var r=ht(e),n=A.f,o=k.f,i=0;i<r.length;i++){var c=r[i];E(t,c)||n(t,c,o(e,c))}},bt=/#|\.prototype\./,gt=function(t,e){var r=_t[wt(t)];return r==St||r!=Ot&&("function"==typeof e?s(e):!!e)},wt=gt.normalize=function(t){return String(t).replace(bt,".").toLowerCase()},_t=gt.data={},Ot=gt.NATIVE="N",St=gt.POLYFILL="P",jt=gt,Et=k.f,xt=function(t,e){var r,n,o,i,c,a=t.target,u=t.global,s=t.stat;if(r=u?f:s?f[a]||I(a,{}):(f[a]||{}).prototype)for(n in e){if(i=e[n],o=t.noTargetGet?(c=Et(r,n))&&c.value:r[n],!jt(u?n:a+(s?".":"#")+n,t.forced)&&void 0!==o){if(typeof i==typeof o)continue;yt(i,o)}(t.sham||o&&o.sham)&&F(i,"sham",!0),Z(r,n,i,t)}},Ct=Array.isArray||function(t){return"Array"==y(t)},Pt=function(t){return Object(w(t))},Tt=function(t,e,r){var n=S(e);n in t?A.f(t,n,m(0,r)):t[n]=r},kt=!!Object.getOwnPropertySymbols&&!s((function(){return!String(Symbol())})),Mt=f.Symbol,$t=L("wks"),At=function(t){return $t[t]||($t[t]=kt&&Mt[t]||(kt?Mt:D)("Symbol."+t))},Ft=At("species"),It=function(t,e){var r;return Ct(t)&&("function"!=typeof(r=t.constructor)||r!==Array&&!Ct(r.prototype)?O(r)&&null===(r=r[Ft])&&(r=void 0):r=void 0),new(void 0===r?Array:r)(0===e?0:e)},Lt=At("species"),Nt=At("isConcatSpreadable"),qt=!s((function(){var t=[];return t[Nt]=!1,t.concat()[0]!==t})),zt=(Q="concat",!s((function(){var t=[];return(t.constructor={})[Lt]=function(){return{foo:1}},1!==t[Q](Boolean).foo}))),Bt=function(t){if(!O(t))return!1;var e=t[Nt];return void 0!==e?!!e:Ct(t)};xt({target:"Array",proto:!0,forced:!qt||!zt},{concat:function(t){var e,r,n,o,i,c=Pt(this),a=It(c,0),u=0;for(e=-1,n=arguments.length;e<n;e++)if(i=-1===e?c:arguments[e],Bt(i)){if(u+(o=ct(i.length))>9007199254740991)throw TypeError("Maximum allowed index exceeded");for(r=0;r<o;r++,u++)r in i&&Tt(a,u,i[r])}else{if(u>=9007199254740991)throw TypeError("Maximum allowed index exceeded");Tt(a,u++,i)}return a.length=u,a}});var Rt=Object.keys||function(t){return lt(t,pt)},Dt=Object.assign,Gt=!Dt||s((function(){var t={},e={},r=Symbol();return t[r]=7,"abcdefghijklmnopqrst".split("").forEach((function(t){e[t]=t})),7!=Dt({},t)[r]||"abcdefghijklmnopqrst"!=Rt(Dt({},e)).join("")}))?function(t,e){for(var r=Pt(t),n=arguments.length,o=1,i=mt.f,c=v.f;n>o;)for(var a,u=g(arguments[o++]),f=i?Rt(u).concat(i(u)):Rt(u),s=f.length,p=0;s>p;)a=f[p++],l&&!c.call(u,a)||(r[a]=u[a]);return r}:Dt;xt({target:"Object",stat:!0,forced:Object.assign!==Gt},{assign:Gt});var Wt={name:"simplebar-vue",mounted:function(){var e=t.getOptions(this.$refs.element.attributes);this.SimpleBar=new t(this.$refs.element,e)},computed:{scrollElement:function(){return this.$refs.scrollElement},contentElement:function(){return this.$refs.contentElement}}},Kt=function(){var t=this,e=t.$createElement,r=t._self._c||e;return r("div",{ref:"element"},[r("div",{staticClass:"simplebar-wrapper"},[t._m(0),t._v(" "),r("div",{staticClass:"simplebar-mask"},[r("div",{staticClass:"simplebar-offset"},[r("div",t._g({ref:"scrollElement",staticClass:"simplebar-content-wrapper"},Object.assign({},t.$listeners.scroll&&{scroll:t.$listeners.scroll})),[r("div",{ref:"contentElement",staticClass:"simplebar-content"},[t._t("default")],2)])])]),t._v(" "),r("div",{staticClass:"simplebar-placeholder"})]),t._v(" "),t._m(1),t._v(" "),t._m(2)])};Kt._withStripped=!0;return function(t,e,r,n,o,i,c,a){var u=("function"==typeof r?r.options:r)||{};return u.__file="/Users/adriendenat/Sites/simplebar/packages/simplebar-vue/index.vue",u.render||(u.render=t.render,u.staticRenderFns=t.staticRenderFns,u._compiled=!0,o&&(u.functional=!0)),u._scopeId=n,u}({render:Kt,staticRenderFns:[function(){var t=this.$createElement,e=this._self._c||t;return e("div",{staticClass:"simplebar-height-auto-observer-wrapper"},[e("div",{staticClass:"simplebar-height-auto-observer"})])},function(){var t=this.$createElement,e=this._self._c||t;return e("div",{staticClass:"simplebar-track simplebar-horizontal"},[e("div",{staticClass:"simplebar-scrollbar"})])},function(){var t=this.$createElement,e=this._self._c||t;return e("div",{staticClass:"simplebar-track simplebar-vertical"},[e("div",{staticClass:"simplebar-scrollbar"})])}]},0,Wt,void 0,!1)}));
++!function(e,r){"object"==typeof exports&&"undefined"!=typeof module?module.exports=r(require("simplebar"),require("vue")):"function"==typeof define&&define.amd?define(["simplebar","vue"],r):(e=e||self).SimpleBar=r(e.SimpleBar,e.vue)}(this,(function(e,r){"use strict";e=e&&Object.prototype.hasOwnProperty.call(e,"default")?e.default:e;var t={name:"simplebar-vue",mounted:function(){var r=e.getOptions(this.$refs.element.attributes);this.SimpleBar=new e(this.$refs.element,r)},computed:{scrollElement:function(){return this.$refs.scrollElement},contentElement:function(){return this.$refs.contentElement}}};function l(e,r){var t=Object.keys(e);if(Object.getOwnPropertySymbols){var l=Object.getOwnPropertySymbols(e);r&&(l=l.filter((function(r){return Object.getOwnPropertyDescriptor(e,r).enumerable}))),t.push.apply(t,l)}return t}function o(e){for(var r=1;r<arguments.length;r++){var t=null!=arguments[r]?arguments[r]:{};r%2?l(Object(t),!0).forEach((function(r){n(e,r,t[r])})):Object.getOwnPropertyDescriptors?Object.defineProperties(e,Object.getOwnPropertyDescriptors(t)):l(Object(t)).forEach((function(r){Object.defineProperty(e,r,Object.getOwnPropertyDescriptor(t,r))}))}return e}function n(e,r,t){return r in e?Object.defineProperty(e,r,{value:t,enumerable:!0,configurable:!0,writable:!0}):e[r]=t,e}var s={ref:"element"},a={class:"simplebar-wrapper"},c=r.createVNode("div",{class:"simplebar-height-auto-observer-wrapper"},[r.createVNode("div",{class:"simplebar-height-auto-observer"})],-1),i={class:"simplebar-mask"},p={class:"simplebar-offset"},u={class:"simplebar-content",ref:"contentElement"},d=r.createVNode("div",{class:"simplebar-placeholder"},null,-1),f=r.createVNode("div",{class:"simplebar-track simplebar-horizontal"},[r.createVNode("div",{class:"simplebar-scrollbar"})],-1),b=r.createVNode("div",{class:"simplebar-track simplebar-vertical"},[r.createVNode("div",{class:"simplebar-scrollbar"})],-1);return t.render=function(e,t,l,n,m,v){return r.openBlock(),r.createBlock("div",s,[r.createVNode("div",a,[c,r.createVNode("div",i,[r.createVNode("div",p,[r.createVNode("div",r.mergeProps({class:"simplebar-content-wrapper",ref:"scrollElement"},r.toHandlers(o({},e.$attrs.onScroll&&{scroll:e.$attrs.onScroll}))),[r.createVNode("div",u,[r.renderSlot(e.$slots,"default")],512)],16)])]),d]),f,b],512)},t.__file="index.vue",t}));

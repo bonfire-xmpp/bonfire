@@ -1,0 +1,98 @@
+html {
+  overflow: hidden !important;
+}
+
+@function splitIntoSteps($width, $steps) {
+  $result: ();
+  @for $i from 0 through $steps {
+    $result: append($result, (math.div($i * $width, $steps)));
+  }
+  @return $result
+}
+
+// NOTE: tailwindcss provides these classes
+// Split 100% into 20 steps, for w-number and h-number classes
+$height-width-helper-sizes: splitIntoSteps(100, 20);
+
+@each $size in $height-width-helper-sizes {
+  .h-#{$size} {
+    height: percentage(math.div($size, 100)) !important;
+  }
+
+  .w-#{$size} {
+    width: percentage(math.div($size, 100)) !important;
+  }
+}
+
+.move-window {
+  -webkit-app-region: drag;
+  -webkit-user-select: none;
+  & button {
+    -webkit-app-region: no-drag;
+  }
+}
+
+.border-circle-right {
+  border-bottom-right-radius: 50%;
+  border-top-right-radius: 50%;
+}
+
+.justify-content-between {
+  justify-content: space-between !important;
+}
+
+.clickable, .clickable > * {
+  cursor: pointer;
+}
+
+// Vertically aligns by inserting an empty pseudo class with 100% height,
+// so that the entire height becomes line height
+.align-content-center-inline {
+  &:before {
+    content: '';
+    display: inline-block;
+    height: 100%;
+    vertical-align: middle;
+  }
+  & > * {
+    display: inline-block !important;
+    vertical-align: middle;
+  }
+}
+
+$position-values: (absolute, relative, fixed, static);
+@each $value in $position-values {
+  .position-#{$value} {
+    position: $value;
+  }
+}
+
+.lighten-on-hover {
+  @extend .position-relative;
+
+  & > * {
+    @extend .position-relative;
+    z-index: 5;
+  }
+
+  &:hover::before {
+    content: "";
+
+    @extend .position-absolute;
+    width: 100%; height: 100%;
+    left: 0; right: 0;
+
+    z-index: 1;
+
+    background: white;
+    filter: opacity(0.06);
+  }
+}
+
+.light-shadow {
+  box-shadow: 0 1px 0 rgba(4,4,5,0.2),0 1.5px 0 rgba(6,6,7,0.05),0 2px 0 rgba(4,4,5,0.05);;
+}
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
